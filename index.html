@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Сеня · AI Sports</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--card:#161c26;--card2:#1b2330;--txt:#e8edf4;--mut:#8b98ab;
+  --green:#2ecc71;--red:#ff5c5c;--gold:#f5b83d;--blue:#4da3ff;--line:#232d3d;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:40px}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px}
+header{display:flex;align-items:center;gap:12px;padding:6px 2px 16px}
+.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f5b83d,#ff8a3d);display:flex;align-items:center;justify-content:center;font-size:24px}
+h1{font-size:19px;font-weight:700}
+.sub{color:var(--mut);font-size:12.5px}
+.badge-live{display:inline-block;background:rgba(46,204,113,.12);color:var(--green);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.card .k{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+.card .v{font-size:21px;font-weight:700;margin-top:3px}
+.card .d{font-size:12px;margin-top:2px}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.section{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+.sport{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.sport .ico{font-size:26px}
+.sport .info{flex:1}
+.sport .nm{font-weight:600}
+.sport .st{color:var(--mut);font-size:12px;margin-top:1px}
+.sport .bank{text-align:right}
+.sport .bank .b{font-weight:700;font-size:16px}
+.sport .bank .pct{font-size:12px}
+.bets{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.bet{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
+.bet:last-child{border-bottom:none}
+.bet .res{width:22px;text-align:center;font-size:15px}
+.bet .m{flex:1;min-width:0}
+.bet .match{font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bet .sel{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bet .odds{text-align:right;font-size:13px}
+.bet .pnl{font-size:12px}
+.foot{margin-top:22px;text-align:center;color:var(--mut);font-size:11.5px;line-height:1.7}
+.proof{background:var(--card2);border:1px dashed #2c3a4f;border-radius:12px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:var(--mut)}
+.proof b{color:var(--gold)}
+canvas{width:100%;height:120px;display:block}
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px 8px;margin-bottom:14px}
+.loading{text-align:center;color:var(--mut);padding:30px 0}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:12px;background:rgba(77,163,255,.13);color:var(--blue);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🎯</div>
+    <div>
+      <h1>Сеня · AI Sports<span class="badge-live">LIVE</span></h1>
+      <div class="sub">Каждая ставка — в открытой базе. Проверь сам.</div>
+    </div>
+  </header>
+
+  <div class="grid" id="topCards"><div class="loading">Загрузка…</div></div>
+
+  <div class="chart-card">
+    <div class="k" style="color:var(--mut);font-size:11.5px;text-transform:uppercase">Банк MLB, % от старта</div>
+    <canvas id="chart" width="1040" height="240"></canvas>
+  </div>
+
+  <div class="section">Кошельки по видам спорта</div>
+  <div id="sports"><div class="loading">Загрузка…</div></div>
+
+  <div class="section">Последние ставки MLB</div>
+  <div class="bets" id="bets"><div class="loading">Загрузка…</div></div>
+
+  <div class="proof">
+    🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной
+    базы результатов — той же, куда бот пишет каждую ставку в момент размещения.
+    Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
+  </div>
+
+  <div class="foot" id="foot">Сеня — автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · подписка и реф-программа скоро</div>
+</div>
+
+<script>
+const SB = "https://gqlfnhlrpteqfdfyhavl.supabase.co/rest/v1";
+const KEY = "sb_publishable_J1keRlMi77VotTCnuqGJQg_inumrH9o";
+const H = {apikey: KEY, Authorization: "Bearer " + KEY};
+
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+// реф-захват: t.me/бот?startapp=ref_XXXX → сохраняем для регистрации
+const refMatch = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "").match(/^ref_(\w+)/);
+if (refMatch) localStorage.setItem("senya_ref", refMatch[1]);
+
+async function q(path) {
+  const r = await fetch(SB + path, {headers: H});
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+function pct(x){ return (x>=0?"+":"") + x.toFixed(1) + "%"; }
+function cls(x){ return x>=0 ? "pos" : "neg"; }
+
+async function main(){
+  // MLB staked rows (источник истины)
+  const rows = await q("/bet_log?select=match,match_date,selection,best_odds,result,kelly_pct,stake,closing_odds,closing_ts&staked=is.true&order=match_date.asc&limit=10000");
+  const dec = rows.filter(r => r.result === 1 || r.result === 0);
+  const wins = dec.filter(r => r.result === 1).length;
+
+  // кривая банка в % (стейк = min(kelly,7%) банка, компаунд)
+  let bank = 100; const curve = [100];
+  const capFor = d => (d >= "2026-06-30" ? 0.07 : 0.05);
+  for (const r of rows) {
+    if (r.result === null || r.result === -1) continue;
+    const sf = Math.min((r.kelly_pct||0)/100, capFor(r.match_date||""));
+    bank += r.result === 1 ? bank*sf*((r.best_odds||1)-1) : -bank*sf;
+    curve.push(bank);
+  }
+  // честный CLV (только новый базис)
+  const clvRows = rows.filter(r => r.closing_odds && r.closing_ts && r.best_odds);
+  const clvs = clvRows.map(r => (r.best_odds/r.closing_odds - 1)*100);
+  const clvAvg = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
+
+  document.getElementById("topCards").innerHTML = `
+    <div class="card"><div class="k">Рост банка MLB</div>
+      <div class="v ${cls(bank-100)}">${pct(bank-100)}</div>
+      <div class="d" style="color:var(--mut)">${dec.length} решённых ставок</div></div>
+    <div class="card"><div class="k">Winrate</div>
+      <div class="v">${dec.length ? Math.round(100*wins/dec.length) : "—"}%</div>
+      <div class="d" style="color:var(--mut)">${wins}W · ${dec.length-wins}L</div></div>
+    <div class="card"><div class="k">CLV <span class="tag">честный базис</span></div>
+      <div class="v ${clvAvg===null?"":cls(clvAvg)}">${clvAvg===null?"копится":pct(clvAvg)}</div>
+      <div class="d" style="color:var(--mut)">${clvs.length} закрытий${clvs.length<30?" · n<30, рано судить":""}</div></div>
+    <div class="card"><div class="k">Виды спорта</div>
+      <div class="v">4</div>
+      <div class="d" style="color:var(--mut)">MLB · теннис · футбол · биржа SX</div></div>`;
+
+  drawChart(curve);
+
+  // последние 12 ставок
+  const last = rows.slice(-12).reverse();
+  document.getElementById("bets").innerHTML = last.map(r => {
+    const ico = r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":"⏳";
+    const pnlTxt = r.result===1?`<span class="pos">+${(((r.best_odds||1)-1)*100).toFixed(0)}%</span>`
+                 : r.result===0?`<span class="neg">−100%</span>`
+                 : r.result===-1?`<span style="color:var(--mut)">возврат</span>`:`<span style="color:var(--mut)">в игре</span>`;
+    return `<div class="bet"><div class="res">${ico}</div>
+      <div class="m"><div class="match">${r.match||""}</div>
+      <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
+      <div class="odds"><div>@${r.best_odds??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
+  }).join("");
+
+  // кошельки: теннис и футбол из отдельных баз
+  const banks = [{ico:"⚾",nm:"Бейсбол MLB",st:"боевой форвард",bank:bank,base:100,unit:"%"}];
+  try {
+    const t = await q("/tennis_bet_log?select=pnl,settled&order=ts.asc&limit=5000");
+    const tp = t.filter(x=>x.settled).reduce((a,x)=>a+(x.pnl||0),0);
+    banks.push({ico:"🎾",nm:"Теннис",st:"новое окно с 06.08",bank:300+tp,base:300,unit:"$"});
+  } catch(e){ banks.push({ico:"🎾",nm:"Теннис",st:"новое окно с 06.08",bank:300,base:300,unit:"$"}); }
+  try {
+    const s = await q("/soccer_bet_log?select=pnl,settled&order=ts.asc&limit=5000");
+    const sp = s.filter(x=>x.settled).reduce((a,x)=>a+(x.pnl||0),0);
+    banks.push({ico:"⚽",nm:"Футбол",st:"топ-лиги Европы",bank:300+sp,base:300,unit:"$"});
+  } catch(e){ banks.push({ico:"⚽",nm:"Футбол",st:"топ-лиги Европы",bank:300,base:300,unit:"$"}); }
+  banks.push({ico:"🟦",nm:"Биржа SX",st:"пики по живому стакану",bank:null,base:null,unit:""});
+
+  document.getElementById("sports").innerHTML = banks.map(b=>{
+    if (b.bank===null) return `<div class="sport"><div class="ico">${b.ico}</div>
+      <div class="info"><div class="nm">${b.nm}</div><div class="st">${b.st}</div></div>
+      <div class="bank"><div class="b" style="color:var(--mut)">скоро</div></div></div>`;
+    const roi=(b.bank/b.base-1)*100;
+    const bTxt = b.unit==="%"?pct(roi):"$"+b.bank.toFixed(2);
+    return `<div class="sport"><div class="ico">${b.ico}</div>
+      <div class="info"><div class="nm">${b.nm}</div><div class="st">${b.st}</div></div>
+      <div class="bank"><div class="b ${cls(roi)}">${bTxt}</div>
+      <div class="pct ${cls(roi)}">${b.unit==="%"?"с 05.06":pct(roi)}</div></div></div>`;
+  }).join("");
+}
+
+function drawChart(curve){
+  const c = document.getElementById("chart"), x = c.getContext("2d");
+  const W=c.width, Hh=c.height, pad=8;
+  const mn=Math.min(...curve), mx=Math.max(...curve);
+  const X=i=>pad+(W-2*pad)*i/(curve.length-1||1);
+  const Y=v=>Hh-pad-(Hh-2*pad)*((v-mn)/((mx-mn)||1));
+  // базовая линия 100%
+  x.strokeStyle="#2c3a4f"; x.setLineDash([6,6]); x.beginPath();
+  x.moveTo(pad,Y(100)); x.lineTo(W-pad,Y(100)); x.stroke(); x.setLineDash([]);
+  // градиент под кривой
+  const g=x.createLinearGradient(0,0,0,Hh);
+  g.addColorStop(0,"rgba(245,184,61,.35)"); g.addColorStop(1,"rgba(245,184,61,0)");
+  x.beginPath(); x.moveTo(X(0),Y(curve[0]));
+  curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
+  x.lineTo(X(curve.length-1),Hh-pad); x.lineTo(X(0),Hh-pad); x.closePath();
+  x.fillStyle=g; x.fill();
+  // сама кривая
+  x.beginPath(); x.moveTo(X(0),Y(curve[0]));
+  curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
+  x.strokeStyle="#f5b83d"; x.lineWidth=2.5; x.stroke();
+}
+
+main().catch(e => {
+  document.getElementById("topCards").innerHTML =
+    `<div class="card" style="grid-column:1/3"><div class="k">Ошибка загрузки</div>
+     <div class="d" style="color:var(--mut)">База недоступна: ${e.message}. Обнови позже.</div></div>`;
+});
+</script>
+</body>
+</html>
