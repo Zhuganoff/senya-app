@@ -48,6 +48,23 @@ h1{font-size:19px;font-weight:700}
 canvas{width:100%;height:120px;display:block}
 .chart-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px 8px;margin-bottom:14px}
 .loading{text-align:center;color:var(--mut);padding:30px 0}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tab{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
+.tab.active{background:var(--card2);color:var(--txt);border-color:#3a4a63}
+.dpick{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 10px;font-size:14px}
+.daynav{display:flex;gap:8px;margin-top:9px}
+.nav{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:7px;font-size:12px;cursor:pointer}
+.me-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:13px;align-items:center;margin-bottom:6px}
+.ava{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#4da3ff,#8f6bff);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.me-name{font-size:17px;font-weight:700}
+.me-sub{color:var(--mut);font-size:12.5px;margin-top:2px}
+.reflink{background:var(--card2);border:1px dashed #33415a;border-radius:9px;padding:9px 10px;font-size:12.5px;word-break:break-all;margin:7px 0 10px;color:var(--blue)}
+.btn{width:100%;background:var(--gold);color:#1a1200;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+.qrbox{text-align:center;padding:6px 0 2px}
+.qrbox img{width:190px;height:190px;border-radius:12px;background:#fff;padding:6px}
+.refstat{display:flex;justify-content:space-between;margin-top:11px;font-size:13px;color:var(--mut)}
+.daycard{background:var(--card2);border-radius:10px;padding:10px 12px;font-size:13px}
 .tag{font-size:10.5px;padding:1px 7px;border-radius:12px;background:rgba(77,163,255,.13);color:var(--blue);font-weight:600}
 </style>
 </head>
@@ -61,6 +78,13 @@ canvas{width:100%;height:120px;display:block}
     </div>
   </header>
 
+  <div class="tabs">
+    <button class="tab active" data-tab="dash">📊 Витрина</button>
+    <button class="tab" data-tab="hist">📅 История</button>
+    <button class="tab" data-tab="me">👤 Кабинет</button>
+  </div>
+
+  <div id="pane-dash">
   <div class="grid" id="topCards"><div class="loading">Загрузка…</div></div>
 
   <div class="chart-card">
@@ -73,6 +97,41 @@ canvas{width:100%;height:120px;display:block}
 
   <div class="section">Последние ставки MLB</div>
   <div class="bets" id="bets"><div class="loading">Загрузка…</div></div>
+
+  </div><!-- /pane-dash -->
+
+  <div id="pane-hist" style="display:none">
+    <div class="section">Ставки за день</div>
+    <div class="card" style="margin-bottom:12px">
+      <input type="date" id="dpick" class="dpick">
+      <div class="daynav">
+        <button class="nav" id="dprev">← вчера</button>
+        <button class="nav" id="dnext">завтра →</button>
+      </div>
+    </div>
+    <div id="dayStat" class="card" style="margin-bottom:10px"></div>
+    <div class="bets" id="dayBets"><div class="loading">Выбери дату</div></div>
+  </div>
+
+  <div id="pane-me" style="display:none">
+    <div class="me-card">
+      <div class="ava" id="ava">?</div>
+      <div class="me-info">
+        <div class="me-name" id="meName">Гость</div>
+        <div class="me-sub" id="meSub">Открой приложение из бота</div>
+      </div>
+    </div>
+    <div class="section">Реферальная программа</div>
+    <div class="card">
+      <div class="k">Твоя ссылка</div>
+      <div class="reflink" id="refLink">—</div>
+      <button class="btn" id="copyRef">📋 Скопировать ссылку</button>
+      <button class="btn ghost" id="shareRef">↗️ Поделиться</button>
+      <div class="qrbox"><img id="qrImg" alt="QR" style="display:none"><div id="qrHint" class="me-sub">QR придёт в бот по команде /ref — его можно показать для сканирования</div></div>
+      <div class="refstat"><span>Приглашено: <b id="refCnt">0</b></span><span>Начислено: <b>$0</b></span></div>
+      <div class="me-sub" style="margin-top:8px">Доля с платежей приглашённых начисляется с запуска подписки.</div>
+    </div>
+  </div>
 
   <div class="proof">
     🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной
@@ -199,6 +258,129 @@ function drawChart(curve){
   x.beginPath(); x.moveTo(X(0),Y(curve[0]));
   curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
   x.strokeStyle="#f5b83d"; x.lineWidth=2.5; x.stroke();
+}
+
+
+// ─────────── вкладки ───────────
+document.querySelectorAll(".tab").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const t = btn.dataset.tab;
+    document.getElementById("pane-dash").style.display = t === "dash" ? "" : "none";
+    document.getElementById("pane-hist").style.display = t === "hist" ? "" : "none";
+    document.getElementById("pane-me").style.display   = t === "me"   ? "" : "none";
+    if (t === "hist" && !window.__histInit) { window.__histInit = true; initHistory(); }
+    if (t === "me" && !window.__meInit) { window.__meInit = true; initMe(); }
+  });
+});
+
+// ─────────── история по дням ───────────
+function betRow(r){
+  const ico = r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":"⏳";
+  const clv = (r.closing_ts && r.closing_odds && r.best_odds)
+    ? ` · CLV ${(((r.best_odds/r.closing_odds)-1)*100>=0?"+":"")}${(((r.best_odds/r.closing_odds)-1)*100).toFixed(1)}%` : "";
+  const money = r.stake != null ? `$${Number(r.stake).toFixed(2)}` : "";
+  const res = r.result===1?`<span class="pos">выигрыш</span>`
+            : r.result===0?`<span class="neg">проигрыш</span>`
+            : r.result===-1?`<span style="color:var(--mut)">возврат</span>`
+            : `<span style="color:var(--mut)">в игре</span>`;
+  return `<div class="bet"><div class="res">${ico}</div>
+    <div class="m"><div class="match">${r.match||""}</div>
+    <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}</div></div>
+    <div class="odds"><div>@${r.best_odds??"—"} ${money}</div><div class="pnl">${res}</div></div></div>`;
+}
+
+async function loadDay(d){
+  const box = document.getElementById("dayBets");
+  const stat = document.getElementById("dayStat");
+  box.innerHTML = `<div class="loading">Загрузка…</div>`;
+  try{
+    const rows = await q(`/bet_log?select=match,match_date,selection,best_odds,result,stake,closing_odds,closing_ts&staked=is.true&match_date=eq.${d}&order=ts.asc`);
+    if(!rows.length){
+      stat.innerHTML = `<div class="k">${d}</div><div class="d" style="color:var(--mut)">Ставок не было — бот не нашёл value. Это тоже результат.</div>`;
+      box.innerHTML = `<div class="loading">Выходной</div>`;
+      return;
+    }
+    const dec = rows.filter(r=>r.result===1||r.result===0);
+    const w = dec.filter(r=>r.result===1).length;
+    const pnl = rows.reduce((a,r)=>{
+      const st = Number(r.stake)||0;
+      if(r.result===1) return a + st*((r.best_odds||1)-1);
+      if(r.result===0) return a - st;
+      return a;
+    },0);
+    stat.innerHTML = `<div class="k">${d}</div>
+      <div class="v ${cls(pnl)}">${pnl>=0?"+":""}$${pnl.toFixed(2)}</div>
+      <div class="d" style="color:var(--mut)">${rows.length} ставок · ${w}W-${dec.length-w}L${dec.length<rows.length?` · ${rows.length-dec.length} в игре`:""}</div>`;
+    box.innerHTML = rows.map(betRow).join("");
+  }catch(e){
+    box.innerHTML = `<div class="loading">Ошибка: ${e.message}</div>`;
+  }
+}
+
+function initHistory(){
+  const pick = document.getElementById("dpick");
+  const today = new Date(Date.now() - 6*3600*1000);   // «вчера» по бейсбольному дню
+  const iso = d => d.toISOString().slice(0,10);
+  pick.value = iso(new Date(today.getTime() - 24*3600*1000));
+  pick.max = iso(today);
+  loadDay(pick.value);
+  pick.addEventListener("change", () => loadDay(pick.value));
+  const shift = n => {
+    const d = new Date(pick.value + "T12:00:00Z");
+    d.setDate(d.getDate() + n);
+    if (iso(d) > pick.max) return;
+    pick.value = iso(d); loadDay(pick.value);
+  };
+  document.getElementById("dprev").addEventListener("click", () => shift(-1));
+  document.getElementById("dnext").addEventListener("click", () => shift(1));
+}
+
+// ─────────── личный кабинет ───────────
+async function initMe(){
+  const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  if(!u){
+    document.getElementById("meSub").textContent = "Открой приложение кнопкой в боте @sportzhubot — тогда увидишь свой профиль и ссылку.";
+    return;
+  }
+  const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "Пользователь";
+  document.getElementById("ava").textContent = (u.first_name||"U").trim()[0].toUpperCase();
+  document.getElementById("meName").textContent = name;
+  document.getElementById("meSub").textContent = u.username ? "@"+u.username : "id "+u.id;
+
+  try{
+    const rows = await q(`/senya_users?tg_id=eq.${u.id}&select=ref_code,qr_png`);
+    if(rows.length){
+      const link = `https://t.me/sportzhubot?start=ref_${rows[0].ref_code}`;
+      document.getElementById("refLink").textContent = link;
+      window.__refLink = link;
+      if(rows[0].qr_png){
+        const img = document.getElementById("qrImg");
+        img.src = rows[0].qr_png; img.style.display = "inline-block";
+        document.getElementById("qrHint").textContent = "Покажи QR — по нему попадут по твоей ссылке";
+      }
+      const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id`);
+      document.getElementById("refCnt").textContent = refs.length;
+    } else {
+      document.getElementById("refLink").textContent = "Напиши боту /start — ссылка создастся";
+    }
+  }catch(e){
+    document.getElementById("refLink").textContent = "Не удалось загрузить: " + e.message;
+  }
+
+  document.getElementById("copyRef").addEventListener("click", () => {
+    if(!window.__refLink) return;
+    navigator.clipboard && navigator.clipboard.writeText(window.__refLink);
+    const b = document.getElementById("copyRef");
+    b.textContent = "✅ Скопировано"; setTimeout(()=>b.textContent="📋 Скопировать ссылку", 1600);
+  });
+  document.getElementById("shareRef").addEventListener("click", () => {
+    if(!window.__refLink) return;
+    const share = "https://t.me/share/url?url=" + encodeURIComponent(window.__refLink) +
+                  "&text=" + encodeURIComponent("Сеня — AI-аналитик ставок. Каждая ставка в открытой базе, проверь сам.");
+    if (tg && tg.openTelegramLink) tg.openTelegramLink(share); else window.open(share, "_blank");
+  });
 }
 
 main().catch(e => {
