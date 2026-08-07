@@ -15,33 +15,36 @@
   --accent:#14b8a6;--line:#1e2736;--glow:rgba(16,185,129,.14);
 }
 
-/* ── заставка ── */
-#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:#05070b;
-  background-image:radial-gradient(700px 420px at 50% 42%,rgba(16,185,129,.16),transparent 62%);
-  transition:opacity .55s ease, visibility .55s}
+
+
+/* ── заставка (стиль спортивных интро 2000-х) ── */
+#splash{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+  background:#f2f4f7;overflow:hidden;transition:opacity .5s ease,visibility .5s}
 #splash.hide{opacity:0;visibility:hidden}
-.sp-inner{text-align:center;transform:translateY(-6px)}
-.sp-mark{width:118px;height:118px;display:block;margin:0 auto 20px}
-.sp-shield{stroke-dasharray:340;stroke-dashoffset:340;animation:draw 1.05s cubic-bezier(.6,.05,.3,1) .12s forwards}
-.sp-line{stroke-dasharray:150;stroke-dashoffset:150;animation:draw .85s cubic-bezier(.5,0,.2,1) .6s forwards}
-.sp-dot{opacity:0;transform-origin:92px 36px;animation:pop .5s cubic-bezier(.2,1.5,.4,1) 1.32s forwards}
-.sp-ring{opacity:0;transform-origin:92px 36px;animation:ring 1.1s ease-out 1.42s forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-@keyframes pop{0%{opacity:0;transform:scale(.2)}100%{opacity:1;transform:scale(1)}}
-@keyframes ring{0%{opacity:.9;transform:scale(.5)}70%{opacity:.35}100%{opacity:0;transform:scale(1.9)}}
-.sp-word{font-size:38px;font-weight:800;letter-spacing:16px;color:#eef3f9;text-indent:16px;
-  opacity:0;animation:rise .8s cubic-bezier(.2,.7,.3,1) 1.15s forwards}
-.sp-kick{font-size:10.5px;letter-spacing:5.5px;color:#10b981;margin-top:7px;font-weight:700;
-  opacity:0;animation:rise .8s cubic-bezier(.2,.7,.3,1) 1.42s forwards}
-.sp-tag{font-size:14px;color:#8fa0b6;margin-top:22px;letter-spacing:.3px;
-  opacity:0;animation:rise .9s cubic-bezier(.2,.7,.3,1) 1.75s forwards}
-@keyframes rise{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
-.sp-skip{position:absolute;bottom:26px;font-size:11px;color:#556680;
-  opacity:0;animation:rise .6s ease 2.3s forwards}
-@media (prefers-reduced-motion:reduce){
-  .sp-shield,.sp-line,.sp-dot,.sp-ring,.sp-word,.sp-kick,.sp-tag,.sp-skip{animation-duration:.01s}
-}
+.sp-bars{position:absolute;inset:0;overflow:hidden}
+.sp-bars i{position:absolute;top:-30%;height:170%;width:26%;transform:skewX(-18deg);opacity:0}
+.sp-bars i:nth-child(1){left:-40%;background:#0a0e14;animation:slide .62s cubic-bezier(.2,.75,.25,1) .05s forwards}
+.sp-bars i:nth-child(2){left:-40%;background:#d4001f;animation:slide .62s cubic-bezier(.2,.75,.25,1) .13s forwards;width:9%}
+.sp-bars i:nth-child(3){left:-40%;background:#0b3d91;animation:slide .62s cubic-bezier(.2,.75,.25,1) .19s forwards;width:6%}
+.sp-bars i:nth-child(4){right:-40%;background:#0a0e14;animation:slideR .62s cubic-bezier(.2,.75,.25,1) .1s forwards}
+.sp-bars i:nth-child(5){right:-40%;background:#c9d3de;animation:slideR .62s cubic-bezier(.2,.75,.25,1) .22s forwards;width:5%}
+@keyframes slide{0%{opacity:1;transform:translateX(0) skewX(-18deg)}100%{opacity:1;transform:translateX(210%) skewX(-18deg)}}
+@keyframes slideR{0%{opacity:1;transform:translateX(0) skewX(-18deg)}100%{opacity:1;transform:translateX(-210%) skewX(-18deg)}}
+.sp-stage{position:relative;text-align:center;z-index:2}
+.sp-badge{width:172px;height:172px;margin:0 auto;opacity:0;transform:scale(1.6);
+  animation:land .55s cubic-bezier(.15,.9,.25,1) .55s forwards;
+  filter:drop-shadow(0 14px 30px rgba(10,14,20,.28))}
+.sp-badge svg{width:100%;height:100%}
+.bg-top{font:800 34px/1 -apple-system,'Segoe UI',Roboto,sans-serif;fill:#fff;letter-spacing:1.5px}
+.bg-bot{font:700 15px/1 -apple-system,'Segoe UI',Roboto,sans-serif;fill:#c9d3de;letter-spacing:5px}
+@keyframes land{0%{opacity:0;transform:scale(1.6)}70%{opacity:1;transform:scale(.96)}100%{opacity:1;transform:scale(1)}}
+.sp-tag{margin-top:24px;font-size:15px;color:#2c3644;opacity:0;
+  animation:up .6s ease 1.15s forwards}
+.sp-line{margin-top:9px;font-size:12px;font-weight:800;letter-spacing:6px;color:#d4001f;opacity:0;
+  animation:up .6s ease 1.45s forwards}
+@keyframes up{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:translateY(0)}}
+.sp-skip{position:absolute;bottom:24px;font-size:11px;color:#8a97a6;opacity:0;animation:up .5s ease 2.2s forwards;z-index:2}
+@media (prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important}}
 
 body.light{
   --bg:#f5f7fb;--card:#ffffff;--card2:#eef2f8;--txt:#0e1620;--mut:#5d6b80;
@@ -115,6 +118,13 @@ canvas{width:100%;height:120px;display:block}
 .btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
 .qrbox{text-align:center;padding:6px 0 2px}
 .qrbox canvas{width:200px;height:200px;border-radius:14px;background:#fff;padding:8px;box-shadow:0 8px 26px rgba(0,0,0,.35)}
+.wrcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 15px;margin-bottom:10px}
+.wr-head{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.wr-val{font-size:20px;font-weight:800}
+.wr-bar{height:7px;background:var(--card2);border-radius:4px;overflow:hidden;margin:9px 0 7px}
+.wr-bar i{display:block;height:100%;border-radius:4px;transition:width .5s}
+.wr-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--mut)}
+.trend{margin-top:8px;font-size:12px;font-weight:600}
 .themes{display:flex;gap:6px;margin-top:9px}
 .themes button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:10px;padding:10px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
 .themes button.on{background:linear-gradient(135deg,rgba(16,185,129,.16),rgba(20,184,166,.10));color:var(--txt);border-color:rgba(20,184,166,.45)}
@@ -136,35 +146,28 @@ canvas{width:100%;height:120px;display:block}
 </style>
 </head>
 <body>
-<!-- ЗАСТАВКА (в духе киноинтро спортивных брендов): знак прорисовывается,
-     затем словомарк и слоган, после — плавный уход в приложение -->
+<!-- ЗАСТАВКА в духе классических спортивных интро 2000-х:
+     белое полотно, скользящие параллелограммы, круглый бейдж, слоган капсом -->
 <div id="splash">
-  <div class="sp-inner">
-    <svg class="sp-mark" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="gEmerald" x1="0" y1="0" x2="120" y2="120">
-          <stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#14b8a6"/>
-        </linearGradient>
-        <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="5" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      </defs>
-      <!-- щит: надёжность -->
-      <path class="sp-shield" d="M60 8 L104 26 V60 C104 86 84 104 60 112 C36 104 16 86 16 60 V26 Z"
-            stroke="url(#gEmerald)" stroke-width="3.5" stroke-linejoin="round"/>
-      <!-- растущая кривая: наш график банка -->
-      <polyline class="sp-line" points="32,78 47,64 60,71 76,46 92,36"
-                stroke="url(#gEmerald)" stroke-width="5" stroke-linecap="round"
-                stroke-linejoin="round" filter="url(#glow)"/>
-      <!-- точка входа в ставку -->
-      <circle class="sp-dot" cx="92" cy="36" r="6.5" fill="url(#gEmerald)" filter="url(#glow)"/>
-      <!-- прицел: value, а не угадывание -->
-      <circle class="sp-ring" cx="92" cy="36" r="13" stroke="url(#gEmerald)" stroke-width="2" opacity=".55"/>
-    </svg>
-    <div class="sp-word">СЕНЯ</div>
-    <div class="sp-kick">AI SPORTS ANALYTICS</div>
+  <div class="sp-bars"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="sp-stage">
+    <div class="sp-badge">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="200">
+            <stop offset="0%" stop-color="#ffffff"/><stop offset="42%" stop-color="#c9d3de"/>
+            <stop offset="52%" stop-color="#8a97a6"/><stop offset="100%" stop-color="#e8eef5"/>
+          </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="92" fill="#0a0e14"/>
+        <circle cx="100" cy="100" r="92" fill="none" stroke="url(#chrome)" stroke-width="7"/>
+        <circle cx="100" cy="100" r="78" fill="none" stroke="#d4001f" stroke-width="2.5" opacity=".9"/>
+        <text x="100" y="88" text-anchor="middle" class="bg-top">CLOSER</text>
+        <text x="100" y="128" text-anchor="middle" class="bg-bot">SPORTS AI</text>
+      </svg>
+    </div>
     <div class="sp-tag">Добро пожаловать в мир ставок</div>
+    <div class="sp-line">ЦЕНА РЕШАЕТ ВСЁ</div>
   </div>
   <div class="sp-skip">нажми, чтобы пропустить</div>
 </div>
@@ -184,6 +187,7 @@ canvas{width:100%;height:120px;display:block}
   <div class="tabs">
     <button class="tab active" data-tab="dash">📊 Витрина</button>
     <button class="tab" data-tab="hist">📅 История</button>
+    <button class="tab" data-tab="wr">🎯 Винрейт</button>
     <button class="tab" data-tab="me">👤 Кабинет</button>
   </div>
 
@@ -223,6 +227,16 @@ canvas{width:100%;height:120px;display:block}
     </div>
     <div id="dayStat" class="card" style="margin-bottom:10px"></div>
     <div class="bets" id="dayBets"><div class="loading">Выбери дату</div></div>
+  </div>
+
+  <div id="pane-wr" style="display:none">
+    <div class="section">Винрейт по видам ставок</div>
+    <div id="wrList"><div class="loading">Загрузка…</div></div>
+    <div class="proof" style="margin-top:14px">
+      📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день —
+      вверх после удачного дня, вниз после неудачного. Ничего не «замораживается»
+      на красивой цифре: сегодняшние результаты попадают сюда автоматически.
+    </div>
   </div>
 
   <div id="pane-me" style="display:none">
@@ -298,6 +312,8 @@ const refMatch = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || 
 if (refMatch) localStorage.setItem("senya_ref", refMatch[1]);
 
 
+
+
 // ─────────── заставка ───────────
 (function(){
   const sp = document.getElementById("splash");
@@ -306,11 +322,11 @@ if (refMatch) localStorage.setItem("senya_ref", refMatch[1]);
   const close = () => {
     if(done) return; done = true;
     sp.classList.add("hide");
-    setTimeout(() => sp.remove(), 650);
-    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.impactOccurred("light"); }catch(e){} }
+    setTimeout(() => sp.remove(), 600);
+    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.impactOccurred("medium"); }catch(e){} }
   };
   sp.addEventListener("click", close);
-  setTimeout(close, 3200);
+  setTimeout(close, 3000);
 })();
 
 // ─────────── тема: тёмная / светлая / как в Telegram ───────────
@@ -368,12 +384,12 @@ async function main(){
   const mlbStart = mlbRow.start_bank != null ? Number(mlbRow.start_bank) : 300;
   const mlbRoi = mlbBank != null ? (mlbBank/mlbStart - 1)*100 : (bank-100);
   document.getElementById("topCards").innerHTML = `
-    <div class="card"><div class="k">Банк MLB</div>
-      <div class="v ${cls(mlbRoi)}">${mlbBank != null ? "$"+mlbBank.toFixed(2) : pct(bank-100)}</div>
-      <div class="d ${cls(mlbRoi)}">${pct(mlbRoi)} · ${dec.length} ставок</div></div>
-    <div class="card"><div class="k">Winrate</div>
-      <div class="v">${dec.length ? Math.round(100*wins/dec.length) : "—"}%</div>
-      <div class="d" style="color:var(--mut)">${wins}W · ${dec.length-wins}L</div></div>
+    <div class="card"><div class="k">Винрейт всего</div>
+      <div class="v">${dec.length ? (100*wins/dec.length).toFixed(1) : "—"}%</div>
+      <div class="d" style="color:var(--mut)">${wins}W · ${dec.length-wins}L · ${dec.length} ставок</div></div>
+    <div class="card"><div class="k">Доходность</div>
+      <div class="v ${cls(mlbRoi)}">${pct(mlbRoi)}</div>
+      <div class="d" style="color:var(--mut)">банка с начала форварда</div></div>
     <div class="card"><div class="k">CLV <span class="tag">честный базис</span></div>
       <div class="v ${clvAvg===null?"":cls(clvAvg)}">${clvAvg===null?"копится":pct(clvAvg)}</div>
       <div class="d" style="color:var(--mut)">${clvs.length} закрытий${clvs.length<30?" · n<30, рано судить":""}</div></div>
@@ -420,6 +436,11 @@ async function main(){
 
 function drawChart(curve){
   const c = document.getElementById("chart"), x = c.getContext("2d");
+  // цвета берём из активной темы ДО первого использования (была ошибка порядка)
+  const css = getComputedStyle(document.body);
+  const acc = (css.getPropertyValue("--accent") || "#14b8a6").trim();
+  const lineC = (css.getPropertyValue("--line") || "#1e2736").trim();
+  const isLight = document.body.classList.contains("light");
   const W=c.width, Hh=c.height, pad=8;
   const mn=Math.min(...curve), mx=Math.max(...curve);
   const X=i=>pad+(W-2*pad)*i/(curve.length-1||1);
@@ -429,10 +450,6 @@ function drawChart(curve){
   x.moveTo(pad,Y(100)); x.lineTo(W-pad,Y(100)); x.stroke(); x.setLineDash([]);
   // градиент под кривой
   const g=x.createLinearGradient(0,0,0,Hh);
-  const css = getComputedStyle(document.body);
-  const acc = (css.getPropertyValue("--accent")||"#14b8a6").trim();
-  const lineC = (css.getPropertyValue("--line")||"#1e2736").trim();
-  const isLight = document.body.classList.contains("light");
   g.addColorStop(0, isLight ? "rgba(13,148,136,.28)" : "rgba(16,185,129,.34)");
   g.addColorStop(1, isLight ? "rgba(13,148,136,0)"   : "rgba(16,185,129,0)");
   x.beginPath(); x.moveTo(X(0),Y(curve[0]));
@@ -454,7 +471,9 @@ document.querySelectorAll(".tab").forEach(function(btn){
     const t = btn.dataset.tab;
     document.getElementById("pane-dash").style.display = t === "dash" ? "" : "none";
     document.getElementById("pane-hist").style.display = t === "hist" ? "" : "none";
+    document.getElementById("pane-wr").style.display   = t === "wr"   ? "" : "none";
     document.getElementById("pane-me").style.display   = t === "me"   ? "" : "none";
+    if (t === "wr" && !window.__wrInit) { window.__wrInit = true; initWinrate(); }
     if (t === "hist" && !window.__histInit) { window.__histInit = true; initHistory(); }
     if (t === "me" && !window.__meInit) { window.__meInit = true; initMe(); }
   });
@@ -531,7 +550,7 @@ function initHistory(){
 
 
 // ─────────── графики по видам спорта со свайпом ───────────
-const CHARTS = [];          // [{sport,title,curve,roi}]
+const CHARTS = window.CHARTS = [];   // [{title,curve,roi}] — на window, чтобы смена темы перерисовала
 let chartIdx = 0;
 
 function curveFromRows(rows){
@@ -549,6 +568,14 @@ function curveFromRows(rows){
 
 async function buildCharts(mlbRows, banksRows){
   CHARTS.length = 0;
+  // ЛИЧНЫЙ ГРАФИК: если пользователь указал банк, его кривая считается с даты
+  // старта (tracking_since) — «как если бы повторял с этого дня», а не с
+  // нашей истории. Пока даты нет — показываем общую витрину.
+  if (window.__trackSince) {
+    const mine = mlbRows.filter(r => (r.match_date||"") >= window.__trackSince);
+    CHARTS.push({title:"👤 Мой банк", curve: curveFromRows(mine),
+                 roi: curveFromRows(mine).slice(-1)[0] - 100, personal:true});
+  }
   const mlbCurve = curveFromRows(mlbRows);
   const mlbBank = banksRows.find(b=>b.sport==="mlb");
   CHARTS.push({title:"⚾ Бейсбол MLB", curve:mlbCurve,
@@ -585,6 +612,9 @@ function renderChart(i){
   chartIdx = (i + CHARTS.length) % CHARTS.length;
   const c = CHARTS[chartIdx];
   document.getElementById("chTitle").textContent = c.title;
+  document.getElementById("chSub").textContent = c.personal
+    ? `с ${(window.__trackSince||"").split("-").reverse().join(".")} · ${window.__myBank? "$"+(window.__myBank*(1+c.roi/100)).toFixed(2) : "% от старта"}`
+    : "банк, % от старта";
   const v = document.getElementById("chVal");
   v.textContent = pct(c.roi); v.className = "ch-val " + cls(c.roi);
   drawChart(c.curve);
@@ -636,6 +666,41 @@ async function loadToday(){
   }
 }
 
+// ─────────── винрейт по видам ───────────
+async function initWinrate(){
+  const box = document.getElementById("wrList");
+  try{
+    const banks = await q("/senya_banks?select=*&order=start_bank.desc");
+    // динамика MLB за неделю — честно показываем, куда двигается цифра
+    let trend = "";
+    try{
+      const rows = await q("/bet_log?select=result,match_date&staked=is.true&result=in.(0,1)&order=match_date.asc&limit=10000");
+      if(rows.length > 20){
+        const cut = rows.length - Math.min(40, Math.floor(rows.length/3));
+        const recent = rows.slice(cut), before = rows.slice(0, cut);
+        const wr = a => a.length ? 100*a.filter(r=>r.result===1).length/a.length : 0;
+        const d = wr(recent) - wr(before);
+        trend = `<div class="trend ${d>=0?"pos":"neg"}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(1)} п.п. за последние ${recent.length} ставок</div>`;
+      }
+    }catch(e){}
+    box.innerHTML = banks.map(b => {
+      const tot = (b.wins||0) + (b.losses||0);
+      if(!tot) return `<div class="wrcard"><div class="wr-head"><span>${b.emoji} ${b.title}</span>
+        <span style="color:var(--mut)">нет ставок</span></div></div>`;
+      const wr = 100*(b.wins||0)/tot;
+      const roi = (Number(b.bank)/Number(b.start_bank)-1)*100;
+      return `<div class="wrcard">
+        <div class="wr-head"><span>${b.emoji} <b>${b.title}</b></span>
+          <span class="wr-val ${wr>=50?"pos":"neg"}">${wr.toFixed(1)}%</span></div>
+        <div class="wr-bar"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div>
+        <div class="wr-foot"><span>${b.wins}W · ${b.losses}L · ${tot} ставок</span>
+          <span class="${cls(roi)}">${pct(roi)} банка</span></div>
+        ${b.sport==="mlb"?trend:""}
+      </div>`;
+    }).join("");
+  }catch(e){ box.innerHTML = `<div class="loading">Ошибка: ${e.message}</div>`; }
+}
+
 // ─────────── личный кабинет ───────────
 async function initMe(){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
@@ -681,8 +746,11 @@ async function initMe(){
   // личный банк: загрузка, быстрые кнопки, сохранение
   const bInput = document.getElementById("budget");
   try{
-    const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget`);
-    if(me.length && me[0].daily_budget){ bInput.value = me[0].daily_budget; window.__myBank = Number(me[0].daily_budget); }
+    const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since`);
+    if(me.length){
+      if(me[0].daily_budget){ bInput.value = me[0].daily_budget; window.__myBank = Number(me[0].daily_budget); }
+      if(me[0].tracking_since) window.__trackSince = String(me[0].tracking_since).slice(0,10);
+    }
   }catch(e){}
   document.querySelectorAll("#quickBudget button").forEach(b =>
     b.addEventListener("click", () => { bInput.value = b.dataset.v; }));
@@ -694,6 +762,13 @@ async function initMe(){
         method: "PATCH", headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
         body: JSON.stringify({daily_budget: v})});
       window.__myBank = v;
+      if(!window.__trackSince){
+        const today = new Date().toISOString().slice(0,10);
+        window.__trackSince = today;
+        fetch(SB + `/senya_users?tg_id=eq.${u.id}`, {method:"PATCH",
+          headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
+          body: JSON.stringify({tracking_since: today})}).catch(()=>{});
+      }
       hint.innerHTML = `✅ Сохранено. Ставка 5–10% = <b>$${(v*0.05).toFixed(2)}–$${(v*0.10).toFixed(2)}</b> на игру. Деньги остаются у тебя — бот показывает ставку, ты подтверждаешь.`;
     }catch(e){ hint.textContent = "Не удалось сохранить: " + e.message; }
   });
