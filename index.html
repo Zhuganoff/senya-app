@@ -5,27 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Сеня · AI Sports</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="qr.js"></script>
 <style>
 :root{
-  --bg:#0d1117;--card:#161c26;--card2:#1b2330;--txt:#e8edf4;--mut:#8b98ab;
-  --green:#2ecc71;--red:#ff5c5c;--gold:#f5b83d;--blue:#4da3ff;--line:#232d3d;
+  /* палитра 2026: тёмная база «инструмент, а не игрушка» + изумруд→бирюза
+     (в финтехе означает рост и стабильность), высокий контраст цифр */
+  --bg:#080b11;--card:#111722;--card2:#161d2b;--txt:#eef3f9;--mut:#7f8da3;
+  --green:#10b981;--green-2:#14b8a6;--red:#f5556d;--amber:#f0b429;
+  --accent:#14b8a6;--line:#1e2736;--glow:rgba(16,185,129,.14);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:40px}
+body{background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:40px;
+  background-image:radial-gradient(900px 380px at 12% -8%,rgba(20,184,166,.10),transparent 60%),
+                   radial-gradient(700px 320px at 92% 4%,rgba(16,185,129,.07),transparent 62%)}
 .wrap{max-width:560px;margin:0 auto;padding:16px 14px}
 header{display:flex;align-items:center;gap:12px;padding:6px 2px 16px}
-.logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#f5b83d,#ff8a3d);display:flex;align-items:center;justify-content:center;font-size:24px}
+.logo{width:44px;height:44px;border-radius:13px;background:linear-gradient(135deg,var(--green),var(--green-2));box-shadow:0 6px 20px var(--glow);display:flex;align-items:center;justify-content:center;font-size:24px}
 h1{font-size:19px;font-weight:700}
 .sub{color:var(--mut);font-size:12.5px}
-.badge-live{display:inline-block;background:rgba(46,204,113,.12);color:var(--green);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
+.badge-live{display:inline-block;background:rgba(16,185,129,.14);color:var(--green);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 15px}
 .card .k{color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
 .card .v{font-size:21px;font-weight:700;margin-top:3px}
 .card .d{font-size:12px;margin-top:2px}
 .pos{color:var(--green)}.neg{color:var(--red)}
 .section{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
-.sport{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.sport{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
 .sport .ico{font-size:26px}
 .sport .info{flex:1}
 .sport .nm{font-weight:600}
@@ -33,7 +39,7 @@ h1{font-size:19px;font-weight:700}
 .sport .bank{text-align:right}
 .sport .bank .b{font-weight:700;font-size:16px}
 .sport .bank .pct{font-size:12px}
-.bets{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.bets{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .bet{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line)}
 .bet:last-child{border-bottom:none}
 .bet .res{width:22px;text-align:center;font-size:15px}
@@ -43,29 +49,35 @@ h1{font-size:19px;font-weight:700}
 .bet .odds{text-align:right;font-size:13px}
 .bet .pnl{font-size:12px}
 .foot{margin-top:22px;text-align:center;color:var(--mut);font-size:11.5px;line-height:1.7}
-.proof{background:var(--card2);border:1px dashed #2c3a4f;border-radius:12px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:var(--mut)}
-.proof b{color:var(--gold)}
+.proof{background:var(--card2);border:1px dashed rgba(20,184,166,.28);border-radius:12px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:var(--mut)}
+.proof b{color:var(--accent)}
 canvas{width:100%;height:120px;display:block}
-.chart-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px 8px;margin-bottom:14px}
+.chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 14px 8px;margin-bottom:14px}
 .loading{text-align:center;color:var(--mut);padding:30px 0}
 .tabs{display:flex;gap:6px;margin-bottom:14px}
 .tab{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
-.tab.active{background:var(--card2);color:var(--txt);border-color:#3a4a63}
+.tab.active{background:linear-gradient(135deg,rgba(16,185,129,.16),rgba(20,184,166,.10));color:var(--txt);border-color:rgba(20,184,166,.42)}
 .dpick{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 10px;font-size:14px}
 .daynav{display:flex;gap:8px;margin-top:9px}
 .nav{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:7px;font-size:12px;cursor:pointer}
 .me-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:13px;align-items:center;margin-bottom:6px}
-.ava{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#4da3ff,#8f6bff);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
+.ava{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--green),var(--green-2));color:#04140f;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700}
 .me-name{font-size:17px;font-weight:700}
 .me-sub{color:var(--mut);font-size:12.5px;margin-top:2px}
-.reflink{background:var(--card2);border:1px dashed #33415a;border-radius:9px;padding:9px 10px;font-size:12.5px;word-break:break-all;margin:7px 0 10px;color:var(--blue)}
-.btn{width:100%;background:var(--gold);color:#1a1200;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
+.reflink{background:var(--card2);border:1px dashed rgba(20,184,166,.35);border-radius:10px;padding:10px 11px;font-size:12.5px;word-break:break-all;margin:7px 0 10px;color:var(--accent)}
+.btn{width:100%;background:linear-gradient(135deg,var(--green),var(--green-2));color:#04140f;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px}
 .btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
 .qrbox{text-align:center;padding:6px 0 2px}
-.qrbox img{width:190px;height:190px;border-radius:12px;background:#fff;padding:6px}
-.refstat{display:flex;justify-content:space-between;margin-top:11px;font-size:13px;color:var(--mut)}
+.qrbox canvas{width:200px;height:200px;border-radius:14px;background:#fff;padding:8px;box-shadow:0 8px 26px rgba(0,0,0,.35)}
+.refgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.rs{background:var(--card2);border-radius:11px;padding:10px 6px;text-align:center}
+.rs-v{font-size:19px;font-weight:700}
+.rs-k{color:var(--mut);font-size:11px;margin-top:2px}
+.reflist{margin-top:10px}
+.refitem{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.refitem:last-child{border-bottom:none}
 .daycard{background:var(--card2);border-radius:10px;padding:10px 12px;font-size:13px}
-.tag{font-size:10.5px;padding:1px 7px;border-radius:12px;background:rgba(77,163,255,.13);color:var(--blue);font-weight:600}
+.tag{font-size:10.5px;padding:1px 7px;border-radius:12px;background:rgba(20,184,166,.15);color:var(--accent);font-weight:600}
 </style>
 </head>
 <body>
@@ -91,6 +103,9 @@ canvas{width:100%;height:120px;display:block}
     <div class="k" style="color:var(--mut);font-size:11.5px;text-transform:uppercase">Банк MLB, % от старта</div>
     <canvas id="chart" width="1040" height="240"></canvas>
   </div>
+
+  <div class="section">Ставки сегодня <span class="tag" id="todayTag">live</span></div>
+  <div class="bets" id="todayBets"><div class="loading">Загрузка…</div></div>
 
   <div class="section">Кошельки по видам спорта</div>
   <div id="sports"><div class="loading">Загрузка…</div></div>
@@ -127,9 +142,16 @@ canvas{width:100%;height:120px;display:block}
       <div class="reflink" id="refLink">—</div>
       <button class="btn" id="copyRef">📋 Скопировать ссылку</button>
       <button class="btn ghost" id="shareRef">↗️ Поделиться</button>
-      <div class="qrbox"><img id="qrImg" alt="QR" style="display:none"><div id="qrHint" class="me-sub">QR придёт в бот по команде /ref — его можно показать для сканирования</div></div>
-      <div class="refstat"><span>Приглашено: <b id="refCnt">0</b></span><span>Начислено: <b>$0</b></span></div>
-      <div class="me-sub" style="margin-top:8px">Доля с платежей приглашённых начисляется с запуска подписки.</div>
+      <button class="btn ghost" id="genQr">🔳 Сформировать QR-код</button>
+      <div class="qrbox"><canvas id="qrCanvas" style="display:none"></canvas>
+        <div id="qrHint" class="me-sub">Нажми «Сформировать» — покажешь QR, его отсканируют и попадут по твоей ссылке</div></div>
+      <div class="refgrid">
+        <div class="rs"><div class="rs-v" id="refCnt">0</div><div class="rs-k">приглашено</div></div>
+        <div class="rs"><div class="rs-v" id="refPaid">0</div><div class="rs-k">оплатили</div></div>
+        <div class="rs"><div class="rs-v" id="refEarn">$0</div><div class="rs-k">начислено</div></div>
+      </div>
+      <div id="refList" class="reflist"></div>
+      <div class="me-sub" style="margin-top:9px">Доля с подписок приглашённых начисляется пожизненно, с запуска платежей.</div>
     </div>
   </div>
 
@@ -205,6 +227,7 @@ async function main(){
       <div class="d" style="color:var(--mut)">MLB · теннис · футбол · биржа SX</div></div>`;
 
   drawChart(curve);
+  loadToday();
 
   // последние 12 ставок
   const last = rows.slice(-12).reverse();
@@ -245,11 +268,11 @@ function drawChart(curve){
   const X=i=>pad+(W-2*pad)*i/(curve.length-1||1);
   const Y=v=>Hh-pad-(Hh-2*pad)*((v-mn)/((mx-mn)||1));
   // базовая линия 100%
-  x.strokeStyle="#2c3a4f"; x.setLineDash([6,6]); x.beginPath();
+  x.strokeStyle="#22303f"; x.setLineDash([6,6]); x.beginPath();
   x.moveTo(pad,Y(100)); x.lineTo(W-pad,Y(100)); x.stroke(); x.setLineDash([]);
   // градиент под кривой
   const g=x.createLinearGradient(0,0,0,Hh);
-  g.addColorStop(0,"rgba(245,184,61,.35)"); g.addColorStop(1,"rgba(245,184,61,0)");
+  g.addColorStop(0,"rgba(16,185,129,.34)"); g.addColorStop(1,"rgba(16,185,129,0)");
   x.beginPath(); x.moveTo(X(0),Y(curve[0]));
   curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
   x.lineTo(X(curve.length-1),Hh-pad); x.lineTo(X(0),Hh-pad); x.closePath();
@@ -257,7 +280,7 @@ function drawChart(curve){
   // сама кривая
   x.beginPath(); x.moveTo(X(0),Y(curve[0]));
   curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
-  x.strokeStyle="#f5b83d"; x.lineWidth=2.5; x.stroke();
+  x.strokeStyle="#14b8a6"; x.lineWidth=2.5; x.stroke();
 }
 
 
@@ -337,6 +360,31 @@ function initHistory(){
   document.getElementById("dnext").addEventListener("click", () => shift(1));
 }
 
+// ─────────── ставки сегодня ───────────
+async function loadToday(){
+  const box = document.getElementById("todayBets");
+  // «сегодня» по бейсбольному дню (US Eastern): смещение −4ч от UTC
+  const d = new Date(Date.now() - 4*3600*1000).toISOString().slice(0,10);
+  try{
+    const rows = await q(`/bet_log?select=match,match_date,selection,best_odds,stake,result,closing_odds,closing_ts&staked=is.true&match_date=eq.${d}&order=ts.asc`);
+    document.getElementById("todayTag").textContent = d;
+    if(!rows.length){
+      box.innerHTML = `<div class="bet"><div class="res">🕐</div><div class="m">
+        <div class="match">Ставок пока нет</div>
+        <div class="sel">Слейт идёт вечером · ставим только при EV ≥ 1.5%</div></div></div>`;
+      return;
+    }
+    const sum = rows.reduce((a,r)=>a+(Number(r.stake)||0),0);
+    box.innerHTML = rows.map(betRow).join("") +
+      `<div class="bet" style="background:var(--card2)"><div class="res">Σ</div>
+       <div class="m"><div class="match">Всего ${rows.length} ставок</div>
+       <div class="sel">в игре сегодня</div></div>
+       <div class="odds"><div><b>$${sum.toFixed(2)}</b></div></div></div>`;
+  }catch(e){
+    box.innerHTML = `<div class="loading">Ошибка: ${e.message}</div>`;
+  }
+}
+
 // ─────────── личный кабинет ───────────
 async function initMe(){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
@@ -355,13 +403,23 @@ async function initMe(){
       const link = `https://t.me/sportzhubot?start=ref_${rows[0].ref_code}`;
       document.getElementById("refLink").textContent = link;
       window.__refLink = link;
-      if(rows[0].qr_png){
-        const img = document.getElementById("qrImg");
-        img.src = rows[0].qr_png; img.style.display = "inline-block";
+      try{
+        const cv = document.getElementById("qrCanvas");
+        SenyaQR.draw(cv, link, {px:6, fg:"#080b11", bg:"#ffffff"});
+        cv.style.display = "inline-block";
         document.getElementById("qrHint").textContent = "Покажи QR — по нему попадут по твоей ссылке";
-      }
-      const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id`);
+      }catch(e){}
+      const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
+      const paid = refs.filter(r => r.is_paid).length;
       document.getElementById("refCnt").textContent = refs.length;
+      document.getElementById("refPaid").textContent = paid;
+      document.getElementById("refEarn").textContent = "$0";
+      document.getElementById("refList").innerHTML = refs.slice(0, 8).map(r => {
+        const nm = r.username ? "@" + r.username : (r.first_name || "пользователь");
+        const dt = (r.created_at || "").slice(0, 10);
+        return `<div class="refitem"><span>${nm}</span>
+          <span style="color:var(--mut)">${r.is_paid ? "💚 подписка" : dt}</span></div>`;
+      }).join("") + (refs.length > 8 ? `<div class="me-sub" style="margin-top:6px">и ещё ${refs.length-8}</div>` : "");
     } else {
       document.getElementById("refLink").textContent = "Напиши боту /start — ссылка создастся";
     }
@@ -369,6 +427,17 @@ async function initMe(){
     document.getElementById("refLink").textContent = "Не удалось загрузить: " + e.message;
   }
 
+  document.getElementById("genQr").addEventListener("click", () => {
+    if(!window.__refLink){ document.getElementById("qrHint").textContent = "Сначала напиши боту /start"; return; }
+    try{
+      const cv = document.getElementById("qrCanvas");
+      SenyaQR.draw(cv, window.__refLink, {px:6, fg:"#080b11", bg:"#ffffff"});
+      cv.style.display = "inline-block";
+      document.getElementById("qrHint").textContent = "Готово — покажи этот код, он ведёт на твою ссылку";
+    }catch(e){
+      document.getElementById("qrHint").textContent = "Не удалось сформировать: " + e.message;
+    }
+  });
   document.getElementById("copyRef").addEventListener("click", () => {
     if(!window.__refLink) return;
     navigator.clipboard && navigator.clipboard.writeText(window.__refLink);
