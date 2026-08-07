@@ -104,7 +104,12 @@ function pct(x){ return (x>=0?"+":"") + x.toFixed(1) + "%"; }
 function cls(x){ return x>=0 ? "pos" : "neg"; }
 
 async function main(){
-  // MLB staked rows (источник истины)
+  // Кошельки — из витрины senya_banks (все суммы в $, обновляет publish_banks.py)
+  let banksRows = [];
+  try { banksRows = await q("/senya_banks?select=*&order=start_bank.desc"); } catch(e){}
+  const mlbRow = banksRows.find(b => b.sport === "mlb") || {};
+
+  // MLB staked rows (для графика и ленты ставок)
   const rows = await q("/bet_log?select=match,match_date,selection,best_odds,result,kelly_pct,stake,closing_odds,closing_ts&staked=is.true&order=match_date.asc&limit=10000");
   const dec = rows.filter(r => r.result === 1 || r.result === 0);
   const wins = dec.filter(r => r.result === 1).length;
@@ -123,10 +128,13 @@ async function main(){
   const clvs = clvRows.map(r => (r.best_odds/r.closing_odds - 1)*100);
   const clvAvg = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
 
+  const mlbBank = mlbRow.bank != null ? Number(mlbRow.bank) : null;
+  const mlbStart = mlbRow.start_bank != null ? Number(mlbRow.start_bank) : 300;
+  const mlbRoi = mlbBank != null ? (mlbBank/mlbStart - 1)*100 : (bank-100);
   document.getElementById("topCards").innerHTML = `
-    <div class="card"><div class="k">Рост банка MLB</div>
-      <div class="v ${cls(bank-100)}">${pct(bank-100)}</div>
-      <div class="d" style="color:var(--mut)">${dec.length} решённых ставок</div></div>
+    <div class="card"><div class="k">Банк MLB</div>
+      <div class="v ${cls(mlbRoi)}">${mlbBank != null ? "$"+mlbBank.toFixed(2) : pct(bank-100)}</div>
+      <div class="d ${cls(mlbRoi)}">${pct(mlbRoi)} · ${dec.length} ставок</div></div>
     <div class="card"><div class="k">Winrate</div>
       <div class="v">${dec.length ? Math.round(100*wins/dec.length) : "—"}%</div>
       <div class="d" style="color:var(--mut)">${wins}W · ${dec.length-wins}L</div></div>
@@ -152,31 +160,23 @@ async function main(){
       <div class="odds"><div>@${r.best_odds??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
   }).join("");
 
-  // кошельки: теннис и футбол из отдельных баз
-  const banks = [{ico:"⚾",nm:"Бейсбол MLB",st:"боевой форвард",bank:bank,base:100,unit:"%"}];
-  try {
-    const t = await q("/tennis_bet_log?select=pnl,settled&order=ts.asc&limit=5000");
-    const tp = t.filter(x=>x.settled).reduce((a,x)=>a+(x.pnl||0),0);
-    banks.push({ico:"🎾",nm:"Теннис",st:"новое окно с 06.08",bank:300+tp,base:300,unit:"$"});
-  } catch(e){ banks.push({ico:"🎾",nm:"Теннис",st:"новое окно с 06.08",bank:300,base:300,unit:"$"}); }
-  try {
-    const s = await q("/soccer_bet_log?select=pnl,settled&order=ts.asc&limit=5000");
-    const sp = s.filter(x=>x.settled).reduce((a,x)=>a+(x.pnl||0),0);
-    banks.push({ico:"⚽",nm:"Футбол",st:"топ-лиги Европы",bank:300+sp,base:300,unit:"$"});
-  } catch(e){ banks.push({ico:"⚽",nm:"Футбол",st:"топ-лиги Европы",bank:300,base:300,unit:"$"}); }
-  banks.push({ico:"🟦",nm:"Биржа SX",st:"пики по живому стакану",bank:null,base:null,unit:""});
+  // кошельки — все из витрины, единая валюта $ (замечание CEO 07.08:
+  // бейсбол показывался в %, остальные в $)
+  const SUB = {mlb:"боевой форвард", tennis:"новое окно с 06.08", soccer:"топ-лиги Европы",
+               sx_base:"биржа · базовая", sx_quality:"биржа · фильтр качества",
+               sx_mirror:"биржа · зеркало", poly:"острый рынок"};
+  document.getElementById("sports").innerHTML = (banksRows.length ? banksRows : []).map(b => {
+    const bk = Number(b.bank), st = Number(b.start_bank) || 300;
+    const roi = (bk/st - 1)*100;
+    const wl = (b.wins != null && b.losses != null) ? ` · ${b.wins}W-${b.losses}L` : "";
+    return `<div class="sport"><div class="ico">${b.emoji||"⚽"}</div>
+      <div class="info"><div class="nm">${b.title||b.sport}</div>
+      <div class="st">${SUB[b.sport]||""}${wl}</div></div>
+      <div class="bank"><div class="b ${cls(roi)}">$${bk.toFixed(2)}</div>
+      <div class="pct ${cls(roi)}">${pct(roi)}</div></div></div>`;
+  }).join("") || `<div class="loading">Витрина обновляется…</div>`;
 
-  document.getElementById("sports").innerHTML = banks.map(b=>{
-    if (b.bank===null) return `<div class="sport"><div class="ico">${b.ico}</div>
-      <div class="info"><div class="nm">${b.nm}</div><div class="st">${b.st}</div></div>
-      <div class="bank"><div class="b" style="color:var(--mut)">скоро</div></div></div>`;
-    const roi=(b.bank/b.base-1)*100;
-    const bTxt = b.unit==="%"?pct(roi):"$"+b.bank.toFixed(2);
-    return `<div class="sport"><div class="ico">${b.ico}</div>
-      <div class="info"><div class="nm">${b.nm}</div><div class="st">${b.st}</div></div>
-      <div class="bank"><div class="b ${cls(roi)}">${bTxt}</div>
-      <div class="pct ${cls(roi)}">${b.unit==="%"?"с 05.06":pct(roi)}</div></div></div>`;
-  }).join("");
+  const banks = [];
 }
 
 function drawChart(curve){
