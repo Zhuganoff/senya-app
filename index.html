@@ -19,35 +19,6 @@
 
 
 
-/* ── заставка: фирменная гамма приложения, без посторонних цветов ── */
-#splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;background:#080b11;
-  background-image:radial-gradient(760px 440px at 50% 44%,rgba(16,185,129,.16),transparent 64%);
-  transition:opacity .55s ease,visibility .55s}
-#splash.hide{opacity:0;visibility:hidden}
-body.light #splash{background:#f5f7fb;
-  background-image:radial-gradient(760px 440px at 50% 44%,rgba(13,148,136,.16),transparent 64%)}
-body.light .sp-tag{color:#0e1620}
-body.light .sp-kick{color:#0d9488}
-body.light .sp-skip{color:#5d6b80}
-.sp-inner{text-align:center;transform:translateY(-8px)}
-.sp-mark{width:122px;height:122px;display:block;margin:0 auto 26px}
-.sp-shield{stroke-dasharray:340;stroke-dashoffset:340;animation:draw 1.05s cubic-bezier(.6,.05,.3,1) .12s forwards}
-.sp-line{stroke-dasharray:150;stroke-dashoffset:150;animation:draw .85s cubic-bezier(.5,0,.2,1) .58s forwards}
-.sp-dot{opacity:0;transform-origin:92px 36px;animation:pop .5s cubic-bezier(.2,1.5,.4,1) 1.3s forwards}
-.sp-ring{opacity:0;transform-origin:92px 36px;animation:ring 1.1s ease-out 1.4s forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-@keyframes pop{0%{opacity:0;transform:scale(.2)}100%{opacity:1;transform:scale(1)}}
-@keyframes ring{0%{opacity:.9;transform:scale(.5)}70%{opacity:.35}100%{opacity:0;transform:scale(1.9)}}
-.sp-tag{font-size:19px;font-weight:700;color:#eef3f9;opacity:0;
-  animation:rise .8s cubic-bezier(.2,.7,.3,1) 1.35s forwards}
-.sp-kick{font-size:10.5px;letter-spacing:5.5px;font-weight:700;color:#10b981;margin-top:10px;opacity:0;
-  animation:rise .8s cubic-bezier(.2,.7,.3,1) 1.68s forwards}
-@keyframes rise{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
-.sp-skip{position:absolute;bottom:26px;font-size:11px;color:#556680;opacity:0;animation:rise .6s ease 2.2s forwards}
-@media (prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important}}
-
-
 /* ── заставка: буквы падают по очереди, затем плашка SPORTS. Только наша гамма ── */
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
   align-items:center;justify-content:center;background:#080b11;overflow:hidden;
@@ -141,16 +112,6 @@ h1{font-size:19px;font-weight:700}
 .foot{margin-top:22px;text-align:center;color:var(--mut);font-size:11.5px;line-height:1.7}
 .proof{background:var(--card2);border:1px dashed rgba(20,184,166,.28);border-radius:12px;padding:11px 14px;margin-top:14px;font-size:12.5px;color:var(--mut)}
 .proof b{color:var(--accent)}
-canvas{width:100%;height:120px;display:block}
-.chart-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
-.ch-title{font-size:14.5px;font-weight:700}
-.ch-sub{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
-.ch-val{font-size:19px;font-weight:700}
-.dots{display:flex;gap:5px;justify-content:center;margin-top:8px}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--line);transition:all .2s}
-.dot.on{background:var(--accent);width:18px;border-radius:3px}
-.ch-hint{text-align:center;color:var(--mut);font-size:10.5px;margin-top:6px;opacity:.75}
-.chart-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 14px 8px;margin-bottom:14px}
 .loading{text-align:center;color:var(--mut);padding:30px 0}
 .tabs{display:flex;gap:6px;margin-bottom:14px}
 .tab{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
@@ -241,17 +202,6 @@ canvas{width:100%;height:120px;display:block}
 
   <div id="pane-dash">
   <div class="grid" id="topCards"><div class="loading">Загрузка…</div></div>
-
-  <div class="chart-card">
-    <div class="chart-head">
-      <div><div class="ch-title" id="chTitle">Бейсбол MLB</div>
-           <div class="ch-sub" id="chSub">банк, % от старта</div></div>
-      <div class="ch-val" id="chVal">—</div>
-    </div>
-    <canvas id="chart" width="1040" height="240"></canvas>
-    <div class="dots" id="chDots"></div>
-    <div class="ch-hint">← свайп для смены вида спорта →</div>
-  </div>
 
   <div class="section">Ставки сегодня <span class="tag" id="todayTag">live</span></div>
   <div class="bets" id="todayBets"><div class="loading">Загрузка…</div></div>
@@ -385,7 +335,6 @@ function applyTheme(mode){
   localStorage.setItem("senya_theme", mode);
   document.querySelectorAll("#themeSel button").forEach(b =>
     b.classList.toggle("on", b.dataset.t === mode));
-  if (window.CHARTS && CHARTS.length) renderChart(chartIdx);   // перерисовать в новых цветах
 }
 applyTheme(localStorage.getItem("senya_theme") || "auto");
 document.addEventListener("DOMContentLoaded", () => {
@@ -410,7 +359,7 @@ async function main(){
   const mlbRow = banksRows.find(b => b.sport === "mlb") || {};
 
   // MLB staked rows (для графика и ленты ставок)
-  const rows = await q("/bet_log?select=match,match_date,selection,best_odds,result,kelly_pct,stake,closing_odds,closing_ts&staked=is.true&order=match_date.asc&limit=10000");
+  const rows = await q("/bet_log?select=match,match_date,selection,best_odds,result,kelly_pct,stake,stake_pct,closing_odds,closing_ts&staked=is.true&order=match_date.asc&limit=10000");
   const dec = rows.filter(r => r.result === 1 || r.result === 0);
   const wins = dec.filter(r => r.result === 1).length;
 
@@ -445,7 +394,6 @@ async function main(){
       <div class="v">4</div>
       <div class="d" style="color:var(--mut)">MLB · теннис · футбол · биржа SX</div></div>`;
 
-  buildCharts(rows, banksRows);
   loadToday();
 
   // последние 12 ставок
@@ -456,9 +404,9 @@ async function main(){
                  : r.result===0?`<span class="neg">−100%</span>`
                  : r.result===-1?`<span style="color:var(--mut)">возврат</span>`:`<span style="color:var(--mut)">в игре</span>`;
     return `<div class="bet"><div class="res">${ico}</div>
-      <div class="m"><div class="match">${r.match||""}</div>
+      <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
       <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
-      <div class="odds"><div>@${r.best_odds??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
+      <div class="odds"><div>@${oddsOf(r)??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
   }).join("");
 
   // кошельки — все из витрины, единая валюта $ (замечание CEO 07.08:
@@ -482,33 +430,6 @@ async function main(){
   const banks = [];
 }
 
-function drawChart(curve){
-  const c = document.getElementById("chart"), x = c.getContext("2d");
-  // цвета берём из активной темы ДО первого использования (была ошибка порядка)
-  const css = getComputedStyle(document.body);
-  const acc = (css.getPropertyValue("--accent") || "#14b8a6").trim();
-  const lineC = (css.getPropertyValue("--line") || "#1e2736").trim();
-  const isLight = document.body.classList.contains("light");
-  const W=c.width, Hh=c.height, pad=8;
-  const mn=Math.min(...curve), mx=Math.max(...curve);
-  const X=i=>pad+(W-2*pad)*i/(curve.length-1||1);
-  const Y=v=>Hh-pad-(Hh-2*pad)*((v-mn)/((mx-mn)||1));
-  // базовая линия 100%
-  x.strokeStyle=lineC; x.setLineDash([6,6]); x.beginPath();
-  x.moveTo(pad,Y(100)); x.lineTo(W-pad,Y(100)); x.stroke(); x.setLineDash([]);
-  // градиент под кривой
-  const g=x.createLinearGradient(0,0,0,Hh);
-  g.addColorStop(0, isLight ? "rgba(13,148,136,.28)" : "rgba(16,185,129,.34)");
-  g.addColorStop(1, isLight ? "rgba(13,148,136,0)"   : "rgba(16,185,129,0)");
-  x.beginPath(); x.moveTo(X(0),Y(curve[0]));
-  curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
-  x.lineTo(X(curve.length-1),Hh-pad); x.lineTo(X(0),Hh-pad); x.closePath();
-  x.fillStyle=g; x.fill();
-  // сама кривая
-  x.beginPath(); x.moveTo(X(0),Y(curve[0]));
-  curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
-  x.strokeStyle=acc; x.lineWidth=2.5; x.stroke();
-}
 
 
 // ─────────── вкладки ───────────
@@ -527,25 +448,51 @@ document.querySelectorAll(".tab").forEach(function(btn){
   });
 });
 
+// доля банка по ставке. У ставок до 06.08 фактическая сумма не сохранялась —
+// там честная величина только kelly_pct (в процентах), её и берём запасным вариантом.
+function share(r){
+  if (r.stake_pct != null) return Number(r.stake_pct);
+  if (r.kelly_pct != null) return Number(r.kelly_pct)/100;
+  return 0;
+}
+function plBets(n){
+  const a=Math.abs(n)%100, b=a%10;
+  return (a>10&&a<20)||b===0||b>4 ? "ставок" : b===1 ? "ставка" : "ставки";
+}
+function oddsOf(r){ return r.best_odds ?? r.odds ?? null; }
+
 // ─────────── история по дням ───────────
 function betRow(r){
   const ico = r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":"⏳";
   const clv = (r.closing_ts && r.closing_odds && r.best_odds)
     ? ` · CLV ${(((r.best_odds/r.closing_odds)-1)*100>=0?"+":"")}${(((r.best_odds/r.closing_odds)-1)*100).toFixed(1)}%` : "";
   // размер — в ПРОЦЕНТАХ банка (у каждого свой), плюс сумма под личный банк
-  const pctS = r.stake_pct != null ? `${(Number(r.stake_pct)*100).toFixed(1)}% банка` : "";
-  const money = (r.stake_pct != null && window.__myBank)
-    ? ` = $${(Number(r.stake_pct)*window.__myBank).toFixed(2)}` : "";
+  const sh = share(r);
+  const pctS = sh ? `${(sh*100).toFixed(1)}% банка` : "";
+  const money = (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
   const res = r.result===1?`<span class="pos">выигрыш</span>`
             : r.result===0?`<span class="neg">проигрыш</span>`
             : r.result===-1?`<span style="color:var(--mut)">возврат</span>`
             : `<span style="color:var(--mut)">в игре</span>`;
   return `<div class="bet"><div class="res">${ico}</div>
-    <div class="m"><div class="match">${r.match||""}</div>
+    <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
     <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}</div></div>
-    <div class="odds"><div>@${r.best_odds??"—"}</div>
+    <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
+}
+
+const DAY_SRC = [
+  ["bet_log",        "⚾ ", "match,match_date,selection,best_odds,result,stake,stake_pct,kelly_pct,closing_odds,closing_ts"],
+  ["tennis_bet_log", "🎾 ", "match,match_date,selection,best_odds,result,stake,stake_pct,kelly_pct,closing_odds"],
+  ["soccer_bet_log", "⚽ ", "match,match_date,selection,odds,result,stake,stake_pct,closing_odds,closing_ts"],
+];
+async function loadDayRows(d){
+  const packs = await Promise.all(DAY_SRC.map(([t,ico,sel]) =>
+    q(`/${t}?select=${sel}&staked=is.true&match_date=eq.${d}&order=ts.asc`)
+      .then(rs => rs.map(r => Object.assign(r, {_ico: ico})))
+      .catch(() => [])));
+  return packs.flat();
 }
 
 async function loadDay(d){
@@ -553,7 +500,7 @@ async function loadDay(d){
   const stat = document.getElementById("dayStat");
   box.innerHTML = `<div class="loading">Загрузка…</div>`;
   try{
-    const rows = await q(`/bet_log?select=match,match_date,selection,best_odds,result,stake,closing_odds,closing_ts&staked=is.true&match_date=eq.${d}&order=ts.asc`);
+    const rows = await loadDayRows(d);
     if(!rows.length){
       stat.innerHTML = `<div class="k">${d}</div><div class="d" style="color:var(--mut)">Ставок не было — бот не нашёл value. Это тоже результат.</div>`;
       box.innerHTML = `<div class="loading">Выходной</div>`;
@@ -563,8 +510,8 @@ async function loadDay(d){
     const w = dec.filter(r=>r.result===1).length;
     // P&L дня — в ПРОЦЕНТАХ банка: у каждого пользователя своя сумма
     const pnlPct = rows.reduce((a,r)=>{
-      const sp = Number(r.stake_pct)||0;
-      if(r.result===1) return a + sp*((r.best_odds||1)-1);
+      const sp = share(r);
+      if(r.result===1) return a + sp*((oddsOf(r)||1)-1);
       if(r.result===0) return a - sp;
       return a;
     },0)*100;
@@ -597,103 +544,13 @@ function initHistory(){
 }
 
 
-// ─────────── графики по видам спорта со свайпом ───────────
-const CHARTS = window.CHARTS = [];   // [{title,curve,roi}] — на window, чтобы смена темы перерисовала
-let chartIdx = 0;
-
-function curveFromRows(rows){
-  // кривая в % от старта: компаунд по фактической доле банка (stake_pct)
-  let bank = 100; const curve = [100];
-  for (const r of rows){
-    if (r.result !== 1 && r.result !== 0) continue;
-    const sp = Number(r.stake_pct) || 0;
-    if (!sp) continue;
-    bank += r.result === 1 ? bank*sp*((r.best_odds||1)-1) : -bank*sp;
-    curve.push(bank);
-  }
-  return curve;
-}
-
-async function buildCharts(mlbRows, banksRows){
-  CHARTS.length = 0;
-  // ЛИЧНЫЙ ГРАФИК: если пользователь указал банк, его кривая считается с даты
-  // старта (tracking_since) — «как если бы повторял с этого дня», а не с
-  // нашей истории. Пока даты нет — показываем общую витрину.
-  if (window.__trackSince) {
-    const mine = mlbRows.filter(r => (r.match_date||"") >= window.__trackSince);
-    CHARTS.push({title:"👤 Мой банк", curve: curveFromRows(mine),
-                 roi: curveFromRows(mine).slice(-1)[0] - 100, personal:true});
-  }
-  const mlbCurve = curveFromRows(mlbRows);
-  const mlbBank = banksRows.find(b=>b.sport==="mlb");
-  CHARTS.push({title:"⚾ Бейсбол MLB", curve:mlbCurve,
-               roi: mlbBank ? (Number(mlbBank.bank)/Number(mlbBank.start_bank)-1)*100 : mlbCurve[mlbCurve.length-1]-100});
-  // теннис и футбол — из своих таблиц
-  for (const [tbl, title, sport] of [["tennis_bet_log","🎾 Теннис","tennis"],
-                                     ["soccer_bet_log","⚽ Футбол","soccer"]]){
-    try{
-      const rows = await q(`/${tbl}?select=result,stake,stake_pct,best_odds,odds,pnl,settled&order=ts.asc&limit=5000`);
-      const b = banksRows.find(x=>x.sport===sport);
-      const start = b ? Number(b.start_bank) : 300;
-      let bank = start; const curve = [100];
-      for (const r of rows){
-        if (!r.settled) continue;
-        bank += Number(r.pnl)||0;
-        curve.push(bank/start*100);
-      }
-      CHARTS.push({title, curve: curve.length>1?curve:[100,100],
-                   roi: b ? (Number(b.bank)/start-1)*100 : 0});
-    }catch(e){}
-  }
-  // биржевые книги
-  for (const sp of ["sx_base","sx_quality","sx_mirror","poly"]){
-    const b = banksRows.find(x=>x.sport===sp);
-    if(!b) continue;
-    const roi = (Number(b.bank)/Number(b.start_bank)-1)*100;
-    CHARTS.push({title:`${b.emoji} ${b.title}`, curve:[100, 100+roi], roi});
-  }
-  renderChart(0);
-}
-
-function renderChart(i){
-  if(!CHARTS.length) return;
-  chartIdx = (i + CHARTS.length) % CHARTS.length;
-  const c = CHARTS[chartIdx];
-  document.getElementById("chTitle").textContent = c.title;
-  document.getElementById("chSub").textContent = c.personal
-    ? `с ${(window.__trackSince||"").split("-").reverse().join(".")} · ${window.__myBank? "$"+(window.__myBank*(1+c.roi/100)).toFixed(2) : "% от старта"}`
-    : "банк, % от старта";
-  const v = document.getElementById("chVal");
-  v.textContent = pct(c.roi); v.className = "ch-val " + cls(c.roi);
-  drawChart(c.curve);
-  document.getElementById("chDots").innerHTML =
-    CHARTS.map((_,k)=>`<div class="dot${k===chartIdx?" on":""}"></div>`).join("");
-}
-
-(function attachSwipe(){
-  const el = document.getElementById("chart");
-  if(!el) return;
-  let x0 = null;
-  el.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, {passive:true});
-  el.addEventListener("touchend", e => {
-    if(x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0;
-    if(Math.abs(dx) > 40) renderChart(chartIdx + (dx < 0 ? 1 : -1));
-    x0 = null;
-  }, {passive:true});
-  el.addEventListener("click", e => {          // на десктопе — клик по половинам
-    const r = el.getBoundingClientRect();
-    renderChart(chartIdx + (e.clientX - r.left > r.width/2 ? 1 : -1));
-  });
-})();
-
 // ─────────── ставки сегодня ───────────
 async function loadToday(){
   const box = document.getElementById("todayBets");
   // «сегодня» по бейсбольному дню (US Eastern): смещение −4ч от UTC
   const d = new Date(Date.now() - 4*3600*1000).toISOString().slice(0,10);
   try{
-    const rows = await q(`/bet_log?select=match,match_date,selection,best_odds,stake,result,closing_odds,closing_ts&staked=is.true&match_date=eq.${d}&order=ts.asc`);
+    const rows = await loadDayRows(d);
     document.getElementById("todayTag").textContent = d;
     if(!rows.length){
       box.innerHTML = `<div class="bet"><div class="res">🕐</div><div class="m">
@@ -701,7 +558,7 @@ async function loadToday(){
         <div class="sel">Слейт идёт вечером · ставим только при EV ≥ 1.5%</div></div></div>`;
       return;
     }
-    const sumPct = rows.reduce((a,r)=>a+(Number(r.stake_pct)||0),0)*100;
+    const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;
     const mine = window.__myBank ? ` = $${(sumPct/100*window.__myBank).toFixed(2)}` : "";
     box.innerHTML = rows.map(betRow).join("") +
       `<div class="bet" style="background:var(--card2)"><div class="res">Σ</div>
@@ -714,38 +571,66 @@ async function loadToday(){
   }
 }
 
-// ─────────── винрейт по видам ───────────
+// ─────────── винрейт по ВИДАМ СПОРТА (не по стратегиям) ───────────
+// Показываем только то, на что реально ставим: бейсбол, теннис, футбол.
+// SX и Polymarket — это исследовательские зеркала, а не отдельные виды спорта,
+// в этой вкладке им не место (замечание CEO 08.08).
+const WR_SRC = [
+  ["bet_log",        "⚾", "Бейсбол MLB", "result,match_date", "mlb"],
+  ["tennis_bet_log", "🎾", "Теннис",      "result,match_date", "tennis"],
+  ["soccer_bet_log", "⚽", "Футбол",      "result,match_date", "soccer"],
+];
+
 async function initWinrate(){
   const box = document.getElementById("wrList");
+  const today = new Date(Date.now() - 4*3600*1000).toISOString().slice(0,10);
   try{
-    const banks = await q("/senya_banks?select=*&order=start_bank.desc");
-    // динамика MLB за неделю — честно показываем, куда двигается цифра
-    let trend = "";
-    try{
-      const rows = await q("/bet_log?select=result,match_date&staked=is.true&result=in.(0,1)&order=match_date.asc&limit=10000");
-      if(rows.length > 20){
-        const cut = rows.length - Math.min(40, Math.floor(rows.length/3));
-        const recent = rows.slice(cut), before = rows.slice(0, cut);
-        const wr = a => a.length ? 100*a.filter(r=>r.result===1).length/a.length : 0;
-        const d = wr(recent) - wr(before);
-        trend = `<div class="trend ${d>=0?"pos":"neg"}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(1)} п.п. за последние ${recent.length} ставок</div>`;
+    let banks = {};
+    try{ (await q("/senya_banks?select=sport,bank,start_bank")).forEach(b => banks[b.sport] = b); }catch(e){}
+    const cards = await Promise.all(WR_SRC.map(async ([tbl, ico, title, sel, sportKey]) => {
+      let rows = [];
+      try{
+        rows = await q(`/${tbl}?select=${sel}&staked=is.true&result=in.(0,1)&order=match_date.asc&limit=10000`);
+      }catch(e){ return `<div class="wrcard"><div class="wr-head"><span>${ico} <b>${title}</b></span>
+        <span style="color:var(--mut)">нет данных</span></div></div>`; }
+
+      const n = rows.length;
+      if(!n) return `<div class="wrcard"><div class="wr-head"><span>${ico} <b>${title}</b></span>
+        <span style="color:var(--mut)">ставок ещё не было</span></div></div>`;
+
+      const wrOf = a => a.length ? 100*a.filter(r=>r.result===1).length/a.length : 0;
+      const w = rows.filter(r=>r.result===1).length;
+      const wr = wrOf(rows);
+
+      const bk = banks[sportKey];
+      const roi = bk && bk.start_bank ? (Number(bk.bank)/Number(bk.start_bank)-1)*100 : null;
+
+      // честное движение цифры: сколько она сдвинулась за сегодняшние расчёты,
+      // а если сегодня расчётов не было — за последнюю треть ставок
+      const todays = rows.filter(r=>r.match_date===today);
+      let trend = `<div class="trend" style="color:var(--mut)">за сегодня расчётов не было</div>`;
+      if(todays.length){
+        const before = rows.filter(r=>r.match_date!==today);
+        const d = wr - (before.length ? wrOf(before) : wr);
+        trend = `<div class="trend ${d>=0?"pos":"neg"}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(1)} п.п. за сегодня (${todays.length} ${plBets(todays.length)})</div>`;
+      } else if(n >= 9){
+        const cut = n - Math.max(3, Math.floor(n/3));
+        const d = wrOf(rows.slice(cut)) - wrOf(rows.slice(0, cut));
+        trend = `<div class="trend ${d>=0?"pos":"neg"}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(1)} п.п. за последние ${n-cut} ${plBets(n-cut)}</div>`;
       }
-    }catch(e){}
-    box.innerHTML = banks.map(b => {
-      const tot = (b.wins||0) + (b.losses||0);
-      if(!tot) return `<div class="wrcard"><div class="wr-head"><span>${b.emoji} ${b.title}</span>
-        <span style="color:var(--mut)">нет ставок</span></div></div>`;
-      const wr = 100*(b.wins||0)/tot;
-      const roi = (Number(b.bank)/Number(b.start_bank)-1)*100;
+      const young = n < 10
+        ? `<div class="trend" style="color:var(--mut)">выборка маленькая — цифра ещё прыгает</div>` : "";
+
       return `<div class="wrcard">
-        <div class="wr-head"><span>${b.emoji} <b>${b.title}</b></span>
+        <div class="wr-head"><span>${ico} <b>${title}</b></span>
           <span class="wr-val ${wr>=50?"pos":"neg"}">${wr.toFixed(1)}%</span></div>
         <div class="wr-bar"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div>
-        <div class="wr-foot"><span>${b.wins}W · ${b.losses}L · ${tot} ставок</span>
-          <span class="${cls(roi)}">${pct(roi)} банка</span></div>
-        ${b.sport==="mlb"?trend:""}
+        <div class="wr-foot"><span>${w}W · ${n-w}L · ${n} рассчитано</span>
+          <span class="${roi==null?"":cls(roi)}">${roi==null?"":pct(roi)+" банка"}</span></div>
+        ${trend}${young}
       </div>`;
-    }).join("");
+    }));
+    box.innerHTML = cards.join("");
   }catch(e){ box.innerHTML = `<div class="loading">Ошибка: ${e.message}</div>`; }
 }
 
