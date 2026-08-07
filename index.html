@@ -14,6 +14,14 @@
   --green:#10b981;--green-2:#14b8a6;--red:#f5556d;--amber:#f0b429;
   --accent:#14b8a6;--line:#1e2736;--glow:rgba(16,185,129,.14);
 }
+body.light{
+  --bg:#f5f7fb;--card:#ffffff;--card2:#eef2f8;--txt:#0e1620;--mut:#5d6b80;
+  --green:#059669;--green-2:#0d9488;--red:#dc2f4b;--amber:#b45309;
+  --accent:#0d9488;--line:#dde4ee;--glow:rgba(13,148,136,.16);
+}
+body.light{background-image:radial-gradient(900px 380px at 12% -8%,rgba(13,148,136,.10),transparent 60%),
+                            radial-gradient(700px 320px at 92% 4%,rgba(5,150,105,.07),transparent 62%)}
+body.light .qrbox canvas{box-shadow:0 6px 18px rgba(20,40,70,.12)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--txt);font:15px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;padding-bottom:40px;
   background-image:radial-gradient(900px 380px at 12% -8%,rgba(20,184,166,.10),transparent 60%),
@@ -77,6 +85,9 @@ canvas{width:100%;height:120px;display:block}
 .btn.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
 .qrbox{text-align:center;padding:6px 0 2px}
 .qrbox canvas{width:200px;height:200px;border-radius:14px;background:#fff;padding:8px;box-shadow:0 8px 26px rgba(0,0,0,.35)}
+.themes{display:flex;gap:6px;margin-top:9px}
+.themes button{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:10px;padding:10px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
+.themes button.on{background:linear-gradient(135deg,rgba(16,185,129,.16),rgba(20,184,166,.10));color:var(--txt);border-color:rgba(20,184,166,.45)}
 .bankrow{display:flex;align-items:center;gap:8px;margin:9px 0 8px}
 .cur{font-size:19px;font-weight:700;color:var(--accent)}
 .binput{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font-size:18px;font-weight:700}
@@ -156,6 +167,16 @@ canvas{width:100%;height:120px;display:block}
         <div class="me-sub" id="meSub">Открой приложение из бота</div>
       </div>
     </div>
+    <div class="section">Оформление</div>
+    <div class="card">
+      <div class="k">Тема приложения</div>
+      <div class="themes" id="themeSel">
+        <button data-t="dark">🌙 Тёмная</button>
+        <button data-t="light">☀️ Светлая</button>
+        <button data-t="auto">🔄 Как в Telegram</button>
+      </div>
+    </div>
+
     <div class="section">Мой банк</div>
     <div class="card">
       <div class="k">Сколько готов ставить в сутки</div>
@@ -209,6 +230,23 @@ if (tg) { tg.ready(); tg.expand(); }
 // реф-захват: t.me/бот?startapp=ref_XXXX → сохраняем для регистрации
 const refMatch = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "").match(/^ref_(\w+)/);
 if (refMatch) localStorage.setItem("senya_ref", refMatch[1]);
+
+// ─────────── тема: тёмная / светлая / как в Telegram ───────────
+function applyTheme(mode){
+  const tgDark = !(tg && tg.colorScheme === "light");
+  const light = mode === "light" || (mode === "auto" && !tgDark);
+  document.body.classList.toggle("light", light);
+  localStorage.setItem("senya_theme", mode);
+  document.querySelectorAll("#themeSel button").forEach(b =>
+    b.classList.toggle("on", b.dataset.t === mode));
+  if (window.CHARTS && CHARTS.length) renderChart(chartIdx);   // перерисовать в новых цветах
+}
+applyTheme(localStorage.getItem("senya_theme") || "auto");
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("#themeSel button").forEach(b =>
+    b.addEventListener("click", () => applyTheme(b.dataset.t)));
+  applyTheme(localStorage.getItem("senya_theme") || "auto");
+});
 
 async function q(path) {
   const r = await fetch(SB + path, {headers: H});
@@ -305,11 +343,16 @@ function drawChart(curve){
   const X=i=>pad+(W-2*pad)*i/(curve.length-1||1);
   const Y=v=>Hh-pad-(Hh-2*pad)*((v-mn)/((mx-mn)||1));
   // базовая линия 100%
-  x.strokeStyle="#22303f"; x.setLineDash([6,6]); x.beginPath();
+  x.strokeStyle=lineC; x.setLineDash([6,6]); x.beginPath();
   x.moveTo(pad,Y(100)); x.lineTo(W-pad,Y(100)); x.stroke(); x.setLineDash([]);
   // градиент под кривой
   const g=x.createLinearGradient(0,0,0,Hh);
-  g.addColorStop(0,"rgba(16,185,129,.34)"); g.addColorStop(1,"rgba(16,185,129,0)");
+  const css = getComputedStyle(document.body);
+  const acc = (css.getPropertyValue("--accent")||"#14b8a6").trim();
+  const lineC = (css.getPropertyValue("--line")||"#1e2736").trim();
+  const isLight = document.body.classList.contains("light");
+  g.addColorStop(0, isLight ? "rgba(13,148,136,.28)" : "rgba(16,185,129,.34)");
+  g.addColorStop(1, isLight ? "rgba(13,148,136,0)"   : "rgba(16,185,129,0)");
   x.beginPath(); x.moveTo(X(0),Y(curve[0]));
   curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
   x.lineTo(X(curve.length-1),Hh-pad); x.lineTo(X(0),Hh-pad); x.closePath();
@@ -317,7 +360,7 @@ function drawChart(curve){
   // сама кривая
   x.beginPath(); x.moveTo(X(0),Y(curve[0]));
   curve.forEach((v,i)=>x.lineTo(X(i),Y(v)));
-  x.strokeStyle="#14b8a6"; x.lineWidth=2.5; x.stroke();
+  x.strokeStyle=acc; x.lineWidth=2.5; x.stroke();
 }
 
 
@@ -531,7 +574,7 @@ async function initMe(){
       window.__refLink = link;
       try{
         const cv = document.getElementById("qrCanvas");
-        SenyaQR.draw(cv, link, {px:6, fg:"#080b11", bg:"#ffffff"});
+        SenyaQR.draw(cv, link, {px:6, fg: document.body.classList.contains("light") ? "#0e1620" : "#080b11", bg:"#ffffff"});
         cv.style.display = "inline-block";
         document.getElementById("qrHint").textContent = "Покажи QR — по нему попадут по твоей ссылке";
       }catch(e){}
@@ -577,7 +620,7 @@ async function initMe(){
     if(!window.__refLink){ document.getElementById("qrHint").textContent = "Сначала напиши боту /start"; return; }
     try{
       const cv = document.getElementById("qrCanvas");
-      SenyaQR.draw(cv, window.__refLink, {px:6, fg:"#080b11", bg:"#ffffff"});
+      SenyaQR.draw(cv, window.__refLink, {px:6, fg: document.body.classList.contains("light") ? "#0e1620" : "#080b11", bg:"#ffffff"});
       cv.style.display = "inline-block";
       document.getElementById("qrHint").textContent = "Готово — покажи этот код, он ведёт на твою ссылку";
     }catch(e){
