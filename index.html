@@ -407,8 +407,9 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     <div class="card">
       <div class="k" data-i18n="langTitle">Язык / Language</div>
       <div class="themes" id="langSel">
-        <button data-l="ru">🇷🇺 Русский</button>
-        <button data-l="en">🇬🇧 English</button>
+        <button data-l="ru">RU</button>
+        <button data-l="en">EN</button>
+        <button data-l="zh">中文</button>
       </div>
       <div class="k" style="margin-top:16px" data-i18n="themeTitle">Тема приложения</div>
       <div class="themes" id="themeSel">
@@ -510,7 +511,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v17 · 11.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v18 · 11.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -532,141 +533,166 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v17";
+const BUILD = "v18";
 
-// ── язык интерфейса (CEO 11.08): ru по умолчанию / en; выбор в localStorage
-// (senya_lang). Смена языка перезагружает страницу — все динамические блоки
-// перерисовываются сами, заставка при такой перезагрузке пропускается.
-// Китайский добавим третьим — держать словарь массивами [ru, en] и t() ниже.
-const LANG = (localStorage.getItem("senya_lang") === "en") ? "en" : "ru";
-document.documentElement.lang = LANG;
+// ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
+// Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
+// zh* → zh, остальной мир → en; ручной выбор в localStorage (senya_lang) главнее.
+// Смена языка перезагружает страницу, заставка при этой перезагрузке пропускается.
+const CIS_LANGS = ["ru","uk","be","kk","ky","uz","tg","hy","az","tk"];
+const LANG = (function(){
+  const saved = localStorage.getItem("senya_lang");
+  if (["ru","en","zh"].includes(saved)) return saved;
+  const u = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe
+            && window.Telegram.WebApp.initDataUnsafe.user;
+  const lc = ((u && u.language_code) || navigator.language || "en").toLowerCase();
+  if (lc.startsWith("zh")) return "zh";
+  return CIS_LANGS.some(c => lc === c || lc.startsWith(c + "-")) ? "ru" : "en";
+})();
+const LIDX = {ru: 0, en: 1, zh: 2};
+document.documentElement.lang = LANG === "zh" ? "zh-CN" : LANG;
 const T = {
-  spTag: ["Добро пожаловать в мир ставок", "Welcome to the world of betting"],
-  spSkip: ["нажми, чтобы пропустить", "tap to skip"],
-  headSub: ["Каждая ставка — в открытой базе. Проверь сам.", "Every bet lives in an open database. Verify it yourself."],
-  loading: ["Загрузка…", "Loading…"],
-  secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>"],
-  secDayBets: ["Ставки за день", "Bets by day"],
-  secWr: ["Винрейт по видам спорта", "Win rate by sport"],
-  secLast: ["Последние ставки", "Recent bets"],
-  secEarn: ["Начисления", "Earnings"],
-  secPayouts: ["Выплаты за рефералов", "Referral payouts"],
-  secLink: ["Твоя ссылка", "Your link"],
-  secLook: ["Оформление", "Appearance"],
-  secBank: ["Мой банк", "My bankroll"],
-  secExch: ["Биржа исполнения", "Execution exchange"],
-  secWallets: ["Кошельки по видам спорта", "Wallets by sport"],
-  yesterday: ["← вчера", "← prev day"],
-  tomorrow: ["завтра →", "next day →"],
-  pickDate: ["Выбери дату", "Pick a date"],
+  spTag: ["Добро пожаловать в мир ставок", "Welcome to the world of betting", "欢迎来到投注世界"],
+  spSkip: ["нажми, чтобы пропустить", "tap to skip", "点按跳过"],
+  headSub: ["Каждая ставка — в открытой базе. Проверь сам.", "Every bet lives in an open database. Verify it yourself.", "每一笔投注都记录在公开数据库中，欢迎亲自查证。"],
+  loading: ["Загрузка…", "Loading…", "加载中…"],
+  secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>", "今日投注 <span class=\"tag\" id=\"todayTag\">live</span>"],
+  secDayBets: ["Ставки за день", "Bets by day", "按日查看投注"],
+  secWr: ["Винрейт по видам спорта", "Win rate by sport", "各项目胜率"],
+  secLast: ["Последние ставки", "Recent bets", "最近投注"],
+  secEarn: ["Начисления", "Earnings", "收益"],
+  secPayouts: ["Выплаты за рефералов", "Referral payouts", "推荐返佣"],
+  secLink: ["Твоя ссылка", "Your link", "你的链接"],
+  secLook: ["Оформление", "Appearance", "外观"],
+  secBank: ["Мой банк", "My bankroll", "我的资金"],
+  secExch: ["Биржа исполнения", "Execution exchange", "下注交易所"],
+  secWallets: ["Кошельки по видам спорта", "Wallets by sport", "各项目钱包"],
+  yesterday: ["← вчера", "← prev day", "← 前一天"],
+  tomorrow: ["завтра →", "next day →", "后一天 →"],
+  pickDate: ["Выбери дату", "Pick a date", "选择日期"],
   proofStats: ["📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день — вверх после удачного дня, вниз после неудачного. Ничего не «замораживается» на красивой цифре: сегодняшние результаты попадают сюда автоматически.",
-               "📈 The win rate is computed over ALL settled bets and moves every day — up after a good day, down after a bad one. Nothing gets “frozen” at a pretty number: today's results land here automatically."],
+               "📈 The win rate is computed over ALL settled bets and moves every day — up after a good day, down after a bad one. Nothing gets “frozen” at a pretty number: today's results land here automatically.",
+               "📈 胜率基于全部已结算投注计算，每天都会变动——顺利时上升，失利时下降。数字不会被“冻结”在好看的位置：今天的结果会自动计入。"],
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
-              "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact."],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v17 · 11.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v17 · 11.08.2026</span>"],
-  navDash: ["Дашборд", "Dashboard"], navEarn: ["Начисления", "Earnings"],
-  navStats: ["Статистика", "Statistics"], navMe: ["Профиль", "Profile"],
-  navWallet: ["Кошелёк", "Wallet"],
-  secApi: ["Подключение API", "API connection"],
-  apiTitle: ["API-ключ выбранной биржи", "API key for the selected exchange"],
+              "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
+              "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v18 · 11.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v18 · 11.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v18 · 11.08.2026</span>"],
+  navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Начисления", "Earnings", "收益"],
+  navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
+  navWallet: ["Кошелёк", "Wallet", "钱包"],
+  secApi: ["Подключение API", "API connection", "API 连接"],
+  apiTitle: ["API-ключ выбранной биржи", "API key for the selected exchange", "所选交易所的 API 密钥"],
   apiNote: ["Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.",
-            "The key is stored on this device only and never sent anywhere. Auto-betting activates once the CLV metric is confirmed. ⚠️ Enter an API key only — NEVER your wallet's private key."],
-  apiSaved: ["✅ Ключ сохранён на этом устройстве", "✅ Key saved on this device"],
-  themeTitle: ["Тема приложения", "App theme"],
-  themeDark: ["🌙 Тёмная", "🌙 Dark"], themeLight: ["☀️ Светлая", "☀️ Light"], themeAuto: ["🔄 Как в Telegram", "🔄 Match Telegram"],
-  accent: ["Цвет акцента", "Accent color"],
-  langTitle: ["Язык / Language", "Язык / Language"],
+            "The key is stored on this device only and never sent anywhere. Auto-betting activates once the CLV metric is confirmed. ⚠️ Enter an API key only — NEVER your wallet's private key.",
+            "密钥仅保存在本设备上，绝不会被上传。CLV 指标确认后将开启自动投注。⚠️ 只填写 API 密钥——绝不要填写钱包私钥。"],
+  apiSaved: ["✅ Ключ сохранён на этом устройстве", "✅ Key saved on this device", "✅ 密钥已保存在本设备"],
+  themeTitle: ["Тема приложения", "App theme", "应用主题"],
+  themeDark: ["🌙 Тёмная", "🌙 Dark", "🌙 深色"], themeLight: ["☀️ Светлая", "☀️ Light", "☀️ 浅色"], themeAuto: ["🔄 Как в Telegram", "🔄 Match Telegram", "🔄 跟随 Telegram"],
+  accent: ["Цвет акцента", "Accent color", "强调色"],
+  langTitle: ["Язык / Language", "Язык / Language", "Язык / Language / 语言"],
   palNote: ["Зелёный «выигрыш» и красный «проигрыш» не меняются ни при какой палитре — иначе результат ставки станет нечитаемым.",
-            "The green “win” and red “loss” colors never follow the palette — otherwise bet results would become unreadable."],
-  bankTitle: ["Сколько готов ставить в сутки", "How much you stake per day"],
-  save: ["Сохранить", "Save"],
+            "The green “win” and red “loss” colors never follow the palette — otherwise bet results would become unreadable.",
+            "无论选择哪种配色，绿色“赢”与红色“输”都不会改变——否则投注结果将难以辨认。"],
+  bankTitle: ["Сколько готов ставить в сутки", "How much you stake per day", "每日投入金额"],
+  save: ["Сохранить", "Save", "保存"],
   bankHint: ["Бот считает размер каждой ставки как процент от ЭТОЙ суммы — 5–10% на ставку. Деньги остаются у тебя: бот показывает ставку, ты подтверждаешь.",
-             "The bot sizes every bet as a percentage of THIS amount — 5–10% per bet. Your money stays with you: the bot shows the bet, you confirm it."],
-  exchTitle: ["Через какую биржу ставить", "Which exchange to bet through"],
+             "The bot sizes every bet as a percentage of THIS amount — 5–10% per bet. Your money stays with you: the bot shows the bet, you confirm it.",
+             "机器人按此金额的百分比确定每注大小——每注 5–10%。钱始终在你手里：机器人给出投注，由你确认。"],
+  exchTitle: ["Через какую биржу ставить", "Which exchange to bet through", "选择下注交易所"],
   exchNote: ["Автоставки через выбранную биржу появятся после подтверждения CLV-метрики. Выбор уже сохраняется в профиле и будет использован при подключении кошелька.",
-             "Auto-betting through your chosen exchange arrives once the CLV metric is confirmed. The choice is saved to your profile now and will be used when wallets connect."],
-  earnTitle: ["Всего начислено <span class=\"tag\">25% пожизненно</span>", "Total earned <span class=\"tag\">25% lifetime</span>"],
+             "Auto-betting through your chosen exchange arrives once the CLV metric is confirmed. The choice is saved to your profile now and will be used when wallets connect.",
+             "CLV 指标确认后即可通过所选交易所自动投注。选择已保存到个人资料，接入钱包时生效。"],
+  earnTitle: ["Всего начислено <span class=\"tag\">25% пожизненно</span>", "Total earned <span class=\"tag\">25% lifetime</span>", "累计收益 <span class=\"tag\">终身 25%</span>"],
   earnNote: ["25% с каждого платежа приглашённого — пожизненно, пока он платит. Считаем от подписки, а не от выигрыша: так честно и проверяемо.",
-             "25% of every payment your invitee makes — for life, as long as they pay. Based on subscriptions, not winnings: honest and verifiable."],
-  invited: ["приглашено", "invited"], paidN: ["оплатили", "paid"], toPay: ["к выплате", "payable"],
+             "25% of every payment your invitee makes — for life, as long as they pay. Based on subscriptions, not winnings: honest and verifiable.",
+             "受邀者每笔付款的 25%——终身有效，只要对方持续付费。按订阅金额计算，而非赢利：诚实且可验证。"],
+  invited: ["приглашено", "invited", "已邀请"], paidN: ["оплатили", "paid", "已付费"], toPay: ["к выплате", "payable", "待结算"],
   payNote: ["Выплат пока не было: подписка ещё не запущена. Как только приглашённый оплатит — начисление появится здесь в тот же день и будет повторяться с каждым его платежом.",
-            "No payouts yet: subscriptions haven't launched. As soon as an invitee pays, the accrual appears here the same day and repeats with each of their payments."],
-  copyLink: ["📋 Скопировать ссылку", "📋 Copy link"], shareBtn: ["↗️ Поделиться", "↗️ Share"], makeQr: ["🔳 Сформировать QR-код", "🔳 Generate QR code"],
+            "No payouts yet: subscriptions haven't launched. As soon as an invitee pays, the accrual appears here the same day and repeats with each of their payments.",
+            "暂无返佣：订阅尚未上线。受邀者付费当天，收益即在此显示，并随其每次付款持续累计。"],
+  copyLink: ["📋 Скопировать ссылку", "📋 Copy link", "📋 复制链接"], shareBtn: ["↗️ Поделиться", "↗️ Share", "↗️ 分享"], makeQr: ["🔳 Сформировать QR-код", "🔳 Generate QR code", "🔳 生成二维码"],
   qrHint: ["Нажми «Сформировать» — покажешь QR, его отсканируют и попадут по твоей ссылке",
-           "Tap “Generate” to show a QR — anyone who scans it lands on your link"],
+           "Tap “Generate” to show a QR — anyone who scans it lands on your link",
+           "点“生成”展示二维码——扫码即进入你的链接"],
   // динамика: дашборд
-  wrAll: ["Винрейт всего", "Overall win rate"],
-  betsN: ["ставок", "bets"],
-  profit: ["Доходность", "Profit"],
-  sinceFwd: ["банка с начала форварда", "of bankroll since forward start"],
-  clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>"],
-  accruing: ["копится", "accruing"],
-  closes: ["закрытий", "closes"],
-  early: [" · n<30, рано судить", " · n<30, too early to judge"],
-  sportsK: ["Виды спорта", "Sports"],
-  sportsD: ["MLB · теннис · футбол", "MLB · tennis · soccer"],
-  showcase: ["Витрина обновляется…", "Showcase is updating…"],
+  wrAll: ["Винрейт всего", "Overall win rate", "总胜率"],
+  betsN: ["ставок", "bets", "注"],
+  profit: ["Доходность", "Profit", "收益率"],
+  sinceFwd: ["банка с начала форварда", "of bankroll since forward start", "资金自前测开始的变化"],
+  clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
+  accruing: ["копится", "accruing", "累计中"],
+  closes: ["закрытий", "closes", "次收盘"],
+  early: [" · n<30, рано судить", " · n<30, too early to judge", " · n<30，尚难下结论"],
+  sportsK: ["Виды спорта", "Sports", "运动项目"],
+  sportsD: ["MLB · теннис · футбол", "MLB · tennis · soccer", "MLB · 网球 · 足球"],
+  showcase: ["Витрина обновляется…", "Showcase is updating…", "数据更新中…"],
   // динамика: ставки
-  win: ["выигрыш", "win"], lose: ["проигрыш", "loss"], voided: ["возврат", "void"], inPlay: ["в игре", "in play"],
-  ofBank: ["% банка", "% of bank"],
-  noBetsYet: ["Ставок пока нет", "No bets yet"],
-  slateEve: ["Слейт идёт вечером · ставим только при EV ≥ 1.5%", "The slate runs in the evening · we only bet at EV ≥ 1.5%"],
-  totalOf: ["Всего", "Total"],
-  inPlayToday: ["в игре сегодня", "in play today"],
-  noBetsDay: ["Ставок не было — бот не нашёл value. Это тоже результат.", "No bets — the bot found no value. That's a result too."],
-  dayOff: ["Выходной", "Day off"],
-  yourTotal: ["твой итог", "your total"],
-  errLoad: ["Ошибка загрузки", "Load error"],
-  dbDown: ["База недоступна", "Database unavailable"], tryLater: ["Обнови позже.", "Refresh later."],
+  win: ["выигрыш", "win", "赢"], lose: ["проигрыш", "loss", "输"], voided: ["возврат", "void", "退还"], inPlay: ["в игре", "in play", "进行中"],
+  ofBank: ["% банка", "% of bank", "% 资金"],
+  noBetsYet: ["Ставок пока нет", "No bets yet", "暂无投注"],
+  slateEve: ["Слейт идёт вечером · ставим только при EV ≥ 1.5%", "The slate runs in the evening · we only bet at EV ≥ 1.5%", "晚间选注 · 仅在 EV ≥ 1.5% 时下注"],
+  totalOf: ["Всего", "Total", "共"],
+  inPlayToday: ["в игре сегодня", "in play today", "今日进行中"],
+  noBetsDay: ["Ставок не было — бот не нашёл value. Это тоже результат.", "No bets — the bot found no value. That's a result too.", "没有投注——机器人未找到价值。这同样是结果。"],
+  dayOff: ["Выходной", "Day off", "休息日"],
+  yourTotal: ["твой итог", "your total", "你的合计"],
+  errLoad: ["Ошибка загрузки", "Load error", "加载失败"],
+  dbDown: ["База недоступна", "Database unavailable", "数据库不可用"], tryLater: ["Обнови позже.", "Refresh later.", "请稍后刷新。"],
   // динамика: винрейт
-  noData: ["нет данных", "no data"],
-  noBetsSport: ["ставок ещё не было", "no bets yet"],
-  settledN: ["рассчитано", "settled"],
-  ppToday: ["п.п. за сегодня", "pp today"],
-  ppLast: ["п.п. за последние", "pp over the last"],
-  smallSample: ["выборка маленькая — цифра ещё прыгает", "small sample — the number still jumps around"],
-  noCalcToday: ["за сегодня расчётов не было", "nothing settled today"],
-  winsPct: ["% побед", "% wins"],
-  ofBankSuffix: [" банка", " of bank"],
+  noData: ["нет данных", "no data", "暂无数据"],
+  noBetsSport: ["ставок ещё не было", "no bets yet", "暂无投注"],
+  settledN: ["рассчитано", "settled", "已结算"],
+  ppToday: ["п.п. за сегодня", "pp today", "个百分点（今日）"],
+  ppLast: ["п.п. за последние", "pp over the last", "个百分点（最近"],
+  smallSample: ["выборка маленькая — цифра ещё прыгает", "small sample — the number still jumps around", "样本较小——数字仍会波动"],
+  noCalcToday: ["за сегодня расчётов не было", "nothing settled today", "今日暂无结算"],
+  winsPct: ["% побед", "% wins", "% 胜"],
+  ofBankSuffix: [" банка", " of bank", " 资金"],
   // динамика: кошельки
-  wMlb: ["боевой форвард", "live forward test"], wTennis: ["новое окно с 06.08", "new window since Aug 6"],
-  wSoccer: ["топ-лиги Европы", "top European leagues"], wSxBase: ["биржа · базовая", "exchange · base"],
-  wSxQ: ["биржа · фильтр качества", "exchange · quality filter"], wSxM: ["биржа · зеркало", "exchange · mirror"],
-  wPoly: ["острый рынок", "sharp market"],
-  sportMlb: ["Бейсбол MLB", "Baseball MLB"], sportTennis: ["Теннис", "Tennis"], sportSoccer: ["Футбол", "Soccer"],
-  errWord: ["Ошибка", "Error"],
+  wMlb: ["боевой форвард", "live forward test", "实盘前测"], wTennis: ["новое окно с 06.08", "new window since Aug 6", "8月6日起新窗口"],
+  wSoccer: ["топ-лиги Европы", "top European leagues", "欧洲顶级联赛"], wSxBase: ["биржа · базовая", "exchange · base", "交易所 · 基础"],
+  wSxQ: ["биржа · фильтр качества", "exchange · quality filter", "交易所 · 质量筛选"], wSxM: ["биржа · зеркало", "exchange · mirror", "交易所 · 镜像"],
+  wPoly: ["острый рынок", "sharp market", "尖锐市场"],
+  sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
+  errWord: ["Ошибка", "Error", "错误"],
   // динамика: профиль и рефы
   openFromBot: ["Открой приложение кнопкой в боте @sportzhubot — тогда увидишь свой профиль и ссылку.",
-                "Open the app from the @sportzhubot bot button to see your profile and link."],
+                "Open the app from the @sportzhubot bot button to see your profile and link.",
+                "请通过机器人 @sportzhubot 的按钮打开应用，即可看到个人资料和链接。"],
   openFromBotLink: ["Открой приложение кнопкой в боте @sportzhubot — тогда появится твоя ссылка.",
-                    "Open the app from the @sportzhubot bot button to get your link."],
-  userFallback: ["Пользователь", "User"], userRef: ["пользователь", "user"],
-  startBot: ["Напиши боту /start — ссылка создастся", "Message the bot /start — your link will be created"],
-  startFirst: ["Сначала напиши боту /start", "Message the bot /start first"],
-  saved5_10: ["✅ Сохранено. Ставка 5–10% = ", "✅ Saved. A 5–10% bet = "],
+                    "Open the app from the @sportzhubot bot button to get your link.",
+                    "请通过机器人 @sportzhubot 的按钮打开应用，即可获得你的链接。"],
+  userFallback: ["Пользователь", "User", "用户"], userRef: ["пользователь", "user", "用户"],
+  startBot: ["Напиши боту /start — ссылка создастся", "Message the bot /start — your link will be created", "给机器人发送 /start 即可生成链接"],
+  startFirst: ["Сначала напиши боту /start", "Message the bot /start first", "请先给机器人发送 /start"],
+  saved5_10: ["✅ Сохранено. Ставка 5–10% = ", "✅ Saved. A 5–10% bet = ", "✅ 已保存。每注 5–10% = "],
   perGame: [" на игру. Деньги остаются у тебя — бот показывает ставку, ты подтверждаешь.",
-            " per game. Your money stays with you — the bot shows the bet, you confirm it."],
-  saveFail: ["Не удалось сохранить: ", "Couldn't save: "],
-  qrShow: ["Покажи QR — по нему попадут по твоей ссылке", "Show the QR — it leads to your link"],
-  qrDone: ["Готово — покажи этот код, он ведёт на твою ссылку", "Done — show this code, it leads to your link"],
-  qrFail: ["Не удалось сформировать: ", "Couldn't generate: "],
-  copied: ["✅ Скопировано", "✅ Copied"],
-  perMonth: ["/мес", "/mo"], subWord: ["подписка", "subscribed"], notPaid: ["не оплатил", "not paid"],
-  andMore: ["и ещё", "and"],
+            " per game. Your money stays with you — the bot shows the bet, you confirm it.",
+            "／场。钱始终在你手里——机器人给出投注，由你确认。"],
+  saveFail: ["Не удалось сохранить: ", "Couldn't save: ", "保存失败："],
+  qrShow: ["Покажи QR — по нему попадут по твоей ссылке", "Show the QR — it leads to your link", "展示二维码——扫码即进入你的链接"],
+  qrDone: ["Готово — покажи этот код, он ведёт на твою ссылку", "Done — show this code, it leads to your link", "完成——展示此码，它指向你的链接"],
+  qrFail: ["Не удалось сформировать: ", "Couldn't generate: ", "生成失败："],
+  copied: ["✅ Скопировано", "✅ Copied", "✅ 已复制"],
+  perMonth: ["/мес", "/mo", "／月"], subWord: ["подписка", "subscribed", "已订阅"], notPaid: ["не оплатил", "not paid", "未付费"],
+  andMore: ["и ещё", "and", "另有"],
   noInvites: ["Пока никого не пригласил. Скинь ссылку или покажи QR — начисления пойдут с первого платежа приглашённого.",
-              "You haven't invited anyone yet. Share the link or show the QR — earnings start with your invitee's first payment."],
-  paidCount: ["Оплативших:", "Paying invitees:"],
-  yourShare: ["Твоя доля — 25% с каждого их платежа, пожизненно.", "Your share is 25% of each of their payments, for life."],
-  loadFail: ["Не удалось загрузить: ", "Couldn't load: "],
+              "You haven't invited anyone yet. Share the link or show the QR — earnings start with your invitee's first payment.",
+              "尚未邀请任何人。分享链接或展示二维码——受邀者首次付费即开始产生收益。"],
+  paidCount: ["Оплативших:", "Paying invitees:", "已付费人数："],
+  yourShare: ["Твоя доля — 25% с каждого их платежа, пожизненно.", "Your share is 25% of each of their payments, for life.", "你的分成是他们每笔付款的 25%，终身有效。"],
+  loadFail: ["Не удалось загрузить: ", "Couldn't load: ", "加载失败："],
   shareText: ["AI-аналитик ставок: каждая ставка в открытой базе, проверь сам.",
-              "AI betting analyst: every bet in an open database — verify it yourself."],
+              "AI betting analyst: every bet in an open database — verify it yourself.",
+              "AI 投注分析师：每笔投注都在公开数据库中，欢迎亲自查证。"],
 };
-function t(k){ const v = T[k]; return v ? v[LANG === "en" ? 1 : 0] : k; }
+function t(k){ const v = T[k]; return v ? (v[LIDX[LANG]] ?? v[0]) : k; }
 // статичная разметка переводится один раз при загрузке (скрипт стоит в конце body)
-if (LANG === "en") document.querySelectorAll("[data-i18n]").forEach(el => {
+if (LANG !== "ru") document.querySelectorAll("[data-i18n]").forEach(el => {
   const k = el.dataset.i18n;
-  if (T[k]) el.innerHTML = T[k][1];
+  if (T[k]) el.innerHTML = T[k][LIDX[LANG]] ?? T[k][0];
 });
 
 // WebView Telegram держит страницу в кеше и не спрашивает сервер. Спрашиваем сами:
@@ -892,6 +918,7 @@ function share(r){
 }
 function plBets(n){
   if (LANG === "en") return Math.abs(n) === 1 ? "bet" : "bets";
+  if (LANG === "zh") return "注";
   const a=Math.abs(n)%100, b=a%10;
   return (a>10&&a<20)||b===0||b>4 ? "ставок" : b===1 ? "ставка" : "ставки";
 }
