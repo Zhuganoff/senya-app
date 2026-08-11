@@ -428,6 +428,9 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
       <div class="me-sub" style="margin-top:4px" data-i18n="palNote">Зелёный «выигрыш» и красный «проигрыш» не меняются ни при какой палитре — иначе результат ставки станет нечитаемым.</div>
     </div>
 
+  </div><!-- /pane-me -->
+
+  <div id="pane-wallet" style="display:none">
     <div class="section" data-i18n="secBank">Мой банк</div>
     <div class="card">
       <div class="k" data-i18n="bankTitle">Сколько готов ставить в сутки</div>
@@ -453,10 +456,20 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
       <div class="me-sub" style="margin-top:4px" data-i18n="exchNote">Автоставки через выбранную биржу появятся после подтверждения CLV-метрики. Выбор уже сохраняется в профиле и будет использован при подключении кошелька.</div>
     </div>
 
+    <div class="section" data-i18n="secApi">Подключение API</div>
+    <div class="card">
+      <div class="k" data-i18n="apiTitle">API-ключ выбранной биржи</div>
+      <div class="bankrow">
+        <input type="password" id="apiKeyInput" class="binput" style="min-width:0" placeholder="API key" autocomplete="off">
+        <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
+      </div>
+      <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
+    </div>
+
     <div class="section" data-i18n="secWallets">Кошельки по видам спорта</div>
     <div id="sports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
-  </div><!-- /pane-me -->
+  </div><!-- /pane-wallet -->
 
   <div id="pane-earn" style="display:none">
     <div class="section" data-i18n="secEarn">Начисления</div>
@@ -497,7 +510,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v16 · 11.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v17 · 11.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -505,8 +518,11 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="8.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="5" rx="2"/><rect x="13.5" y="10.5" width="7.5" height="10.5" rx="2"/><rect x="3" y="14" width="7.5" height="7" rx="2"/></svg>
     <span data-i18n="navDash">Дашборд</span></button>
   <button class="bnav-item" data-tab="earn">
-    <svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 8.5V7a2 2 0 0 1 2-2h10"/><circle cx="16.8" cy="13" r="1.4"/></svg>
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15 15 9"/><circle cx="9.3" cy="9.3" r="1.2"/><circle cx="14.7" cy="14.7" r="1.2"/></svg>
     <span data-i18n="navEarn">Начисления</span></button>
+  <button class="bnav-item" data-tab="wallet">
+    <svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 8.5V7a2 2 0 0 1 2-2h10"/><circle cx="16.8" cy="13" r="1.4"/></svg>
+    <span data-i18n="navWallet">Кошелёк</span></button>
   <button class="bnav-item" data-tab="stats">
     <svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg>
     <span data-i18n="navStats">Статистика</span></button>
@@ -516,7 +532,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v16";
+const BUILD = "v17";
 
 // ── язык интерфейса (CEO 11.08): ru по умолчанию / en; выбор в localStorage
 // (senya_lang). Смена языка перезагружает страницу — все динамические блоки
@@ -547,10 +563,16 @@ const T = {
                "📈 The win rate is computed over ALL settled bets and moves every day — up after a good day, down after a bad one. Nothing gets “frozen” at a pretty number: today's results land here automatically."],
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact."],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v16 · 11.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v16 · 11.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v17 · 11.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v17 · 11.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard"], navEarn: ["Начисления", "Earnings"],
   navStats: ["Статистика", "Statistics"], navMe: ["Профиль", "Profile"],
+  navWallet: ["Кошелёк", "Wallet"],
+  secApi: ["Подключение API", "API connection"],
+  apiTitle: ["API-ключ выбранной биржи", "API key for the selected exchange"],
+  apiNote: ["Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.",
+            "The key is stored on this device only and never sent anywhere. Auto-betting activates once the CLV metric is confirmed. ⚠️ Enter an API key only — NEVER your wallet's private key."],
+  apiSaved: ["✅ Ключ сохранён на этом устройстве", "✅ Key saved on this device"],
   themeTitle: ["Тема приложения", "App theme"],
   themeDark: ["🌙 Тёмная", "🌙 Dark"], themeLight: ["☀️ Светлая", "☀️ Light"], themeAuto: ["🔄 Как в Telegram", "🔄 Match Telegram"],
   accent: ["Цвет акцента", "Accent color"],
@@ -746,6 +768,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#exchSel button").forEach(b =>
     b.addEventListener("click", () => {
       applyExch(b.dataset.e);
+      // поле API-ключа показывает ключ ВЫБРАННОЙ биржи — перечитать при переключении
+      const apiInp = document.getElementById("apiKeyInput");
+      if (apiInp) apiInp.value = localStorage.getItem("senya_api_" + b.dataset.e) || "";
       if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     }));
   document.querySelectorAll("#langSel button").forEach(b =>
@@ -839,7 +864,7 @@ async function main(){
 
 
 // ─────────── нижнее меню ───────────
-const PANES = ["dash", "earn", "stats", "me"];
+const PANES = ["dash", "earn", "wallet", "stats", "me"];
 document.querySelectorAll(".bnav-item").forEach(function(btn){
   btn.addEventListener("click", function(){
     document.querySelectorAll(".bnav-item").forEach(b => b.classList.remove("active"));
@@ -853,6 +878,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
       window.__statsInit = true; initHistory(); initWinrate();
     }
     if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
+    if (t === "wallet" && !window.__walletInit) { window.__walletInit = true; initWallet(); }
     if (t === "me"   && !window.__meInit)   { window.__meInit   = true; initMe(); }
   });
 });
@@ -1079,21 +1105,29 @@ async function initMe(){
   document.getElementById("ava").textContent = (u.first_name||"U").trim()[0].toUpperCase();
   document.getElementById("meName").textContent = name;
   document.getElementById("meSub").textContent = u.username ? "@"+u.username : "id "+u.id;
+}
+
+// ─────────── кошелёк: банк, API-ключ (v17 — вынесено из профиля по команде CEO) ───────────
+async function initWallet(){
+  const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
 
   // личный банк: загрузка, быстрые кнопки, сохранение
   const bInput = document.getElementById("budget");
-  try{
-    const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since`);
-    if(me.length){
-      if(me[0].daily_budget){ bInput.value = me[0].daily_budget; window.__myBank = Number(me[0].daily_budget); }
-      if(me[0].tracking_since) window.__trackSince = String(me[0].tracking_since).slice(0,10);
-    }
-  }catch(e){}
+  if(u){
+    try{
+      const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since`);
+      if(me.length){
+        if(me[0].daily_budget){ bInput.value = me[0].daily_budget; window.__myBank = Number(me[0].daily_budget); }
+        if(me[0].tracking_since) window.__trackSince = String(me[0].tracking_since).slice(0,10);
+      }
+    }catch(e){}
+  }
   document.querySelectorAll("#quickBudget button").forEach(b =>
     b.addEventListener("click", () => { bInput.value = b.dataset.v; }));
   document.getElementById("saveBudget").addEventListener("click", async () => {
-    const v = Math.max(20, Number(bInput.value) || 300);
     const hint = document.getElementById("budgetHint");
+    if(!u){ hint.textContent = t("openFromBot"); return; }
+    const v = Math.max(20, Number(bInput.value) || 300);
     try{
       await fetch(SB + `/senya_users?tg_id=eq.${u.id}`, {
         method: "PATCH", headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
@@ -1110,6 +1144,15 @@ async function initMe(){
     }catch(e){ hint.textContent = t("saveFail") + e.message; }
   });
 
+  // API-ключ биржи: хранится ТОЛЬКО в localStorage устройства (некастодиальность),
+  // на сервер не уходит; ключ свой у каждой биржи (senya_api_sx / senya_api_poly)
+  const apiInp = document.getElementById("apiKeyInput");
+  const exchNow = () => localStorage.getItem("senya_exch") || "sx";
+  apiInp.value = localStorage.getItem("senya_api_" + exchNow()) || "";
+  document.getElementById("saveApiKey").addEventListener("click", () => {
+    localStorage.setItem("senya_api_" + exchNow(), apiInp.value.trim());
+    document.getElementById("apiHint").textContent = t("apiSaved");
+  });
 }
 
 // ─────────── начисления и выплаты за рефералов ───────────
