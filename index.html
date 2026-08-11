@@ -116,6 +116,11 @@ h1{font-size:19px;font-weight:700}
 .tabs{display:flex;gap:6px;margin-bottom:14px}
 .tab{flex:1;background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:11px;padding:9px 4px;font-size:12.5px;font-weight:600;cursor:pointer}
 .tab.active{background:linear-gradient(135deg,rgba(16,185,129,.16),rgba(20,184,166,.10));color:var(--txt);border-color:rgba(20,184,166,.42)}
+.bet.win{background:linear-gradient(90deg,rgba(16,185,129,.14),rgba(16,185,129,.03));border-left:3px solid var(--green)}
+.bet.lose{background:linear-gradient(90deg,rgba(239,68,68,.13),rgba(239,68,68,.03));border-left:3px solid var(--red)}
+.bet.void{border-left:3px solid var(--line)}
+body.light .bet.win{background:linear-gradient(90deg,rgba(13,148,136,.13),rgba(13,148,136,.02))}
+body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(220,38,38,.02))}
 .dpick{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 10px;font-size:14px}
 .daynav{display:flex;gap:8px;margin-top:9px}
 .nav{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:7px;font-size:12px;cursor:pointer}
@@ -209,7 +214,7 @@ h1{font-size:19px;font-weight:700}
   <div class="section">Кошельки по видам спорта</div>
   <div id="sports"><div class="loading">Загрузка…</div></div>
 
-  <div class="section">Последние ставки MLB</div>
+  <div class="section">Последние ставки</div>
   <div class="bets" id="bets"><div class="loading">Загрузка…</div></div>
 
   </div><!-- /pane-dash -->
@@ -295,7 +300,7 @@ h1{font-size:19px;font-weight:700}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · подписка и реф-программа скоро</div>
+  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · подписка и реф-программа скоро<br><span style="opacity:.55">сборка v8 · 08.08.2026</span></div>
 </div>
 
 <script>
@@ -396,18 +401,7 @@ async function main(){
 
   loadToday();
 
-  // последние 12 ставок
-  const last = rows.slice(-12).reverse();
-  document.getElementById("bets").innerHTML = last.map(r => {
-    const ico = r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":"⏳";
-    const pnlTxt = r.result===1?`<span class="pos">+${(((r.best_odds||1)-1)*100).toFixed(0)}%</span>`
-                 : r.result===0?`<span class="neg">−100%</span>`
-                 : r.result===-1?`<span style="color:var(--mut)">возврат</span>`:`<span style="color:var(--mut)">в игре</span>`;
-    return `<div class="bet"><div class="res">${ico}</div>
-      <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
-      <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
-      <div class="odds"><div>@${oddsOf(r)??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
-  }).join("");
+  loadLastBets();
 
   // кошельки — все из витрины, единая валюта $ (замечание CEO 07.08:
   // бейсбол показывался в %, остальные в $)
@@ -459,11 +453,13 @@ function plBets(n){
   const a=Math.abs(n)%100, b=a%10;
   return (a>10&&a<20)||b===0||b>4 ? "ставок" : b===1 ? "ставка" : "ставки";
 }
+function rowCls(r){ return r.result===1 ? "win" : r.result===0 ? "lose" : r.result===-1 ? "void" : ""; }
+function resIco(r){ return r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":"⏳"; }
 function oddsOf(r){ return r.best_odds ?? r.odds ?? null; }
 
 // ─────────── история по дням ───────────
 function betRow(r){
-  const ico = r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":"⏳";
+  const ico = resIco(r);
   const clv = (r.closing_ts && r.closing_odds && r.best_odds)
     ? ` · CLV ${(((r.best_odds/r.closing_odds)-1)*100>=0?"+":"")}${(((r.best_odds/r.closing_odds)-1)*100).toFixed(1)}%` : "";
   // размер — в ПРОЦЕНТАХ банка (у каждого свой), плюс сумма под личный банк
@@ -474,7 +470,7 @@ function betRow(r){
             : r.result===0?`<span class="neg">проигрыш</span>`
             : r.result===-1?`<span style="color:var(--mut)">возврат</span>`
             : `<span style="color:var(--mut)">в игре</span>`;
-  return `<div class="bet"><div class="res">${ico}</div>
+  return `<div class="bet ${rowCls(r)}"><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
     <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
@@ -543,6 +539,28 @@ function initHistory(){
   document.getElementById("dnext").addEventListener("click", () => shift(1));
 }
 
+
+// последние ставки по ВСЕМ видам спорта (раньше здесь был только бейсбол)
+async function loadLastBets(){
+  const box = document.getElementById("bets");
+  const packs = await Promise.all(DAY_SRC.map(([t, ico, sel]) =>
+    q(`/${t}?select=${sel}&staked=is.true&order=ts.desc&limit=12`)
+      .then(rs => rs.map(r => Object.assign(r, {_ico: ico})))
+      .catch(() => [])));
+  const last = packs.flat()
+    .sort((x, y) => String(y.match_date||"").localeCompare(String(x.match_date||"")))
+    .slice(0, 12);
+  if(!last.length){ box.innerHTML = `<div class="loading">Ставок пока нет</div>`; return; }
+  box.innerHTML = last.map(r => {
+    const pnlTxt = r.result===1?`<span class="pos">+${(((oddsOf(r)||1)-1)*100).toFixed(0)}%</span>`
+                 : r.result===0?`<span class="neg">−100%</span>`
+                 : r.result===-1?`<span style="color:var(--mut)">возврат</span>`:`<span style="color:var(--mut)">в игре</span>`;
+    return `<div class="bet ${rowCls(r)}"><div class="res">${resIco(r)}</div>
+      <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
+      <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
+      <div class="odds"><div>@${oddsOf(r)??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
+  }).join("");
+}
 
 // ─────────── ставки сегодня ───────────
 async function loadToday(){
