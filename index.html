@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>AI Sports</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="qr.js"></script>
@@ -340,6 +343,26 @@ body.light .bottombar{background:rgba(255,255,255,.94)}
 </nav>
 
 <script>
+const BUILD = "v10";
+
+// WebView Telegram держит страницу в кеше и не спрашивает сервер. Спрашиваем сами:
+// version.json тянется с меткой времени (в fetch query работает), и если на сервере
+// сборка новее — уходим на тот же адрес с одноразовым параметром, это гарантированный
+// промах мимо кеша. Флаг в sessionStorage не даёт зациклиться, если файл недоступен.
+(function checkBuild(){
+  try{
+    if (sessionStorage.getItem("build_reloaded") === BUILD) return;
+    fetch("version.json?t=" + Date.now(), {cache: "no-store"})
+      .then(r => r.ok ? r.json() : null)
+      .then(v => {
+        if (v && v.build && v.build !== BUILD) {
+          sessionStorage.setItem("build_reloaded", v.build);
+          location.replace(location.pathname + "?r=" + Date.now());
+        }
+      }).catch(()=>{});
+  }catch(e){}
+})();
+
 const SB = "https://gqlfnhlrpteqfdfyhavl.supabase.co/rest/v1";
 const KEY = "sb_publishable_J1keRlMi77VotTCnuqGJQg_inumrH9o";
 const H = {apikey: KEY, Authorization: "Bearer " + KEY};
