@@ -121,6 +121,20 @@ h1{font-size:19px;font-weight:700}
 .bet.void{border-left:3px solid var(--line)}
 body.light .bet.win{background:linear-gradient(90deg,rgba(13,148,136,.13),rgba(13,148,136,.02))}
 body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(220,38,38,.02))}
+/* ── нижнее меню (CEO 11.08): навигация переехала из верхних вкладок вниз ── */
+.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;
+  background:rgba(17,23,34,.94);border-top:1px solid var(--line);
+  padding:6px 2px calc(6px + env(safe-area-inset-bottom,0px));
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+body.light .bottombar{background:rgba(255,255,255,.94)}
+.bnav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  background:none;border:0;padding:5px 2px;cursor:pointer;color:var(--mut);
+  font-size:10px;font-weight:600;font-family:inherit;letter-spacing:.1px;
+  transition:color .15s ease}
+.bnav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;
+  stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bnav-item.active{color:var(--accent)}
+.wrap{padding-bottom:86px}
 .dpick{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:9px 10px;font-size:14px}
 .daynav{display:flex;gap:8px;margin-top:9px}
 .nav{flex:1;background:var(--card2);border:1px solid var(--line);color:var(--mut);border-radius:9px;padding:7px;font-size:12px;cursor:pointer}
@@ -198,13 +212,6 @@ body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(2
     </div>
   </header>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="dash">📊 Витрина</button>
-    <button class="tab" data-tab="hist">📅 История</button>
-    <button class="tab" data-tab="wr">🎯 Винрейт</button>
-    <button class="tab" data-tab="me">👤 Кабинет</button>
-  </div>
-
   <div id="pane-dash">
   <div class="grid" id="topCards"><div class="loading">Загрузка…</div></div>
 
@@ -219,7 +226,7 @@ body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(2
 
   </div><!-- /pane-dash -->
 
-  <div id="pane-hist" style="display:none">
+  <div id="pane-stats" style="display:none">
     <div class="section">Ставки за день</div>
     <div class="card" style="margin-bottom:12px">
       <input type="date" id="dpick" class="dpick">
@@ -230,10 +237,8 @@ body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(2
     </div>
     <div id="dayStat" class="card" style="margin-bottom:10px"></div>
     <div class="bets" id="dayBets"><div class="loading">Выбери дату</div></div>
-  </div>
 
-  <div id="pane-wr" style="display:none">
-    <div class="section">Винрейт по видам ставок</div>
+    <div class="section" style="margin-top:18px">Винрейт по видам спорта</div>
     <div id="wrList"><div class="loading">Загрузка…</div></div>
     <div class="proof" style="margin-top:14px">
       📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день —
@@ -275,23 +280,38 @@ body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(2
       </div>
     </div>
 
-    <div class="section">Реферальная программа</div>
+  </div><!-- /pane-me -->
+
+  <div id="pane-earn" style="display:none">
+    <div class="section">Начисления</div>
     <div class="card">
-      <div class="k">Твоя ссылка <span class="tag">25% пожизненно</span></div>
+      <div class="k">Всего начислено <span class="tag">25% пожизненно</span></div>
+      <div class="cur" id="earnTotal" style="font-size:30px;margin:4px 0 2px">$0</div>
+      <div class="me-sub">25% с каждого платежа приглашённого — пожизненно, пока он платит.
+        Считаем от подписки, а не от выигрыша: так честно и проверяемо.</div>
+      <div class="refgrid">
+        <div class="rs"><div class="rs-v" id="refCnt">0</div><div class="rs-k">приглашено</div></div>
+        <div class="rs"><div class="rs-v" id="refPaid">0</div><div class="rs-k">оплатили</div></div>
+        <div class="rs"><div class="rs-v" id="refEarn">$0</div><div class="rs-k">к выплате</div></div>
+      </div>
+    </div>
+
+    <div class="section">Выплаты за рефералов</div>
+    <div class="card">
+      <div id="refList" class="reflist"><div class="loading">Загрузка…</div></div>
+      <div id="payNote" class="me-sub" style="margin-top:9px">
+        Выплат пока не было: подписка ещё не запущена. Как только приглашённый оплатит —
+        начисление появится здесь в тот же день и будет повторяться с каждым его платежом.</div>
+    </div>
+
+    <div class="section">Твоя ссылка</div>
+    <div class="card">
       <div class="reflink" id="refLink">—</div>
       <button class="btn" id="copyRef">📋 Скопировать ссылку</button>
       <button class="btn ghost" id="shareRef">↗️ Поделиться</button>
       <button class="btn ghost" id="genQr">🔳 Сформировать QR-код</button>
       <div class="qrbox"><canvas id="qrCanvas" style="display:none"></canvas>
         <div id="qrHint" class="me-sub">Нажми «Сформировать» — покажешь QR, его отсканируют и попадут по твоей ссылке</div></div>
-      <div class="refgrid">
-        <div class="rs"><div class="rs-v" id="refCnt">0</div><div class="rs-k">приглашено</div></div>
-        <div class="rs"><div class="rs-v" id="refPaid">0</div><div class="rs-k">оплатили</div></div>
-        <div class="rs"><div class="rs-v" id="refEarn">$0</div><div class="rs-k">начислено</div></div>
-      </div>
-      <div id="refList" class="reflist"></div>
-      <div class="me-sub" style="margin-top:9px"><b>25% с каждого платежа</b> приглашённого — пожизненно, пока он платит.
-        Считаем от подписки, а не от выигрыша: так честно и проверяемо. Начисления пойдут с запуска платежей.</div>
     </div>
   </div>
 
@@ -301,8 +321,23 @@ body.light .bet.lose{background:linear-gradient(90deg,rgba(220,38,38,.11),rgba(2
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v9 · 08.08.2026</span></div>
+  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v10 · 11.08.2026</span></div>
 </div>
+
+<nav class="bottombar" id="bnav">
+  <button class="bnav-item active" data-tab="dash">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="8.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="5" rx="2"/><rect x="13.5" y="10.5" width="7.5" height="10.5" rx="2"/><rect x="3" y="14" width="7.5" height="7" rx="2"/></svg>
+    <span>Дашборд</span></button>
+  <button class="bnav-item" data-tab="earn">
+    <svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 8.5V7a2 2 0 0 1 2-2h10"/><circle cx="16.8" cy="13" r="1.4"/></svg>
+    <span>Начисления</span></button>
+  <button class="bnav-item" data-tab="stats">
+    <svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg>
+    <span>Статистика</span></button>
+  <button class="bnav-item" data-tab="me">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+    <span>Профиль</span></button>
+</nav>
 
 <script>
 const SB = "https://gqlfnhlrpteqfdfyhavl.supabase.co/rest/v1";
@@ -433,19 +468,22 @@ async function main(){
 
 
 
-// ─────────── вкладки ───────────
-document.querySelectorAll(".tab").forEach(function(btn){
+// ─────────── нижнее меню ───────────
+const PANES = ["dash", "earn", "stats", "me"];
+document.querySelectorAll(".bnav-item").forEach(function(btn){
   btn.addEventListener("click", function(){
-    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".bnav-item").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
     const t = btn.dataset.tab;
-    document.getElementById("pane-dash").style.display = t === "dash" ? "" : "none";
-    document.getElementById("pane-hist").style.display = t === "hist" ? "" : "none";
-    document.getElementById("pane-wr").style.display   = t === "wr"   ? "" : "none";
-    document.getElementById("pane-me").style.display   = t === "me"   ? "" : "none";
-    if (t === "wr" && !window.__wrInit) { window.__wrInit = true; initWinrate(); }
-    if (t === "hist" && !window.__histInit) { window.__histInit = true; initHistory(); }
-    if (t === "me" && !window.__meInit) { window.__meInit = true; initMe(); }
+    PANES.forEach(p => document.getElementById("pane-" + p).style.display = (p === t ? "" : "none"));
+    window.scrollTo({top: 0, behavior: "instant"});
+    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
+    // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
+    if (t === "stats" && !window.__statsInit) {
+      window.__statsInit = true; initHistory(); initWinrate();
+    }
+    if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
+    if (t === "me"   && !window.__meInit)   { window.__meInit   = true; initMe(); }
   });
 });
 
@@ -671,37 +709,6 @@ async function initMe(){
   document.getElementById("meName").textContent = name;
   document.getElementById("meSub").textContent = u.username ? "@"+u.username : "id "+u.id;
 
-  try{
-    const rows = await q(`/senya_users?tg_id=eq.${u.id}&select=ref_code,qr_png`);
-    if(rows.length){
-      const link = `https://t.me/sportzhubot?start=ref_${rows[0].ref_code}`;
-      document.getElementById("refLink").textContent = link;
-      window.__refLink = link;
-      try{
-        const cv = document.getElementById("qrCanvas");
-        SenyaQR.draw(cv, link, {px:6, fg: document.body.classList.contains("light") ? "#0e1620" : "#080b11", bg:"#ffffff"});
-        cv.style.display = "inline-block";
-        document.getElementById("qrHint").textContent = "Покажи QR — по нему попадут по твоей ссылке";
-      }catch(e){}
-      const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
-      const paid = refs.filter(r => r.is_paid).length;
-      document.getElementById("refCnt").textContent = refs.length;
-      document.getElementById("refPaid").textContent = paid;
-      document.getElementById("refEarn").textContent =
-        SUB_PRICE ? "$" + (paid * SUB_PRICE * REF_SHARE).toFixed(0) : "$0";
-      document.getElementById("refList").innerHTML = refs.slice(0, 8).map(r => {
-        const nm = r.username ? "@" + r.username : (r.first_name || "пользователь");
-        const dt = (r.created_at || "").slice(0, 10);
-        return `<div class="refitem"><span>${nm}</span>
-          <span style="color:var(--mut)">${r.is_paid ? "💚 подписка" : dt}</span></div>`;
-      }).join("") + (refs.length > 8 ? `<div class="me-sub" style="margin-top:6px">и ещё ${refs.length-8}</div>` : "");
-    } else {
-      document.getElementById("refLink").textContent = "Напиши боту /start — ссылка создастся";
-    }
-  }catch(e){
-    document.getElementById("refLink").textContent = "Не удалось загрузить: " + e.message;
-  }
-
   // личный банк: загрузка, быстрые кнопки, сохранение
   const bInput = document.getElementById("budget");
   try{
@@ -731,6 +738,56 @@ async function initMe(){
       hint.innerHTML = `✅ Сохранено. Ставка 5–10% = <b>$${(v*0.05).toFixed(2)}–$${(v*0.10).toFixed(2)}</b> на игру. Деньги остаются у тебя — бот показывает ставку, ты подтверждаешь.`;
     }catch(e){ hint.textContent = "Не удалось сохранить: " + e.message; }
   });
+
+}
+
+// ─────────── начисления и выплаты за рефералов ───────────
+async function initEarn(){
+  const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  if(!u){
+    document.getElementById("refLink").textContent = "Открой приложение кнопкой в боте @sportzhubot — тогда появится твоя ссылка.";
+    document.getElementById("refList").innerHTML = "";
+    return;
+  }
+  try{
+    const rows = await q(`/senya_users?tg_id=eq.${u.id}&select=ref_code,qr_png`);
+    if(!rows.length){
+      document.getElementById("refLink").textContent = "Напиши боту /start — ссылка создастся";
+      document.getElementById("refList").innerHTML = "";
+      return;
+    }
+    const link = `https://t.me/sportzhubot?start=ref_${rows[0].ref_code}`;
+    document.getElementById("refLink").textContent = link;
+    window.__refLink = link;
+    try{
+      const cv = document.getElementById("qrCanvas");
+      SenyaQR.draw(cv, link, {px:6, fg: document.body.classList.contains("light") ? "#0e1620" : "#080b11", bg:"#ffffff"});
+      cv.style.display = "inline-block";
+      document.getElementById("qrHint").textContent = "Покажи QR — по нему попадут по твоей ссылке";
+    }catch(e){}
+
+    const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
+    const paid = refs.filter(r => r.is_paid).length;
+    const earned = SUB_PRICE ? paid * SUB_PRICE * REF_SHARE : 0;
+    document.getElementById("refCnt").textContent = refs.length;
+    document.getElementById("refPaid").textContent = paid;
+    document.getElementById("refEarn").textContent = "$" + earned.toFixed(0);
+    document.getElementById("earnTotal").textContent = "$" + earned.toFixed(0);
+    document.getElementById("refList").innerHTML = refs.length
+      ? refs.slice(0, 20).map(r => {
+          const nm = r.username ? "@" + r.username : (r.first_name || "пользователь");
+          const dt = (r.created_at || "").slice(0, 10).split("-").reverse().join(".");
+          const pay = r.is_paid
+            ? `<span class="pos">${SUB_PRICE ? "+$" + (SUB_PRICE*REF_SHARE).toFixed(0) + "/мес" : "подписка"}</span>`
+            : `<span style="color:var(--mut)">не оплатил</span>`;
+          return `<div class="refitem"><span>${nm} <span style="color:var(--mut);font-size:11.5px">· ${dt}</span></span>${pay}</div>`;
+        }).join("") + (refs.length > 20 ? `<div class="me-sub" style="margin-top:6px">и ещё ${refs.length-20}</div>` : "")
+      : `<div class="me-sub">Пока никого не пригласил. Скинь ссылку или покажи QR — начисления пойдут с первого платежа приглашённого.</div>`;
+    if(paid) document.getElementById("payNote").innerHTML =
+      `Оплативших: <b>${paid}</b>. Твоя доля — 25% с каждого их платежа, пожизненно.`;
+  }catch(e){
+    document.getElementById("refLink").textContent = "Не удалось загрузить: " + e.message;
+  }
 
   document.getElementById("genQr").addEventListener("click", () => {
     if(!window.__refLink){ document.getElementById("qrHint").textContent = "Сначала напиши боту /start"; return; }
