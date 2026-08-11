@@ -438,6 +438,16 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
       </div>
     </div>
 
+    <div class="section">Биржа исполнения</div>
+    <div class="card">
+      <div class="k">Через какую биржу ставить</div>
+      <div class="themes" id="exchSel">
+        <button data-e="sx">⚡ SX.bet</button>
+        <button data-e="poly">🟣 Polymarket</button>
+      </div>
+      <div class="me-sub" style="margin-top:4px">Автоставки через выбранную биржу появятся после подтверждения CLV-метрики. Выбор уже сохраняется в профиле и будет использован при подключении кошелька.</div>
+    </div>
+
     <div class="section">Кошельки по видам спорта</div>
     <div id="sports"><div class="loading">Загрузка…</div></div>
 
@@ -482,7 +492,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v14 · 11.08.2026</span></div>
+  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v15 · 11.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -501,7 +511,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v14";
+const BUILD = "v15";
 
 // WebView Telegram держит страницу в кеше и не спрашивает сервер. Спрашиваем сами:
 // version.json тянется с меткой времени (в fetch query работает), и если на сервере
@@ -576,6 +586,15 @@ function applyPal(name){
 }
 applyPal(localStorage.getItem("senya_pal") || "ice");
 
+// биржа исполнения: пока предпочтение в localStorage (senya_exch), по умолчанию SX —
+// привязка кошелька и автоставки подключаются после подтверждения CLV (n>=30)
+function applyExch(name){
+  localStorage.setItem("senya_exch", name);
+  document.querySelectorAll("#exchSel button").forEach(b =>
+    b.classList.toggle("on", b.dataset.e === name));
+}
+applyExch(localStorage.getItem("senya_exch") || "sx");
+
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("#themeSel button").forEach(b =>
     b.addEventListener("click", () => applyTheme(b.dataset.t)));
@@ -584,8 +603,14 @@ document.addEventListener("DOMContentLoaded", () => {
       applyPal(b.dataset.p);
       if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     }));
+  document.querySelectorAll("#exchSel button").forEach(b =>
+    b.addEventListener("click", () => {
+      applyExch(b.dataset.e);
+      if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
+    }));
   applyTheme(localStorage.getItem("senya_theme") || "auto");
   applyPal(localStorage.getItem("senya_pal") || "ice");
+  applyExch(localStorage.getItem("senya_exch") || "sx");
 });
 
 async function q(path) {
