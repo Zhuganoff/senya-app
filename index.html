@@ -369,12 +369,6 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   <div class="section">Ставки сегодня <span class="tag" id="todayTag">live</span></div>
   <div class="bets" id="todayBets"><div class="loading">Загрузка…</div></div>
 
-  <div class="section">Кошельки по видам спорта</div>
-  <div id="sports"><div class="loading">Загрузка…</div></div>
-
-  <div class="section">Последние ставки</div>
-  <div class="bets" id="bets"><div class="loading">Загрузка…</div></div>
-
   </div><!-- /pane-dash -->
 
   <div id="pane-stats" style="display:none">
@@ -391,6 +385,9 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 
     <div class="section" style="margin-top:18px">Винрейт по видам спорта</div>
     <div id="wrList"><div class="loading">Загрузка…</div></div>
+    <div class="section">Последние ставки</div>
+    <div class="bets" id="bets"><div class="loading">Загрузка…</div></div>
+
     <div class="proof" style="margin-top:14px">
       📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день —
       вверх после удачного дня, вниз после неудачного. Ничего не «замораживается»
@@ -441,6 +438,9 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
       </div>
     </div>
 
+    <div class="section">Кошельки по видам спорта</div>
+    <div id="sports"><div class="loading">Загрузка…</div></div>
+
   </div><!-- /pane-me -->
 
   <div id="pane-earn" style="display:none">
@@ -482,7 +482,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v12 · 11.08.2026</span></div>
+  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v13 · 11.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -501,7 +501,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v12";
+const BUILD = "v13";
 
 // WebView Telegram держит страницу в кеше и не спрашивает сервер. Спрашиваем сами:
 // version.json тянется с меткой времени (в fetch query работает), и если на сервере
