@@ -552,7 +552,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v21 · 12.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v22 · 12.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -574,7 +574,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v21";
+const BUILD = "v22";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -617,9 +617,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v21 · 12.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v21 · 12.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v21 · 12.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v22 · 12.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v22 · 12.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v22 · 12.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Начисления", "Earnings", "收益"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"],
@@ -1030,20 +1030,32 @@ function betRow(r){
             : `<span style="color:var(--mut)">${t("inPlay")}</span>`;
   return `<div class="bet ${rowCls(r)}"><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
-    <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${r.ts?` · 🕐 ${fmtTime(r.ts)}`:""}</div></div>
+    <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${gameTime(r)}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
 }
 
+// commence = время НАЧАЛА ИГРЫ (пока есть только у тенниса; для MLB/футбола
+// появится после добавления колонки commence_ts — SQL у CEO). Пока колонки нет,
+// у этих видов показывается время ставки (🕐 с тильдой ≈ «незадолго до игры»).
 const DAY_SRC = [
   ["bet_log",        "⚾ ", "match,match_date,selection,best_odds,result,stake,stake_pct,kelly_pct,closing_odds,closing_ts,ts"],
-  ["tennis_bet_log", "🎾 ", "match,match_date,selection,best_odds,result,stake,stake_pct,kelly_pct,closing_odds,ts"],
+  ["tennis_bet_log", "🎾 ", "match,match_date,selection,best_odds,result,stake,stake_pct,kelly_pct,closing_odds,ts,commence"],
   ["soccer_bet_log", "⚽ ", "match,match_date,selection,odds,result,stake,stake_pct,closing_odds,closing_ts,ts"],
 ];
 
 // время постановки ставки в поясе пользователя (senya_tz: "auto" или сдвиг UTC).
 // В базе хранится момент СТАВКИ (ts), не старт матча — показываем честно его.
+// время для строки ставки: старт ИГРЫ (commence / commence_ts), в поясе
+// пользователя; если вид спорта его ещё не пишет — время ставки с «≈»
+function gameTime(r){
+  const start = r.commence || r.commence_ts;
+  if (start) return ` · 🕐 ${fmtTime(start)}`;
+  if (r.ts) return ` · 🕐 ≈${fmtTime(r.ts)}`;
+  return "";
+}
+
 function fmtTime(iso){
   if(!iso) return "";
   // метка без зоны — это UTC из базы: без 'Z' браузер счёл бы её локальной
