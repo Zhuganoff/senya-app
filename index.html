@@ -482,7 +482,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v13 · 11.08.2026</span></div>
+  <div class="foot" id="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v14 · 11.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -501,7 +501,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v13";
+const BUILD = "v14";
 
 // WebView Telegram держит страницу в кеше и не спрашивает сервер. Спрашиваем сами:
 // version.json тянется с меткой времени (в fetch query работает), и если на сервере
@@ -636,8 +636,8 @@ async function main(){
       <div class="v ${clvAvg===null?"":cls(clvAvg)}">${clvAvg===null?"копится":pct(clvAvg)}</div>
       <div class="d" style="color:var(--mut)">${clvs.length} закрытий${clvs.length<30?" · n<30, рано судить":""}</div></div>
     <div class="card"><div class="k">Виды спорта</div>
-      <div class="v">4</div>
-      <div class="d" style="color:var(--mut)">MLB · теннис · футбол · биржа SX</div></div>`;
+      <div class="v">3</div>
+      <div class="d" style="color:var(--mut)">MLB · теннис · футбол</div></div>`;
 
   loadToday();
 
