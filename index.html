@@ -459,40 +459,35 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   </div><!-- /pane-me -->
 
   <div id="pane-wallet" style="display:none">
-    <div class="section" data-i18n="secBank">Мой банк</div>
+    <div class="section" data-i18n="secWalletMain">Общий кошелёк</div>
     <div class="card">
-      <div class="k" data-i18n="bankTitle">Сколько готов ставить в сутки</div>
+      <div class="k" data-i18n="exchTitle">Биржа кошелька</div>
+      <div class="themes" id="exchSel">
+
+        <button data-e="sx"><img class="exch-ico" alt="" src="data:image/png;base64,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"> SX.bet</button>
+        <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
+      </div>
+      <div class="k" style="margin-top:16px" data-i18n="walletSum">Сумма кошелька</div>
       <div class="bankrow">
         <span class="cur">$</span>
         <input type="number" id="budget" class="binput" min="20" step="10" value="300">
         <button class="btn small" id="saveBudget" data-i18n="save">Сохранить</button>
       </div>
-      <div class="me-sub" id="budgetHint" data-i18n="bankHint">Бот считает размер каждой ставки как процент от ЭТОЙ суммы — 5–10% на ставку. Деньги остаются у тебя: бот показывает ставку, ты подтверждаешь.</div>
+      <div class="me-sub" id="budgetHint" data-i18n="walletNote">Один счёт на выбранной бирже — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.</div>
       <div class="quick" id="quickBudget">
         <button data-v="100">$100</button><button data-v="300">$300</button>
         <button data-v="500">$500</button><button data-v="1000">$1000</button>
       </div>
-    </div>
-
-    <div class="section" data-i18n="secExch">Биржа исполнения</div>
-    <div class="card">
-      <div class="k" data-i18n="exchTitle">Через какую биржу ставить</div>
-      <div class="themes" id="exchSel">
-        <button data-e="sx"><img class="exch-ico" alt="" src="data:image/png;base64,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"> SX.bet</button>
-        <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
-      </div>
-      <div class="me-sub" style="margin-top:4px" data-i18n="exchNote">Автоставки через выбранную биржу появятся после подтверждения CLV-метрики. Выбор уже сохраняется в профиле и будет использован при подключении кошелька.</div>
-    </div>
-
-    <div class="section" data-i18n="secApi">Подключение API</div>
-    <div class="card">
-      <div class="k" data-i18n="apiTitle">API-ключ выбранной биржи</div>
+      <div class="k" style="margin-top:16px" data-i18n="apiTitle">API-ключ выбранной биржи</div>
       <div class="bankrow">
         <input type="password" id="apiKeyInput" class="binput" style="min-width:0" placeholder="API key" autocomplete="off">
         <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
       </div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
     </div>
+
+    <div class="section" data-i18n="secSportsWr">Виды спорта</div>
+    <div id="sports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
     <div class="section" data-i18n="secGuide">Справка</div>
     <div class="card">
@@ -507,9 +502,6 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
           ⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.</div>
       </details>
     </div>
-
-    <div class="section" data-i18n="secWallets">Кошельки по видам спорта</div>
-    <div id="sports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
   </div><!-- /pane-wallet -->
 
@@ -552,7 +544,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v22 · 12.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v23 · 12.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -574,7 +566,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v22";
+const BUILD = "v23";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -617,13 +609,19 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v22 · 12.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v22 · 12.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v22 · 12.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v23 · 12.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v23 · 12.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v23 · 12.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Начисления", "Earnings", "收益"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"],
   secApi: ["Подключение API", "API connection", "API 连接"],
+  secWalletMain: ["Общий кошелёк", "Main wallet", "总钱包"],
+  walletSum: ["Сумма кошелька", "Wallet balance", "钱包金额"],
+  walletNote: ["Один счёт на выбранной бирже — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.",
+               "One account on your chosen exchange — shared across the bot's bets (baseball + tennis). Each bet is sized at 5–10% of this amount. Once the API key is connected, the balance syncs from the exchange automatically.",
+               "所选交易所上的一个账户——机器人所有投注（棒球+网球）共用。每注为该金额的 5–10%。接入 API 密钥后，余额将自动从交易所同步。"],
+  secSportsWr: ["Виды спорта", "Sports", "运动项目"],
   apiTitle: ["API-ключ выбранной биржи", "API key for the selected exchange", "所选交易所的 API 密钥"],
   apiNote: ["Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.",
             "The key is stored on this device only and never sent anywhere. Auto-betting activates once the CLV metric is confirmed. ⚠️ Enter an API key only — NEVER your wallet's private key.",
@@ -955,25 +953,6 @@ async function main(){
 
   loadLastBets();
 
-  // кошельки — все из витрины, единая валюта $ (замечание CEO 07.08:
-  // бейсбол показывался в %, остальные в $)
-  const SUB = {mlb:t("wMlb"), tennis:t("wTennis"), soccer:t("wSoccer"),
-               sx_base:t("wSxBase"), sx_quality:t("wSxQ"),
-               sx_mirror:t("wSxM"), poly:t("wPoly")};
-  document.getElementById("sports").innerHTML = (banksRows.length ? banksRows : []).map(b => {
-    const bk = Number(b.bank), st = Number(b.start_bank) || 300;
-    const roi = (bk/st - 1)*100;
-    const tot = (b.wins||0) + (b.losses||0);
-    const wr = tot ? Math.round(100*(b.wins||0)/tot) : null;
-    const wl = tot ? ` · ${b.wins}W-${b.losses}L · <b style="color:${wr>=50?"var(--green)":"var(--red)"}">${wr}${t("winsPct")}</b>` : "";
-    return `<div class="sport"><div class="ico">${b.emoji||"⚽"}</div>
-      <div class="info"><div class="nm">${b.title||b.sport}</div>
-      <div class="st">${SUB[b.sport]||""}${wl}</div></div>
-      <div class="bank"><div class="b ${cls(roi)}">$${bk.toFixed(2)}</div>
-      <div class="pct ${cls(roi)}">${pct(roi)}</div></div></div>`;
-  }).join("") || `<div class="loading">${t("showcase")}</div>`;
-
-  const banks = [];
 }
 
 
@@ -1295,6 +1274,31 @@ async function initWallet(){
     localStorage.setItem("senya_api_" + exchNow(), apiInp.value.trim());
     document.getElementById("apiHint").textContent = t("apiSaved");
   });
+
+  // виды спорта — ВИНРЕЙТЫ, не кошельки (CEO 12.08: кошелёк один, общий);
+  // те же запросы, что на «Статистике» — цифры обязаны совпадать
+  loadSportsWr();
+}
+
+async function loadSportsWr(){
+  const box = document.getElementById("sports");
+  const SRC = [["bet_log", "⚾", t("sportMlb"), t("wMlb")],
+               ["tennis_bet_log", "🎾", t("sportTennis"), t("wTennis")],
+               ["soccer_bet_log", "⚽", t("sportSoccer"), t("wSoccer")]];
+  const cards = await Promise.all(SRC.map(async ([tbl, ico, title, sub]) => {
+    let rows = [];
+    try { rows = await q(`/${tbl}?select=result&staked=is.true&result=in.(0,1)&limit=10000`); }
+    catch(e) { return ""; }
+    const n = rows.length, w = rows.filter(r => r.result === 1).length;
+    const wr = n ? 100 * w / n : 0;
+    return `<div class="sport"><div class="ico">${ico}</div>
+      <div class="info"><div class="nm">${title}</div>
+      <div class="st">${sub} · ${w}W-${n - w}L</div>
+      <div class="wr-bar" style="margin-top:6px"><i style="width:${Math.min(100, wr)}%;background:${wr >= 50 ? "var(--green)" : "var(--red)"}"></i></div></div>
+      <div class="bank"><div class="b ${wr >= 50 ? "pos" : "neg"}">${n ? wr.toFixed(0) + "%" : "—"}</div>
+      <div class="pct" style="color:var(--mut)">${n} ${plBets(n)}</div></div></div>`;
+  }));
+  box.innerHTML = cards.join("") || `<div class="loading">${t("loading")}</div>`;
 }
 
 // ─────────── начисления и выплаты за рефералов ───────────
