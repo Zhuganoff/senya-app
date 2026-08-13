@@ -552,7 +552,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v25 · 13.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v26 · 13.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -577,7 +577,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v25";
+const BUILD = "v26";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -620,9 +620,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v25 · 13.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v25 · 13.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v25 · 13.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v26 · 13.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v26 · 13.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v26 · 13.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Начисления", "Earnings", "收益"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1227,7 +1227,8 @@ async function loadToday(){
     // CEO 13.08: сводка ПЕРЕД ставками — сколько из скольких зашло и % банка
     const dec = rows.filter(r => r.result === 1 || r.result === 0);
     const w = dec.filter(r => r.result === 1).length;
-    const pend = rows.length - dec.length - rows.filter(r => r.result === -1).length;
+    const stale = rows.filter(r => (r.result === null || r.result === undefined) && isStale(r)).length;
+    const pend = rows.length - dec.length - rows.filter(r => r.result === -1).length - stale;
     const pnlPct = rows.reduce((a, r) => {
       const sp = share(r);
       if (r.result === 1) return a + sp * ((oddsOf(r) || 1) - 1);
@@ -1237,7 +1238,7 @@ async function loadToday(){
     const head = dec.length
       ? `<div class="bet" style="background:var(--card2)"><div class="res">📊</div>
          <div class="m"><div class="match">${w}/${dec.length} ${t("sumHits")} (${(100*w/dec.length).toFixed(0)}%)</div>
-         <div class="sel">${pend > 0 ? `⏳ ${pend} ${t("inPlay")}` : t("inPlayToday")}</div></div>
+         <div class="sel">${[pend > 0 ? `⏳ ${pend} ${t("inPlay")}` : "", stale > 0 ? `⏸ ${stale} ${t("suspended")}` : ""].filter(Boolean).join(" · ") || t("inPlayToday")}</div></div>
          <div class="odds"><div class="${cls(pnlPct)}"><b>${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}</b></div></div></div>`
       : "";
     const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;
