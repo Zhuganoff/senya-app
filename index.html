@@ -544,7 +544,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v23 · 12.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v24 · 13.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -566,7 +566,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v23";
+const BUILD = "v24";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -609,9 +609,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v23 · 12.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v23 · 12.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v23 · 12.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v24 · 13.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v24 · 13.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v24 · 13.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Начисления", "Earnings", "收益"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"],
@@ -671,6 +671,8 @@ const T = {
   win: ["выигрыш", "win", "赢"], lose: ["проигрыш", "loss", "输"], voided: ["возврат", "void", "退还"], inPlay: ["в игре", "in play", "进行中"],
   ofBank: ["% банка", "% of bank", "% 资金"],
   noBetsYet: ["Ставок пока нет", "No bets yet", "暂无投注"],
+  lastPlayDay: ["последний игровой день", "last betting day", "最近投注日"],
+  sumHits: ["зашло", "hit", "命中"],
   slateEve: ["Слейт идёт вечером · ставим только при EV ≥ 1.5%", "The slate runs in the evening · we only bet at EV ≥ 1.5%", "晚间选注 · 仅在 EV ≥ 1.5% 时下注"],
   totalOf: ["Всего", "Total", "共"],
   inPlayToday: ["в игре сегодня", "in play today", "今日进行中"],
@@ -1131,17 +1133,43 @@ async function loadToday(){
   // «сегодня» по бейсбольному дню (US Eastern): смещение −4ч от UTC
   const d = new Date(Date.now() - 4*3600*1000).toISOString().slice(0,10);
   try{
-    const rows = await loadDayRows(d);
-    document.getElementById("todayTag").textContent = d;
+    let rows = await loadDayRows(d);
+    let tag = d;
+    if(!rows.length){
+      // CEO 13.08: блок не пустеет — держим ПОСЛЕДНИЙ игровой день, пока не
+      // начались новые ставки (иначе «улетают в статистику» и неудобно смотреть)
+      const lastDates = await Promise.all(DAY_SRC.map(([t2]) =>
+        q(`/${t2}?select=match_date&staked=is.true&order=match_date.desc&limit=1`)
+          .then(rs => (rs[0] || {}).match_date || "").catch(() => "")));
+      const last = lastDates.sort().reverse()[0];
+      if (last) { rows = await loadDayRows(last); tag = `${last} · ${t("lastPlayDay")}`; }
+    }
+    document.getElementById("todayTag").textContent = tag;
     if(!rows.length){
       box.innerHTML = `<div class="bet"><div class="res">🕐</div><div class="m">
         <div class="match">${t("noBetsYet")}</div>
         <div class="sel">${t("slateEve")}</div></div></div>`;
       return;
     }
+    // CEO 13.08: сводка ПЕРЕД ставками — сколько из скольких зашло и % банка
+    const dec = rows.filter(r => r.result === 1 || r.result === 0);
+    const w = dec.filter(r => r.result === 1).length;
+    const pend = rows.length - dec.length - rows.filter(r => r.result === -1).length;
+    const pnlPct = rows.reduce((a, r) => {
+      const sp = share(r);
+      if (r.result === 1) return a + sp * ((oddsOf(r) || 1) - 1);
+      if (r.result === 0) return a - sp;
+      return a;
+    }, 0) * 100;
+    const head = dec.length
+      ? `<div class="bet" style="background:var(--card2)"><div class="res">📊</div>
+         <div class="m"><div class="match">${w}/${dec.length} ${t("sumHits")} (${(100*w/dec.length).toFixed(0)}%)</div>
+         <div class="sel">${pend > 0 ? `⏳ ${pend} ${t("inPlay")}` : t("inPlayToday")}</div></div>
+         <div class="odds"><div class="${cls(pnlPct)}"><b>${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}</b></div></div></div>`
+      : "";
     const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;
     const mine = window.__myBank ? ` = $${(sumPct/100*window.__myBank).toFixed(2)}` : "";
-    box.innerHTML = rows.map(betRow).join("") +
+    box.innerHTML = head + rows.map(betRow).join("") +
       `<div class="bet" style="background:var(--card2)"><div class="res">Σ</div>
        <div class="m"><div class="match">${t("totalOf")} ${rows.length} ${plBets(rows.length)}</div>
        <div class="sel">${t("inPlayToday")}</div></div>
