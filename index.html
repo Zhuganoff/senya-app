@@ -391,6 +391,8 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 
   <div id="pane-dash">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
+  <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" style="display:none">
@@ -579,7 +581,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v28 · 17.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v29 · 17.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -611,7 +613,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v28";
+const BUILD = "v29";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -669,9 +671,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v28 · 17.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v28 · 17.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v28 · 17.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v29 · 17.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v29 · 17.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v29 · 17.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -729,6 +731,10 @@ const T = {
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
+  profitAll: ["Прибыль общая", "Total profit", "总盈利"],
+  profit24: ["Прибыль за сутки", "Profit last 24h", "近24小时盈利"],
+  ofBankShort: ["от банка", "of bankroll", "占资金"],
+  wrBySport: ["Винрейт по видам", "Win rate by sport", "分项胜率"],
   msInnings: ["Счёт по иннингам", "Line score by inning", "各局比分"],
   msSets: ["Счёт по сетам", "Score by set", "各盘比分"],
   msHalves: ["Счёт по таймам", "Score by half", "半场比分"],
@@ -998,9 +1004,9 @@ function pct(x){ return (x>=0?"+":"") + x.toFixed(1) + "%"; }
 function cls(x){ return x>=0 ? "pos" : "neg"; }
 
 async function main(){
-  // Дашборд v27 (CEO 17.08): только кошелёк пользователя + доходность по видам.
-  // Кошелёк — senya_users.daily_budget; доходность — senya_banks (bank/start_bank),
-  // тот же расчёт, что ROI в WR-блоке Статистики: цифры обязаны совпадать.
+  // Дашборд v29 (CEO 17.08, третья редакция): общий винрейт → общая прибыль
+  // (% банка и $ от кошелька пользователя, вся история и за сутки) → винрейт
+  // по каждому виду. Всё из bet_log-таблиц напрямую (принцип «всё из базы»).
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   let myBank = null;
   if (u) {
@@ -1012,24 +1018,49 @@ async function main(){
       }
     } catch(e){}
   }
-  let banks = {};
-  try { (await q("/senya_banks?select=sport,bank,start_bank")).forEach(b => banks[b.sport] = b); } catch(e){}
-  const SPORTS = [["mlb","⚾",t("sportMlb")], ["tennis","🎾",t("sportTennis")], ["soccer","⚽",t("sportSoccer")]];
-  const cards = SPORTS.map(([k, ico, title]) => {
-    const bk = banks[k];
-    const roi = bk && bk.start_bank ? (Number(bk.bank)/Number(bk.start_bank) - 1)*100 : null;
-    // доллары — от кошелька ПОЛЬЗОВАТЕЛЯ (правило витрины: свои суммы не показываем)
-    const usd = (roi != null && myBank != null)
-      ? `${roi >= 0 ? "+" : "−"}$${Math.abs(roi/100*myBank).toFixed(2)}` : "";
-    return `<div class="card"><div class="k">${ico} ${title}</div>
-      <div class="v ${roi==null?"":cls(roi)}">${roi==null?t("accruing"):pct(roi)}</div>
-      <div class="d ${roi==null||!usd?"":cls(roi)}">${usd || t("profitNote")}</div></div>`;
+  // select по таблицам разный: у футбола НЕТ kelly_pct и best_odds (MINI_APP §4)
+  const SRC = [["bet_log","⚾",t("sportMlb"),"result,stake,stake_pct,kelly_pct,best_odds,ts"],
+               ["tennis_bet_log","🎾",t("sportTennis"),"result,stake,stake_pct,kelly_pct,best_odds,ts"],
+               ["soccer_bet_log","⚽",t("sportSoccer"),"result,stake,stake_pct,odds,ts"]];
+  const packs = await Promise.all(SRC.map(([tbl,,,sel]) =>
+    q(`/${tbl}?select=${sel}&staked=is.true&result=in.(0,1)&order=ts.desc&limit=10000`)
+      .catch(() => [])));
+  let W = 0, N = 0, pnlAll = 0, pnl24 = 0;
+  const dayAgo = Date.now() - 24*3600*1000;
+  const sportRows = packs.map((rows, i) => {
+    const w = rows.filter(r => r.result === 1).length, n = rows.length;
+    W += w; N += n;
+    rows.forEach(r => {
+      const sp = share(r);
+      const d = r.result === 1 ? sp*((oddsOf(r)||1)-1) : -sp;
+      pnlAll += d;
+      let ts = r.ts || "";
+      if (ts && !/Z$|[+-]\d\d:?\d\d$/.test(ts)) ts += "Z";
+      if (ts && Date.parse(ts) > dayAgo) pnl24 += d;
+    });
+    const wr = n ? 100*w/n : 0;
+    return `<div class="sport"><div class="ico">${SRC[i][1]}</div>
+      <div class="info"><div class="nm">${SRC[i][2]}</div>
+      <div class="st">${w}W-${n-w}L · ${n} ${plBets(n)}</div>
+      <div class="wr-bar" style="margin-top:6px"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div></div>
+      <div class="bank"><div class="b ${wr>=50?"pos":"neg"}">${n?wr.toFixed(0)+"%":"—"}</div></div></div>`;
   });
+  const money = p => myBank != null ? ` = ${p>=0?"+":"−"}$${Math.abs(p/100*myBank).toFixed(2)}` : "";
+  const pA = pnlAll*100, p24 = pnl24*100;
   document.getElementById("topCards").innerHTML = `
     <div class="card"><div class="k">${t("myWallet")}</div>
       <div class="v">${myBank != null ? "$" + myBank.toFixed(0) : "—"}</div>
       <div class="d" style="color:var(--mut)">${myBank != null ? t("walletLinked") : t("walletNotLinked")}</div></div>
-    ${cards.join("")}`;
+    <div class="card"><div class="k">${t("wrAll")}</div>
+      <div class="v ${N && W/N>=0.5?"pos":"neg"}">${N ? (100*W/N).toFixed(1)+"%" : "—"}</div>
+      <div class="d" style="color:var(--mut)">${W}W · ${N-W}L · ${N} ${t("betsN")}</div></div>
+    <div class="card"><div class="k">${t("profitAll")}</div>
+      <div class="v ${cls(pA)}">${pct(pA)}</div>
+      <div class="d ${cls(pA)}">${t("ofBankShort")}${money(pA)}</div></div>
+    <div class="card" style="grid-column:1/-1"><div class="k">${t("profit24")}</div>
+      <div class="v ${cls(p24)}">${pct(p24)}</div>
+      <div class="d ${cls(p24)}">${t("ofBankShort")}${money(p24)}</div></div>`;
+  document.getElementById("dashSports").innerHTML = sportRows.join("");
 
   loadLastBets();
 }
