@@ -252,6 +252,20 @@ body.light .dpick{color-scheme:light}
   color:var(--accent);font-weight:600}
 .refgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:var(--s3)}
 .refgrid.two{grid-template-columns:repeat(2,1fr)}
+/* ── всплывающее окно счёта/статистики матча (v28, CEO 17.08) ── */
+.msov{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(3,7,13,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.mscard{position:relative;width:100%;max-width:360px;max-height:80vh;overflow:auto;
+  background:var(--card);background:color-mix(in srgb,var(--card) 90%,transparent);
+  border:1px solid var(--line);border-radius:var(--r-l,16px);box-shadow:var(--shadow);padding:16px}
+.msx{position:absolute;top:8px;right:8px;width:30px;height:30px;border:0;border-radius:50%;
+  background:var(--card2);color:var(--mut);font-size:15px;line-height:1;cursor:pointer}
+.mstab{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px}
+.mstab td,.mstab th{padding:4px 6px;border-bottom:1px solid var(--line);text-align:center;font-weight:500}
+.mstab th{color:var(--mut);font-size:11px}
+.mstab td:first-child,.mstab th:first-child{text-align:left;white-space:nowrap}
+.bet[data-ms]{cursor:pointer}
+.bscore{font-weight:700;margin-left:6px;font-variant-numeric:tabular-nums}
 .rs{background:var(--card-2);border-radius:var(--r-m);padding:var(--s3) 6px;text-align:center}
 .rs-v{font-size:19px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .rs-k{font-size:10.5px;color:var(--mut);margin-top:2px}
@@ -565,7 +579,14 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v27 · 17.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v28 · 17.08.2026</span></div>
+</div>
+
+<div class="msov" id="msov" style="display:none">
+  <div class="mscard">
+    <button class="msx" id="msClose" aria-label="close">✕</button>
+    <div id="msBody"></div>
+  </div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -590,7 +611,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v27";
+const BUILD = "v28";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -648,9 +669,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v27 · 17.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v27 · 17.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v27 · 17.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v28 · 17.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v28 · 17.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v28 · 17.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -708,6 +729,23 @@ const T = {
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
+  msInnings: ["Счёт по иннингам", "Line score by inning", "各局比分"],
+  msSets: ["Счёт по сетам", "Score by set", "各盘比分"],
+  msHalves: ["Счёт по таймам", "Score by half", "半场比分"],
+  msHt: ["1-й тайм", "1st half", "上半场"],
+  msFt: ["Матч", "Full time", "全场"],
+  msEt: ["Доп. время", "Extra time", "加时"],
+  msPen: ["Пенальти", "Penalties", "点球"],
+  msRet: ["матч не доигран — возврат ставки", "match not finished — stake returned", "比赛未打完——退还投注"],
+  msTap: ["счёт и статистика", "score & stats", "比分与统计"],
+  statShotsOn: ["Удары в створ", "Shots on target", "射正"],
+  statShotsOff: ["Удары мимо", "Shots off target", "射偏"],
+  statShots: ["Всего ударов", "Total shots", "总射门"],
+  statCorners: ["Угловые", "Corners", "角球"],
+  statPoss: ["Владение", "Possession", "控球率"],
+  statFouls: ["Фолы", "Fouls", "犯规"],
+  statYellow: ["Жёлтые карточки", "Yellow cards", "黄牌"],
+  statRed: ["Красные карточки", "Red cards", "红牌"],
   walletLinked: ["сумма из вкладки «Кошелёк»", "amount from the Wallet tab", "金额来自「钱包」页"],
   walletNotLinked: ["кошелёк не привязан — задай сумму во вкладке «Кошелёк»", "wallet not linked — set the amount in the Wallet tab", "未绑定钱包——请在「钱包」页设置金额"],
   profitNote: ["доходность банка бота", "bot bankroll return", "机器人资金收益率"],
@@ -1007,6 +1045,12 @@ async function initSched(){
     const since = new Date(Date.now() - 4*3600*1000).toISOString();
     __schedRows = await q(`/senya_schedule?select=*&commence=gte.${since}&order=commence.asc`);
   } catch(e) { __schedRows = []; }
+  // счёт сыгранных: даты матчей ± сутки (день MLB — ET, теннис — UTC)
+  const dts = __schedRows.flatMap(r => {
+    const c = (r.commence || "").slice(0, 10);
+    return c ? [c, new Date(new Date(c).getTime() - 86400000).toISOString().slice(0,10)] : [];
+  });
+  await loadMatchStats(dts);
   const sports = Object.keys(SCHED_SPORTS).filter(sp => __schedRows.some(r => r.sport === sp));
   if (!sports.length) { box.innerHTML = `<div class="loading">${t("schedEmpty")}</div>`; return; }
   __schedSport = sports[0];
@@ -1033,6 +1077,15 @@ function renderSched(){
       // порядок кф = порядок имён в строке: MLB «Away @ Home» → away/home, теннис «Home vs Away» → home/away
       const o = r.sport === "mlb" ? [r.odds_away, r.odds_home] : [r.odds_home, r.odds_away];
       const oS = (o[0] && o[1]) ? `${Number(o[0]).toFixed(2)} / ${Number(o[1]).toFixed(2)}` : "—";
+      // сыгранный матч: финальный счёт вместо кф, тап открывает окно статистики
+      const ms = msFor(r.sport, r.match);
+      if (ms && ms.final_score) {
+        return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}">
+          <div class="res">🏁</div>
+          <div class="m"><div class="match">${r.match || ""}</div>
+          <div class="sel">${fmtTime(r.commence)} · ${t("msTap")}</div></div>
+          <div class="odds"><div class="bscore" style="margin:0">${ms.final_score}</div></div></div>`;
+      }
       return `<div class="bet"><div class="res">🕐</div>
         <div class="m"><div class="match">${r.match || ""}</div>
         <div class="sel">${fmtTime(r.commence)}</div></div>
@@ -1104,13 +1157,92 @@ function betRow(r){
             : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
             : `<span style="color:var(--mut)">${t("inPlay")}</span>`;
-  return `<div class="bet ${rowCls(r)}"><div class="res">${ico}</div>
-    <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
+  // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно
+  const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match) : null;
+  const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
+  const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}"` : "";
+  return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
+    <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
     <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${gameTime(r)}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
 }
+
+// ─────────── счёт и статистика сыгранных матчей (v28, CEO 17.08) ───────────
+// Данные пишут грейдеры при сеттле (match_stats.py) в senya_match_stats;
+// витрина только читает. Маппинг к строкам ставок/расписания — sport + match.
+const ICO_SPORT = {"⚾ ": "mlb", "🎾 ": "tennis", "⚽ ": "soccer"};
+window.__msCache = {}; window.__msDates = new Set();
+async function loadMatchStats(dates){
+  const uniq = [...new Set(dates.filter(Boolean))].filter(d => !window.__msDates.has(d));
+  if(!uniq.length) return;
+  uniq.forEach(d => window.__msDates.add(d));
+  try{
+    const rs = await q(`/senya_match_stats?select=*&match_date=in.(${uniq.join(",")})`);
+    rs.forEach(r => window.__msCache[`${r.sport}|${r.match_name}`] = r);
+  }catch(e){}
+}
+function msFor(sport, match){ return sport ? window.__msCache[`${sport}|${match}`] : null; }
+const msAbbr = n => (n||"").trim().split(" ").pop();   // короткое имя для таблиц
+
+function msHtml(r){
+  const sep = r.sport === "mlb" ? " @ " : " vs ";
+  const [n1, n2] = (r.match_name || "").split(sep).concat("");
+  const p = r.periods || {}, s = r.stats || {};
+  let h = `<div class="k" style="padding-right:26px">${r.match_name||""}</div>
+    <div class="v" style="margin:2px 0 10px">${r.final_score||"—"}</div>`;
+  if(r.sport === "mlb" && (p.innings||[]).length){
+    const rhe = k => ((s.rhe||{})[k]||[]).map(x=>`<td><b>${x??"—"}</b></td>`).join("");
+    h += `<div class="k">${t("msInnings")}</div>
+      <div style="overflow-x:auto;margin-top:6px"><table class="mstab">
+      <tr><th></th>${p.innings.map(i=>`<th>${i.n}</th>`).join("")}<th>R</th><th>H</th><th>E</th></tr>
+      <tr><td>${msAbbr(n1)}</td>${p.innings.map(i=>`<td>${i.a??"·"}</td>`).join("")}${rhe("a")}</tr>
+      <tr><td>${msAbbr(n2)}</td>${p.innings.map(i=>`<td>${i.h??"·"}</td>`).join("")}${rhe("h")}</tr>
+      </table></div>`;
+    const pit = s.pitchers || {};
+    const pl = [["win","W"],["loss","L"],["save","SV"]].filter(x=>pit[x[0]])
+      .map(x=>`${x[1]}: ${pit[x[0]]}`).join(" · ");
+    if(pl) h += `<div class="me-sub" style="margin-top:8px">⚾ ${pl}</div>`;
+  }
+  if(r.sport === "tennis" && (p.sets||[]).length){
+    h += `<div class="k">${t("msSets")}</div><table class="mstab" style="margin-top:6px">
+      <tr><td>${msAbbr(n1)}</td>${p.sets.map(st=>`<td class="${st[0]>st[1]?"pos":""}"><b>${st[0]}</b></td>`).join("")}</tr>
+      <tr><td>${msAbbr(n2)}</td>${p.sets.map(st=>`<td class="${st[1]>st[0]?"pos":""}"><b>${st[1]}</b></td>`).join("")}</tr>
+      </table>`;
+    if(s.retired) h += `<div class="me-sub" style="margin-top:8px">↩️ ${t("msRet")}</div>`;
+  }
+  if(r.sport === "soccer"){
+    const per = [["ht","msHt"],["ft","msFt"],["et","msEt"],["pen","msPen"]]
+      .filter(x=>p[x[0]]).map(x=>`<tr><td>${t(x[1])}</td><td><b>${p[x[0]]}</b></td></tr>`).join("");
+    if(per) h += `<div class="k">${t("msHalves")}</div><table class="mstab" style="margin-top:6px">${per}</table>`;
+    const L = [["shots_on","statShotsOn"],["shots_off","statShotsOff"],["shots","statShots"],
+               ["corners","statCorners"],["possession","statPoss"],["fouls","statFouls"],
+               ["yellow","statYellow"],["red","statRed"]];
+    const sh = s.home || {}, sa = s.away || {};
+    const rows = L.filter(x => sh[x[0]] != null || sa[x[0]] != null).map(x =>
+      `<tr><td style="text-align:left"><b>${sh[x[0]]??"—"}</b></td>
+       <td style="color:var(--mut)">${t(x[1])}</td>
+       <td style="text-align:right"><b>${sa[x[0]]??"—"}</b></td></tr>`).join("");
+    if(rows) h += `<div class="k" style="margin-top:10px">${msAbbr(n1)} · ${msAbbr(n2)}</div>
+      <table class="mstab" style="margin-top:6px">${rows}</table>`;
+  }
+  return h;
+}
+function msShow(key){
+  const r = window.__msCache[key];
+  if(!r) return;
+  document.getElementById("msBody").innerHTML = msHtml(r);
+  document.getElementById("msov").style.display = "flex";
+  if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
+}
+function msHide(){ document.getElementById("msov").style.display = "none"; }
+document.getElementById("msClose").addEventListener("click", msHide);
+document.getElementById("msov").addEventListener("click", e => { if(e.target.id === "msov") msHide(); });
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-ms]");
+  if(b) msShow(b.dataset.ms);
+});
 
 // commence = время НАЧАЛА ИГРЫ (пока есть только у тенниса; для MLB/футбола
 // появится после добавления колонки commence_ts — SQL у CEO). Пока колонки нет,
@@ -1157,6 +1289,7 @@ async function loadDay(d){
   box.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try{
     const rows = await loadDayRows(d);
+    await loadMatchStats(rows.map(r => r.match_date).concat(d));
     if(!rows.length){
       stat.innerHTML = `<div class="k">${d}</div><div class="d" style="color:var(--mut)">${t("noBetsDay")}</div>`;
       box.innerHTML = `<div class="loading">${t("dayOff")}</div>`;
@@ -1211,12 +1344,16 @@ async function loadLastBets(){
     .sort((x, y) => String(y.match_date||"").localeCompare(String(x.match_date||"")))
     .slice(0, 12);
   if(!last.length){ box.innerHTML = `<div class="loading">${t("noBetsYet")}</div>`; return; }
+  await loadMatchStats(last.map(r => r.match_date));
   box.innerHTML = last.map(r => {
     const pnlTxt = r.result===1?`<span class="pos">+${(((oddsOf(r)||1)-1)*100).toFixed(0)}%</span>`
                  : r.result===0?`<span class="neg">−100%</span>`
                  : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`:`<span style="color:var(--mut)">${t("inPlay")}</span>`;
-    return `<div class="bet ${rowCls(r)}"><div class="res">${resIco(r)}</div>
-      <div class="m"><div class="match">${r._ico||""}${r.match||""}</div>
+    const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match) : null;
+    const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
+    const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}"` : "";
+    return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${resIco(r)}</div>
+      <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
       <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
       <div class="odds"><div>@${oddsOf(r)??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
   }).join("");
