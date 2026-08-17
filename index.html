@@ -266,6 +266,9 @@ body.light .dpick{color-scheme:light}
 .mstab td:first-child,.mstab th:first-child{text-align:left;white-space:nowrap}
 .bet[data-ms]{cursor:pointer}
 .bscore{font-weight:700;margin-left:6px;font-variant-numeric:tabular-nums}
+.refrow{display:flex;gap:8px;margin-top:6px}
+.refrow #copyRef{flex:1}
+.qrbtn{flex:none;width:48px;display:flex;align-items:center;justify-content:center;padding:0}
 .rs{background:var(--card-2);border-radius:var(--r-m);padding:var(--s3) 6px;text-align:center}
 .rs-v{font-size:19px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .rs-k{font-size:10.5px;color:var(--mut);margin-top:2px}
@@ -527,6 +530,17 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   </div><!-- /pane-wallet -->
 
   <div id="pane-earn" style="display:none">
+    <div class="section" data-i18n="secLink">Твоя ссылка</div>
+    <div class="card">
+      <div class="reflink" id="refLink">—</div>
+      <div class="refrow">
+        <button class="btn" id="copyRef" data-i18n="copyLink">🔗 Реферальная ссылка</button>
+        <button class="btn qrbtn" id="qrBtn" aria-label="QR">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM19 14h2M14 19h2M19 19h2v2h-2zM16 21h1"/></svg>
+        </button>
+      </div>
+    </div>
+
     <div class="section" data-i18n="secEarn">Рефералы</div>
     <div class="card">
       <div class="refgrid two" style="margin-top:0">
@@ -564,15 +578,6 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
       <div class="me-sub" style="margin-top:9px" data-i18n="line2Note">Вторая линия — люди, которых пригласили твои рефералы. С каждого их платежа тебе идёт 5%.</div>
     </div>
 
-    <div class="section" data-i18n="secLink">Твоя ссылка</div>
-    <div class="card">
-      <div class="reflink" id="refLink">—</div>
-      <button class="btn" id="copyRef" data-i18n="copyLink">🔗 Реферальная ссылка</button>
-      <button class="btn ghost" id="shareRef" data-i18n="shareBtn">↗️ Поделиться</button>
-      <button class="btn ghost" id="genQr" data-i18n="makeQr">🔳 Сформировать QR-код</button>
-      <div class="qrbox"><canvas id="qrCanvas" style="display:none"></canvas>
-        <div id="qrHint" class="me-sub" data-i18n="qrHint">Нажми «Сформировать» — покажешь QR, его отсканируют и попадут по твоей ссылке</div></div>
-    </div>
   </div>
 
   <div class="proof" data-i18n="proofMain">
@@ -581,7 +586,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v29 · 17.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v30 · 17.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -613,7 +618,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v29";
+const BUILD = "v30";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -671,9 +676,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v29 · 17.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v29 · 17.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v29 · 17.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v30 · 17.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v30 · 17.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v30 · 17.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1559,12 +1564,20 @@ async function initEarn(){
     const link = `https://t.me/sportzhubot?start=ref_${rows[0].ref_code}`;
     document.getElementById("refLink").textContent = link;
     window.__refLink = link;
-    try{
-      const cv = document.getElementById("qrCanvas");
-      SenyaQR.draw(cv, link, {px:6, fg: document.body.classList.contains("light") ? "#0e1620" : "#080b11", bg:"#ffffff"});
-      cv.style.display = "inline-block";
-      document.getElementById("qrHint").textContent = t("qrShow");
-    }catch(e){}
+    // QR: сгенерирован ОДИН раз при регистрации ботом и хранится в
+    // senya_users.qr_png (CEO 17.08). У старых пользователей поля может не
+    // быть — дорисовываем сами и сохраняем, тоже один раз и навсегда.
+    window.__qrUri = rows[0].qr_png || null;
+    if(!window.__qrUri){
+      try{
+        const cv = document.createElement("canvas");
+        SenyaQR.draw(cv, link, {px:6, fg:"#080b11", bg:"#ffffff"});
+        window.__qrUri = cv.toDataURL("image/png");
+        fetch(SB + `/senya_users?tg_id=eq.${u.id}`, {method:"PATCH",
+          headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
+          body: JSON.stringify({qr_png: window.__qrUri})}).catch(()=>{});
+      }catch(e){}
+    }
 
     // строка списка линии: имя · дата · статус оплаты (share — доля с платежа уровня)
     const refItem = (r, share) => {
@@ -1621,28 +1634,20 @@ async function initEarn(){
     document.getElementById("refLink").textContent = t("loadFail") + e.message;
   }
 
-  document.getElementById("genQr").addEventListener("click", () => {
-    if(!window.__refLink){ document.getElementById("qrHint").textContent = t("startFirst"); return; }
-    try{
-      const cv = document.getElementById("qrCanvas");
-      SenyaQR.draw(cv, window.__refLink, {px:6, fg: document.body.classList.contains("light") ? "#0e1620" : "#080b11", bg:"#ffffff"});
-      cv.style.display = "inline-block";
-      document.getElementById("qrHint").textContent = t("qrDone");
-    }catch(e){
-      document.getElementById("qrHint").textContent = t("qrFail") + e.message;
-    }
-  });
   document.getElementById("copyRef").addEventListener("click", () => {
     if(!window.__refLink) return;
     navigator.clipboard && navigator.clipboard.writeText(window.__refLink);
     const b = document.getElementById("copyRef");
     b.textContent = t("copied"); setTimeout(()=>b.textContent=t("copyLink"), 1600);
   });
-  document.getElementById("shareRef").addEventListener("click", () => {
-    if(!window.__refLink) return;
-    const share = "https://t.me/share/url?url=" + encodeURIComponent(window.__refLink) +
-                  "&text=" + encodeURIComponent(t("shareText"));
-    if (tg && tg.openTelegramLink) tg.openTelegramLink(share); else window.open(share, "_blank");
+  // QR-кнопка (CEO 17.08): показывает постоянный QR регистрации в модалке
+  document.getElementById("qrBtn").addEventListener("click", () => {
+    if(!window.__qrUri){ return; }
+    document.getElementById("msBody").innerHTML =
+      `<div class="k" style="padding-right:26px">${t("secLink")}</div>
+       <img src="${window.__qrUri}" alt="QR" style="width:100%;max-width:280px;display:block;margin:12px auto 4px;border-radius:12px;background:#fff">
+       <div class="me-sub" style="text-align:center">${t("qrShow")}</div>`;
+    document.getElementById("msov").style.display = "flex";
   });
 }
 
