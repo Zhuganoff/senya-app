@@ -451,6 +451,53 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
       <div class="me-sub" id="subHint" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
     </div>
 
+    <!-- v31 (CEO 17.08): бывшая вкладка «Кошелёк» живёт здесь и видна ТОЛЬКО
+         оплатившим тариф (senya_users.paid_until >= сегодня или is_paid) -->
+    <div id="exchBlock" style="display:none">
+    <div class="section" data-i18n="secWalletMain">Кошелёк и биржа</div>
+    <div class="card">
+      <div class="me-sub" id="tariffInfo" style="margin-bottom:8px"></div>
+      <div class="k" data-i18n="exchTitle">Биржа кошелька</div>
+      <div class="themes" id="exchSel">
+
+        <button data-e="sx"><img class="exch-ico" alt="" src="data:image/png;base64,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"> SX.bet</button>
+        <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
+      </div>
+      <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть биржу</a>
+      <div class="k" style="margin-top:16px" data-i18n="walletSum">Сумма кошелька</div>
+      <div class="bankrow">
+        <span class="cur">$</span>
+        <input type="number" id="budget" class="binput" min="20" step="10" value="300">
+        <button class="btn small" id="saveBudget" data-i18n="save">Сохранить</button>
+      </div>
+      <div class="me-sub" id="budgetHint" data-i18n="walletNote">Один счёт на выбранной бирже — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.</div>
+      <div class="quick" id="quickBudget">
+        <button data-v="100">$100</button><button data-v="300">$300</button>
+        <button data-v="500">$500</button><button data-v="1000">$1000</button>
+      </div>
+      <div class="k" style="margin-top:16px" data-i18n="apiTitle">API-ключ выбранной биржи</div>
+      <div class="bankrow">
+        <input type="password" id="apiKeyInput" class="binput" style="min-width:0" placeholder="API key" autocomplete="off">
+        <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
+      </div>
+      <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
+    </div>
+
+    <div class="section" data-i18n="secGuide">Справка</div>
+    <div class="card">
+      <details>
+        <summary class="k" style="cursor:pointer" data-i18n="guideTitle">Как подключить биржу к боту</summary>
+        <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">
+          1️⃣ Выбери биржу выше (SX.bet или Polymarket) и зарегистрируйся на её сайте. Убедись, что она работает в твоей стране, и пройди проверку (KYC).<br><br>
+          2️⃣ Пополни счёт стейблкоином USDC — это твой ставочный банк. Держи на нём только сумму, которой готов играть.<br><br>
+          3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b> (на SX: Account → API).<br><br>
+          4️⃣ Вставь ключ в поле «Подключение API» выше и нажми «Сохранить» — он останется только на этом устройстве.<br><br>
+          5️⃣ Готово. Когда автоставки включатся (после подтверждения CLV-метрики), бот начнёт ставить через твой счёт — деньги всегда остаются у тебя.<br><br>
+          ⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.</div>
+      </details>
+    </div>
+    </div><!-- /exchBlock -->
+
     <div class="section" data-i18n="secLook">Оформление</div>
     <div class="card">
       <div class="k" data-i18n="langTitle">Язык / Language</div>
@@ -481,53 +528,6 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     </div>
 
   </div><!-- /pane-me -->
-
-  <div id="pane-wallet" style="display:none">
-    <div class="section" data-i18n="secWalletMain">Общий кошелёк</div>
-    <div class="card">
-      <div class="k" data-i18n="exchTitle">Биржа кошелька</div>
-      <div class="themes" id="exchSel">
-
-        <button data-e="sx"><img class="exch-ico" alt="" src="data:image/png;base64,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"> SX.bet</button>
-        <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
-      </div>
-      <div class="k" style="margin-top:16px" data-i18n="walletSum">Сумма кошелька</div>
-      <div class="bankrow">
-        <span class="cur">$</span>
-        <input type="number" id="budget" class="binput" min="20" step="10" value="300">
-        <button class="btn small" id="saveBudget" data-i18n="save">Сохранить</button>
-      </div>
-      <div class="me-sub" id="budgetHint" data-i18n="walletNote">Один счёт на выбранной бирже — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.</div>
-      <div class="quick" id="quickBudget">
-        <button data-v="100">$100</button><button data-v="300">$300</button>
-        <button data-v="500">$500</button><button data-v="1000">$1000</button>
-      </div>
-      <div class="k" style="margin-top:16px" data-i18n="apiTitle">API-ключ выбранной биржи</div>
-      <div class="bankrow">
-        <input type="password" id="apiKeyInput" class="binput" style="min-width:0" placeholder="API key" autocomplete="off">
-        <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
-      </div>
-      <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
-    </div>
-
-    <div class="section" data-i18n="secSportsWr">Виды спорта</div>
-    <div id="sports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-
-    <div class="section" data-i18n="secGuide">Справка</div>
-    <div class="card">
-      <details>
-        <summary class="k" style="cursor:pointer" data-i18n="guideTitle">Как подключить биржу к боту</summary>
-        <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">
-          1️⃣ Выбери биржу выше (SX.bet или Polymarket) и зарегистрируйся на её сайте. Убедись, что она работает в твоей стране, и пройди проверку (KYC).<br><br>
-          2️⃣ Пополни счёт стейблкоином USDC — это твой ставочный банк. Держи на нём только сумму, которой готов играть.<br><br>
-          3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b> (на SX: Account → API).<br><br>
-          4️⃣ Вставь ключ в поле «Подключение API» выше и нажми «Сохранить» — он останется только на этом устройстве.<br><br>
-          5️⃣ Готово. Когда автоставки включатся (после подтверждения CLV-метрики), бот начнёт ставить через твой счёт — деньги всегда остаются у тебя.<br><br>
-          ⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.</div>
-      </details>
-    </div>
-
-  </div><!-- /pane-wallet -->
 
   <div id="pane-earn" style="display:none">
     <div class="section" data-i18n="secLink">Твоя ссылка</div>
@@ -586,7 +586,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v30 · 17.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v31 · 17.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -603,9 +603,6 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   <button class="bnav-item" data-tab="sched">
     <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
     <span data-i18n="navSched">Игры</span></button>
-  <button class="bnav-item" data-tab="wallet">
-    <svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 8.5V7a2 2 0 0 1 2-2h10"/><circle cx="16.8" cy="13" r="1.4"/></svg>
-    <span data-i18n="navWallet">Кошелёк</span></button>
   <button class="bnav-item" data-tab="stats">
     <svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg>
     <span data-i18n="navStats">Статистика</span></button>
@@ -618,7 +615,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v30";
+const BUILD = "v31";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -676,9 +673,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v30 · 17.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v30 · 17.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v30 · 17.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v31 · 17.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v31 · 17.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v31 · 17.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -736,6 +733,8 @@ const T = {
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
+  exchOpen: ["↗️ Открыть биржу", "↗️ Open exchange", "↗️ 打开交易所"],
+  tariffActive: ["Тариф активен", "Plan active", "套餐生效"],
   profitAll: ["Прибыль общая", "Total profit", "总盈利"],
   profit24: ["Прибыль за сутки", "Profit last 24h", "近24小时盈利"],
   ofBankShort: ["от банка", "of bankroll", "占资金"],
@@ -757,8 +756,8 @@ const T = {
   statFouls: ["Фолы", "Fouls", "犯规"],
   statYellow: ["Жёлтые карточки", "Yellow cards", "黄牌"],
   statRed: ["Красные карточки", "Red cards", "红牌"],
-  walletLinked: ["сумма из вкладки «Кошелёк»", "amount from the Wallet tab", "金额来自「钱包」页"],
-  walletNotLinked: ["кошелёк не привязан — задай сумму во вкладке «Кошелёк»", "wallet not linked — set the amount in the Wallet tab", "未绑定钱包——请在「钱包」页设置金额"],
+  walletLinked: ["сумма из Профиля", "amount from your Profile", "金额来自「个人」页"],
+  walletNotLinked: ["кошелёк не привязан — настройка в Профиле после оплаты тарифа", "wallet not linked — set it up in Profile after subscribing", "未绑定钱包——订阅后在「个人」页设置"],
   profitNote: ["доходность банка бота", "bot bankroll return", "机器人资金收益率"],
   closes: ["закрытий", "closes", "次收盘"],
   early: [" · n<30, рано судить", " · n<30, too early to judge", " · n<30，尚难下结论"],
@@ -1024,14 +1023,17 @@ async function main(){
     } catch(e){}
   }
   // select по таблицам разный: у футбола НЕТ kelly_pct и best_odds (MINI_APP §4)
-  const SRC = [["bet_log","⚾",t("sportMlb"),"result,stake,stake_pct,kelly_pct,best_odds,ts"],
-               ["tennis_bet_log","🎾",t("sportTennis"),"result,stake,stake_pct,kelly_pct,best_odds,ts"],
-               ["soccer_bet_log","⚽",t("sportSoccer"),"result,stake,stake_pct,odds,ts"]];
+  const SRC = [["bet_log","⚾",t("sportMlb"),"result,stake,stake_pct,kelly_pct,best_odds,match_date"],
+               ["tennis_bet_log","🎾",t("sportTennis"),"result,stake,stake_pct,kelly_pct,best_odds,match_date"],
+               ["soccer_bet_log","⚽",t("sportSoccer"),"result,stake,stake_pct,odds,match_date"]];
   const packs = await Promise.all(SRC.map(([tbl,,,sel]) =>
-    q(`/${tbl}?select=${sel}&staked=is.true&result=in.(0,1)&order=ts.desc&limit=10000`)
+    q(`/${tbl}?select=${sel}&staked=is.true&result=in.(0,1)&order=match_date.desc&limit=10000`)
       .catch(() => [])));
+  // «за сутки» = ПОСЛЕДНИЙ ИГРОВОЙ ДЕНЬ (match_date), тем же расчётом, что
+  // «Ставки за день» в Статистике — цифры обязаны совпадать (баг v29: считал
+  // по ts за 24ч и расходился со Статистикой, CEO 17.08)
+  const lastDay = packs.flat().reduce((a, r) => (r.match_date||"") > a ? r.match_date : a, "");
   let W = 0, N = 0, pnlAll = 0, pnl24 = 0;
-  const dayAgo = Date.now() - 24*3600*1000;
   const sportRows = packs.map((rows, i) => {
     const w = rows.filter(r => r.result === 1).length, n = rows.length;
     W += w; N += n;
@@ -1039,9 +1041,7 @@ async function main(){
       const sp = share(r);
       const d = r.result === 1 ? sp*((oddsOf(r)||1)-1) : -sp;
       pnlAll += d;
-      let ts = r.ts || "";
-      if (ts && !/Z$|[+-]\d\d:?\d\d$/.test(ts)) ts += "Z";
-      if (ts && Date.parse(ts) > dayAgo) pnl24 += d;
+      if (r.match_date === lastDay) pnl24 += d;
     });
     const wr = n ? 100*w/n : 0;
     return `<div class="sport"><div class="ico">${SRC[i][1]}</div>
@@ -1064,7 +1064,7 @@ async function main(){
       <div class="d ${cls(pA)}">${t("ofBankShort")}${money(pA)}</div></div>
     <div class="card" style="grid-column:1/-1"><div class="k">${t("profit24")}</div>
       <div class="v ${cls(p24)}">${pct(p24)}</div>
-      <div class="d ${cls(p24)}">${t("ofBankShort")}${money(p24)}</div></div>`;
+      <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")}${money(p24)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
 
   loadLastBets();
@@ -1132,7 +1132,7 @@ function renderSched(){
 }
 
 // ─────────── нижнее меню ───────────
-const PANES = ["dash", "sched", "earn", "wallet", "stats", "me"];
+const PANES = ["dash", "sched", "earn", "stats", "me"];   // v31: «Кошелёк» → в Профиль
 document.querySelectorAll(".bnav-item").forEach(function(btn){
   btn.addEventListener("click", function(){
     document.querySelectorAll(".bnav-item").forEach(b => b.classList.remove("active"));
@@ -1147,7 +1147,6 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
     if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
-    if (t === "wallet" && !window.__walletInit) { window.__walletInit = true; initWallet(); }
     if (t === "me"   && !window.__meInit)   { window.__meInit   = true; initMe(); }
   });
 });
@@ -1458,7 +1457,7 @@ async function initWinrate(){
   }catch(e){ box.innerHTML = `<div class="loading">${t("errWord")}: ${e.message}</div>`; }
 }
 
-// ─────────── личный кабинет ───────────
+// ─────────── личный кабинет (v31: сюда переехал «Кошелёк», вкладки больше нет) ───────────
 async function initMe(){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   if(!u){
@@ -1469,22 +1468,47 @@ async function initMe(){
   document.getElementById("ava").textContent = (u.first_name||"U").trim()[0].toUpperCase();
   document.getElementById("meName").textContent = name;
   document.getElementById("meSub").textContent = u.username ? "@"+u.username : "id "+u.id;
+  // блок биржи виден ТОЛЬКО оплатившим (CEO 17.08): paid_until >= сегодня или is_paid.
+  // paid_from/paid_until — новые колонки (SQL у CEO); до них — фолбэк-select.
+  let me = null;
+  try{
+    me = (await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since,is_paid,paid_from,paid_until`))[0];
+  }catch(e){
+    try{ me = (await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since,is_paid`))[0]; }catch(e2){}
+  }
+  const today = new Date().toISOString().slice(0,10);
+  const paid = !!(me && (me.is_paid || (me.paid_until && String(me.paid_until) >= today)));
+  if(paid){
+    document.getElementById("exchBlock").style.display = "";
+    const ti = document.getElementById("tariffInfo");
+    if(me.paid_from || me.paid_until)
+      ti.textContent = `${t("tariffActive")}: ${me.paid_from || "—"} → ${me.paid_until || "—"}`;
+    initWallet(me);
+  }
 }
 
-// ─────────── кошелёк: банк, API-ключ (v17 — вынесено из профиля по команде CEO) ───────────
-async function initWallet(){
+// кошелёк/биржа (v31 — живёт в Профиле, показывается после оплаты тарифа)
+async function initWallet(me){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+
+  // ссылка на биржу пользователя (CEO 17.08)
+  const EXCH_URL = {sx: "https://sx.bet", poly: "https://polymarket.com"};
+  const linkEl = document.getElementById("exchLink");
+  const setExchLink = () => { linkEl.href = EXCH_URL[localStorage.getItem("senya_exch") || "sx"]; };
+  setExchLink();
+  linkEl.addEventListener("click", e => {
+    e.preventDefault();
+    const url = EXCH_URL[localStorage.getItem("senya_exch") || "sx"];
+    if (tg && tg.openLink) tg.openLink(url); else window.open(url, "_blank");
+  });
+  document.querySelectorAll("#exchSel button").forEach(b =>
+    b.addEventListener("click", () => setTimeout(setExchLink, 50)));
 
   // личный банк: загрузка, быстрые кнопки, сохранение
   const bInput = document.getElementById("budget");
-  if(u){
-    try{
-      const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since`);
-      if(me.length){
-        if(me[0].daily_budget){ bInput.value = me[0].daily_budget; window.__myBank = Number(me[0].daily_budget); }
-        if(me[0].tracking_since) window.__trackSince = String(me[0].tracking_since).slice(0,10);
-      }
-    }catch(e){}
+  if(me){
+    if(me.daily_budget){ bInput.value = me.daily_budget; window.__myBank = Number(me.daily_budget); }
+    if(me.tracking_since) window.__trackSince = String(me.tracking_since).slice(0,10);
   }
   document.querySelectorAll("#quickBudget button").forEach(b =>
     b.addEventListener("click", () => { bInput.value = b.dataset.v; }));
@@ -1518,30 +1542,7 @@ async function initWallet(){
     document.getElementById("apiHint").textContent = t("apiSaved");
   });
 
-  // виды спорта — ВИНРЕЙТЫ, не кошельки (CEO 12.08: кошелёк один, общий);
-  // те же запросы, что на «Статистике» — цифры обязаны совпадать
-  loadSportsWr();
-}
-
-async function loadSportsWr(){
-  const box = document.getElementById("sports");
-  const SRC = [["bet_log", "⚾", t("sportMlb"), t("wMlb")],
-               ["tennis_bet_log", "🎾", t("sportTennis"), t("wTennis")],
-               ["soccer_bet_log", "⚽", t("sportSoccer"), t("wSoccer")]];
-  const cards = await Promise.all(SRC.map(async ([tbl, ico, title, sub]) => {
-    let rows = [];
-    try { rows = await q(`/${tbl}?select=result&staked=is.true&result=in.(0,1)&limit=10000`); }
-    catch(e) { return ""; }
-    const n = rows.length, w = rows.filter(r => r.result === 1).length;
-    const wr = n ? 100 * w / n : 0;
-    return `<div class="sport"><div class="ico">${ico}</div>
-      <div class="info"><div class="nm">${title}</div>
-      <div class="st">${sub} · ${w}W-${n - w}L</div>
-      <div class="wr-bar" style="margin-top:6px"><i style="width:${Math.min(100, wr)}%;background:${wr >= 50 ? "var(--green)" : "var(--red)"}"></i></div></div>
-      <div class="bank"><div class="b ${wr >= 50 ? "pos" : "neg"}">${n ? wr.toFixed(0) + "%" : "—"}</div>
-      <div class="pct" style="color:var(--mut)">${n} ${plBets(n)}</div></div></div>`;
-  }));
-  box.innerHTML = cards.join("") || `<div class="loading">${t("loading")}</div>`;
+  // «Виды спорта» из кошелька УДАЛЕНЫ (CEO 17.08 v31): винрейты уже на дашборде
 }
 
 // ─────────── начисления и выплаты за рефералов ───────────
