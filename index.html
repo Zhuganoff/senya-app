@@ -309,15 +309,21 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 .bnav-item.active svg{transform:translateY(-1px)}
 .exch-ico{width:16px;height:16px;object-fit:contain;background:#fff;border-radius:5px;
   padding:2px;vertical-align:-4px;margin-right:2px}
-/* цветные иконки меню (CEO 11.08): у каждой вкладки свой цвет, неактивные приглушены */
-.bnav-item svg{opacity:.62}
+/* v32 (CEO 17.08): меню ОДНОТОННОЕ — иконки серые, цвет получает ТОЛЬКО
+   активная вкладка (акцент). Цветные per-tab иконки 11.08 удалены. */
+.bnav-item svg{opacity:.62;stroke:currentColor}
 .bnav-item.active svg{opacity:1}
-.bnav-item[data-tab="dash"] svg{stroke:#38bdf8}
-.bnav-item[data-tab="sched"] svg{stroke:#fb923c}
-.bnav-item[data-tab="earn"] svg{stroke:#34d399}
-.bnav-item[data-tab="wallet"] svg{stroke:#fbbf24}
-.bnav-item[data-tab="stats"] svg{stroke:#a78bfa}
-.bnav-item[data-tab="me"] svg{stroke:#f472b6}
+/* центральная круглая кнопка «Ставки» — крупнее и выделена */
+.bnav-item.bnav-center{flex:1.15}
+.bnav-item.bnav-center .cbtn{width:52px;height:52px;margin-top:-22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--card);border:1px solid var(--line);
+  box-shadow:0 6px 18px -6px rgba(0,0,0,.45);transition:background .16s ease,border-color .16s ease}
+.bnav-item.bnav-center svg{width:26px;height:26px;opacity:.8}
+.bnav-item.bnav-center.active .cbtn{background:linear-gradient(135deg,var(--accent),var(--accent2,var(--accent)));
+  border-color:transparent;box-shadow:0 8px 22px -6px var(--glow)}
+.bnav-item.bnav-center.active svg{stroke:#fff;opacity:1;transform:none}
+.bnav-item.bnav-center.active::before{display:none}
 
 /* ── заставка ── */
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
@@ -586,7 +592,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v31 · 17.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v32 · 17.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -603,9 +609,9 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   <button class="bnav-item" data-tab="sched">
     <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
     <span data-i18n="navSched">Игры</span></button>
-  <button class="bnav-item" data-tab="stats">
-    <svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg>
-    <span data-i18n="navStats">Статистика</span></button>
+  <button class="bnav-item bnav-center" data-tab="stats">
+    <span class="cbtn"><svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg></span>
+    <span data-i18n="navStats">Ставки</span></button>
   <button class="bnav-item" data-tab="earn">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15 15 9"/><circle cx="9.3" cy="9.3" r="1.2"/><circle cx="14.7" cy="14.7" r="1.2"/></svg>
     <span data-i18n="navEarn">Рефералы</span></button>
@@ -615,7 +621,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v31";
+const BUILD = "v32";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -673,11 +679,11 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v31 · 17.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v31 · 17.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v31 · 17.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v32 · 17.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v32 · 17.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v32 · 17.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
-  navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
+  navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
   schedHead: ["Расписание игр", "Game schedule", "比赛赛程"],
   schedSub: ["время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки",
