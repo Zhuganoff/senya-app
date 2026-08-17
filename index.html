@@ -251,6 +251,7 @@ body.light .dpick{color-scheme:light}
   padding:11px var(--s3);font-size:12.5px;word-break:break-all;margin:var(--s2) 0 var(--s3);
   color:var(--accent);font-weight:600}
 .refgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:var(--s3)}
+.refgrid.two{grid-template-columns:repeat(2,1fr)}
 .rs{background:var(--card-2);border-radius:var(--r-m);padding:var(--s3) 6px;text-align:center}
 .rs-v{font-size:19px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .rs-k{font-size:10.5px;color:var(--mut);margin-top:2px}
@@ -376,10 +377,6 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 
   <div id="pane-dash">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-
-  <div class="section" data-i18n="secToday">Ставки сегодня <span class="tag" id="todayTag">live</span></div>
-  <div class="bets" id="todayBets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" style="display:none">
@@ -429,7 +426,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
         • Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>
         • Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>
         • Полная статистика и CLV в открытой базе — ничего не скрыто<br>
-        • 25% с каждого платежа приглашённых — пожизненно<br>
+        • 20% с платежей 1-й линии + 5% со 2-й — пожизненно<br>
         • Отмена в один клик, без вопросов</div>
       <button class="btn" id="subBtn" data-i18n="subBtn">💳 Оформить за $29/мес</button>
       <div class="me-sub" id="subHint" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
@@ -514,20 +511,30 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   </div><!-- /pane-wallet -->
 
   <div id="pane-earn" style="display:none">
-    <div class="section" data-i18n="secEarn">Начисления</div>
+    <div class="section" data-i18n="secEarn">Рефералы</div>
     <div class="card">
-      <div class="k" data-i18n="earnTitle">Всего начислено <span class="tag">25% пожизненно</span></div>
+      <div class="refgrid two" style="margin-top:0">
+        <div class="rs"><div class="rs-v" id="turnPers">$0</div><div class="rs-k" data-i18n="turnPers">личный оборот</div></div>
+        <div class="rs"><div class="rs-v" id="turnTeam">$0</div><div class="rs-k" data-i18n="turnTeam">командный оборот</div></div>
+      </div>
+      <div class="me-sub" style="margin-top:8px" data-i18n="turnNote">Оборот — платежи подписки твоих линий: личный — первая линия, командный — обе. Подписка ещё не запущена, поэтому пока $0.</div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="k" data-i18n="earnTitle">Всего начислено <span class="tag">20% + 5%</span></div>
       <div class="cur" id="earnTotal" style="font-size:30px;margin:4px 0 2px">$0</div>
-      <div class="me-sub" data-i18n="earnNote">25% с каждого платежа приглашённого — пожизненно, пока он платит.
-        Считаем от подписки, а не от выигрыша: так честно и проверяемо.</div>
+      <div class="me-sub" data-i18n="earnNote">20% с каждого платежа первой линии и 5% с платежей второй — пожизненно, пока они платят. Считаем от подписки, а не от выигрыша: так честно и проверяемо.</div>
       <div class="refgrid">
         <div class="rs"><div class="rs-v" id="refCnt">0</div><div class="rs-k" data-i18n="invited">приглашено</div></div>
         <div class="rs"><div class="rs-v" id="refPaid">0</div><div class="rs-k" data-i18n="paidN">оплатили</div></div>
         <div class="rs"><div class="rs-v" id="refEarn">$0</div><div class="rs-k" data-i18n="toPay">к выплате</div></div>
       </div>
+      <div class="refgrid two" style="margin-top:8px">
+        <div class="rs"><div class="rs-v" id="gamesMine">—</div><div class="rs-k" data-i18n="gamesMine">игр зашло у тебя</div></div>
+        <div class="rs"><div class="rs-v" id="gamesRefs">—</div><div class="rs-k" data-i18n="gamesRefs">у твоих рефералов</div></div>
+      </div>
     </div>
 
-    <div class="section" data-i18n="secPayouts">Выплаты за рефералов</div>
+    <div class="section" data-i18n="secLine1">Первая линия · 20%</div>
     <div class="card">
       <div id="refList" class="reflist"><div class="loading" data-i18n="loading">Загрузка…</div></div>
       <div id="payNote" class="me-sub" style="margin-top:9px" data-i18n="payNote">
@@ -535,10 +542,16 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
         начисление появится здесь в тот же день и будет повторяться с каждым его платежом.</div>
     </div>
 
+    <div class="section" data-i18n="secLine2">Вторая линия · 5%</div>
+    <div class="card">
+      <div id="ref2List" class="reflist"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+      <div class="me-sub" style="margin-top:9px" data-i18n="line2Note">Вторая линия — люди, которых пригласили твои рефералы. С каждого их платежа тебе идёт 5%.</div>
+    </div>
+
     <div class="section" data-i18n="secLink">Твоя ссылка</div>
     <div class="card">
       <div class="reflink" id="refLink">—</div>
-      <button class="btn" id="copyRef" data-i18n="copyLink">📋 Скопировать ссылку</button>
+      <button class="btn" id="copyRef" data-i18n="copyLink">🔗 Реферальная ссылка</button>
       <button class="btn ghost" id="shareRef" data-i18n="shareBtn">↗️ Поделиться</button>
       <button class="btn ghost" id="genQr" data-i18n="makeQr">🔳 Сформировать QR-код</button>
       <div class="qrbox"><canvas id="qrCanvas" style="display:none"></canvas>
@@ -552,7 +565,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style="opacity:.55">сборка v26 · 13.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v27 · 17.08.2026</span></div>
 </div>
 
 <nav class="bottombar" id="bnav">
@@ -562,22 +575,22 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
   <button class="bnav-item" data-tab="sched">
     <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
     <span data-i18n="navSched">Игры</span></button>
-  <button class="bnav-item" data-tab="earn">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15 15 9"/><circle cx="9.3" cy="9.3" r="1.2"/><circle cx="14.7" cy="14.7" r="1.2"/></svg>
-    <span data-i18n="navEarn">Начисления</span></button>
   <button class="bnav-item" data-tab="wallet">
     <svg viewBox="0 0 24 24"><path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><path d="M3 8.5V7a2 2 0 0 1 2-2h10"/><circle cx="16.8" cy="13" r="1.4"/></svg>
     <span data-i18n="navWallet">Кошелёк</span></button>
   <button class="bnav-item" data-tab="stats">
     <svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg>
     <span data-i18n="navStats">Статистика</span></button>
+  <button class="bnav-item" data-tab="earn">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15 15 9"/><circle cx="9.3" cy="9.3" r="1.2"/><circle cx="14.7" cy="14.7" r="1.2"/></svg>
+    <span data-i18n="navEarn">Рефералы</span></button>
   <button class="bnav-item" data-tab="me">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
 <script>
-const BUILD = "v26";
+const BUILD = "v27";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -604,8 +617,23 @@ const T = {
   secDayBets: ["Ставки за день", "Bets by day", "按日查看投注"],
   secWr: ["Винрейт по видам спорта", "Win rate by sport", "各项目胜率"],
   secLast: ["Последние ставки", "Recent bets", "最近投注"],
-  secEarn: ["Начисления", "Earnings", "收益"],
+  secEarn: ["Рефералы", "Referrals", "推荐"],
   secPayouts: ["Выплаты за рефералов", "Referral payouts", "推荐返佣"],
+  secLine1: ["Первая линия · 20%", "First line · 20%", "第一层 · 20%"],
+  secLine2: ["Вторая линия · 5%", "Second line · 5%", "第二层 · 5%"],
+  turnPers: ["личный оборот", "personal turnover", "个人流水"],
+  turnTeam: ["командный оборот", "team turnover", "团队流水"],
+  turnNote: ["Оборот — платежи подписки твоих линий: личный — первая линия, командный — обе. Подписка ещё не запущена, поэтому пока $0.",
+             "Turnover is your lines' subscription payments: personal — first line, team — both. Subscriptions aren't live yet, so it's $0 for now.",
+             "流水指你各层级的订阅付款：个人——第一层，团队——两层合计。订阅尚未开放，因此暂为 $0。"],
+  line2Note: ["Вторая линия — люди, которых пригласили твои рефералы. С каждого их платежа тебе идёт 5%.",
+              "The second line is people invited by your referrals. You get 5% of each of their payments.",
+              "第二层是由你的推荐人邀请的用户。他们每笔付款你可得 5%。"],
+  noLine2: ["Во второй линии пока никого: как только твои приглашённые позовут своих — они появятся здесь.",
+            "No one in the second line yet: once your invitees invite their own, they'll show up here.",
+            "第二层暂无成员：当你的受邀者邀请他们的朋友后，将显示在这里。"],
+  gamesMine: ["игр зашло у тебя", "games won for you", "你的命中场次"],
+  gamesRefs: ["у твоих рефералов", "for your referrals", "你推荐人的命中"],
   secLink: ["Твоя ссылка", "Your link", "你的链接"],
   secLook: ["Оформление", "Appearance", "外观"],
   secBank: ["Мой банк", "My bankroll", "我的资金"],
@@ -620,10 +648,10 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 25% с платежей приглашённых, пожизненно<br><span style=\"opacity:.55\">сборка v26 · 13.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 25% of invitees' payments, lifetime<br><span style=\"opacity:.55\">build v26 · 13.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：受邀者每笔付款的 25%，终身有效<br><span style=\"opacity:.55\">build v26 · 13.08.2026</span>"],
-  navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Начисления", "Earnings", "收益"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v27 · 17.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v27 · 17.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v27 · 17.08.2026</span>"],
+  navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Статистика", "Statistics", "统计"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
   schedHead: ["Расписание игр", "Game schedule", "比赛赛程"],
@@ -660,15 +688,15 @@ const T = {
   exchNote: ["Автоставки через выбранную биржу появятся после подтверждения CLV-метрики. Выбор уже сохраняется в профиле и будет использован при подключении кошелька.",
              "Auto-betting through your chosen exchange arrives once the CLV metric is confirmed. The choice is saved to your profile now and will be used when wallets connect.",
              "CLV 指标确认后即可通过所选交易所自动投注。选择已保存到个人资料，接入钱包时生效。"],
-  earnTitle: ["Всего начислено <span class=\"tag\">25% пожизненно</span>", "Total earned <span class=\"tag\">25% lifetime</span>", "累计收益 <span class=\"tag\">终身 25%</span>"],
-  earnNote: ["25% с каждого платежа приглашённого — пожизненно, пока он платит. Считаем от подписки, а не от выигрыша: так честно и проверяемо.",
-             "25% of every payment your invitee makes — for life, as long as they pay. Based on subscriptions, not winnings: honest and verifiable.",
-             "受邀者每笔付款的 25%——终身有效，只要对方持续付费。按订阅金额计算，而非赢利：诚实且可验证。"],
+  earnTitle: ["Всего начислено <span class=\"tag\">20% + 5%</span>", "Total earned <span class=\"tag\">20% + 5%</span>", "累计收益 <span class=\"tag\">20% + 5%</span>"],
+  earnNote: ["20% с каждого платежа первой линии и 5% с платежей второй — пожизненно, пока они платят. Считаем от подписки, а не от выигрыша: так честно и проверяемо.",
+             "20% of every first-line payment and 5% of second-line payments — for life, as long as they pay. Based on subscriptions, not winnings: honest and verifiable.",
+             "第一层每笔付款的 20%，第二层付款的 5%——终身有效，只要对方持续付费。按订阅金额计算，而非赢利：诚实且可验证。"],
   invited: ["приглашено", "invited", "已邀请"], paidN: ["оплатили", "paid", "已付费"], toPay: ["к выплате", "payable", "待结算"],
   payNote: ["Выплат пока не было: подписка ещё не запущена. Как только приглашённый оплатит — начисление появится здесь в тот же день и будет повторяться с каждым его платежом.",
             "No payouts yet: subscriptions haven't launched. As soon as an invitee pays, the accrual appears here the same day and repeats with each of their payments.",
             "暂无返佣：订阅尚未上线。受邀者付费当天，收益即在此显示，并随其每次付款持续累计。"],
-  copyLink: ["📋 Скопировать ссылку", "📋 Copy link", "📋 复制链接"], shareBtn: ["↗️ Поделиться", "↗️ Share", "↗️ 分享"], makeQr: ["🔳 Сформировать QR-код", "🔳 Generate QR code", "🔳 生成二维码"],
+  copyLink: ["🔗 Реферальная ссылка", "🔗 Referral link", "🔗 推荐链接"], shareBtn: ["↗️ Поделиться", "↗️ Share", "↗️ 分享"], makeQr: ["🔳 Сформировать QR-код", "🔳 Generate QR code", "🔳 生成二维码"],
   qrHint: ["Нажми «Сформировать» — покажешь QR, его отсканируют и попадут по твоей ссылке",
            "Tap “Generate” to show a QR — anyone who scans it lands on your link",
            "点“生成”展示二维码——扫码即进入你的链接"],
@@ -679,6 +707,10 @@ const T = {
   sinceFwd: ["банка с начала форварда", "of bankroll since forward start", "资金自前测开始的变化"],
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
+  myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
+  walletLinked: ["сумма из вкладки «Кошелёк»", "amount from the Wallet tab", "金额来自「钱包」页"],
+  walletNotLinked: ["кошелёк не привязан — задай сумму во вкладке «Кошелёк»", "wallet not linked — set the amount in the Wallet tab", "未绑定钱包——请在「钱包」页设置金额"],
+  profitNote: ["доходность банка бота", "bot bankroll return", "机器人资金收益率"],
   closes: ["закрытий", "closes", "次收盘"],
   early: [" · n<30, рано судить", " · n<30, too early to judge", " · n<30，尚难下结论"],
   sportsK: ["Виды спорта", "Sports", "运动项目"],
@@ -717,9 +749,9 @@ const T = {
   secSub: ["Подписка", "Subscription", "订阅"],
   subTitle: ["AI Sports Pro <span class=\"tag\">β</span>", "AI Sports Pro <span class=\"tag\">β</span>", "AI Sports Pro <span class=\"tag\">β</span>"],
   subPerMon: ["/мес", "/mo", "／月"],
-  subList: ["• Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>• Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>• Полная статистика и CLV в открытой базе — ничего не скрыто<br>• 25% с каждого платежа приглашённых — пожизненно<br>• Отмена в один клик, без вопросов",
-            "• Every bot bet in real time — MLB, tennis, soccer: odds, size and an entry window before the start<br>• Each bet sized to YOUR bankroll — Kelly does the math<br>• Full stats and CLV in an open database — nothing hidden<br>• 25% of every payment your invitees make — for life<br>• Cancel in one click, no questions asked",
-            "• 机器人所有投注实时推送——MLB、网球、足球：赔率、注额与开赛前入场窗口<br>• 每注按你的资金量身定制——凯利公式替你计算<br>• 公开数据库中的完整统计与 CLV——毫无隐藏<br>• 受邀者每笔付款的 25%——终身有效<br>• 一键取消，无需理由"],
+  subList: ["• Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>• Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>• Полная статистика и CLV в открытой базе — ничего не скрыто<br>• 20% с платежей 1-й линии + 5% со 2-й — пожизненно<br>• Отмена в один клик, без вопросов",
+            "• Every bot bet in real time — MLB, tennis, soccer: odds, size and an entry window before the start<br>• Each bet sized to YOUR bankroll — Kelly does the math<br>• Full stats and CLV in an open database — nothing hidden<br>• 20% of 1st-line payments + 5% of 2nd — for life<br>• Cancel in one click, no questions asked",
+            "• 机器人所有投注实时推送——MLB、网球、足球：赔率、注额与开赛前入场窗口<br>• 每注按你的资金量身定制——凯利公式替你计算<br>• 公开数据库中的完整统计与 CLV——毫无隐藏<br>• 第一层付款的 20% + 第二层的 5%——终身有效<br>• 一键取消，无需理由"],
   subBtn: ["💳 Оформить за $29/мес", "💳 Subscribe for $29/mo", "💳 订阅 每月 $29"],
   subSoon: ["Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.",
             "Payments aren't live yet — the bot will message you first when they are. Everything is free to watch for now.",
@@ -757,14 +789,14 @@ const T = {
   qrShow: ["Покажи QR — по нему попадут по твоей ссылке", "Show the QR — it leads to your link", "展示二维码——扫码即进入你的链接"],
   qrDone: ["Готово — покажи этот код, он ведёт на твою ссылку", "Done — show this code, it leads to your link", "完成——展示此码，它指向你的链接"],
   qrFail: ["Не удалось сформировать: ", "Couldn't generate: ", "生成失败："],
-  copied: ["✅ Скопировано", "✅ Copied", "✅ 已复制"],
+  copied: ["✅ Ссылка скопирована", "✅ Link copied", "✅ 链接已复制"],
   perMonth: ["/мес", "/mo", "／月"], subWord: ["подписка", "subscribed", "已订阅"], notPaid: ["не оплатил", "not paid", "未付费"],
   andMore: ["и ещё", "and", "另有"],
   noInvites: ["Пока никого не пригласил. Скинь ссылку или покажи QR — начисления пойдут с первого платежа приглашённого.",
               "You haven't invited anyone yet. Share the link or show the QR — earnings start with your invitee's first payment.",
               "尚未邀请任何人。分享链接或展示二维码——受邀者首次付费即开始产生收益。"],
   paidCount: ["Оплативших:", "Paying invitees:", "已付费人数："],
-  yourShare: ["Твоя доля — 25% с каждого их платежа, пожизненно.", "Your share is 25% of each of their payments, for life.", "你的分成是他们每笔付款的 25%，终身有效。"],
+  yourShare: ["Твоя доля — 20% с платежей первой линии и 5% со второй, пожизненно.", "Your share is 20% of first-line payments and 5% of second-line, for life.", "你的分成：第一层付款的 20%，第二层的 5%，终身有效。"],
   loadFail: ["Не удалось загрузить: ", "Couldn't load: ", "加载失败："],
   shareText: ["AI-аналитик ставок: каждая ставка в открытой базе, проверь сам.",
               "AI betting analyst: every bet in an open database — verify it yourself.",
@@ -801,10 +833,12 @@ const H = {apikey: KEY, Authorization: "Bearer " + KEY};
 
 const tg = window.Telegram && window.Telegram.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
-// Реферальная программа: 25% с КАЖДОГО платежа приглашённого, пожизненно (CEO 08.08).
+// Реферальная программа (CEO 17.08): два уровня — 20% с платежей первой линии,
+// 5% с платежей второй (приглашённые твоих рефералов). Заменяет 25% от 08.08.
 // Считаем от платежей, а не от выигрыша: чужой выигрыш мы не видим и проверить не можем.
 // Цена подписки ещё не утверждена — пока null, начисления показываем нулём.
-const REF_SHARE = 0.25;
+const REF_L1 = 0.20;
+const REF_L2 = 0.05;
 const SUB_PRICE = 29;   // $/мес — утверждено CEO 11.08; счётчик начислений считает от неё
 
 // реф-захват: t.me/бот?startapp=ref_XXXX → сохраняем для регистрации
@@ -900,7 +934,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // БЕЗ location.reload(): WebView Telegram на телефонах его молча глотает
       // (пояс «не менялся», баг CEO 12.08) — просто перерисовываем списки ставок,
       // fmtTime читает выбранный пояс при каждой отрисовке
-      try { loadToday(); } catch(e) {}
       try { loadLastBets(); } catch(e) {}
       try { if (window.__statsInit) loadDay(document.getElementById("dpick").value); } catch(e) {}
       if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
@@ -927,51 +960,40 @@ function pct(x){ return (x>=0?"+":"") + x.toFixed(1) + "%"; }
 function cls(x){ return x>=0 ? "pos" : "neg"; }
 
 async function main(){
-  // Кошельки — из витрины senya_banks (все суммы в $, обновляет publish_banks.py)
-  let banksRows = [];
-  try { banksRows = await q("/senya_banks?select=*&order=start_bank.desc"); } catch(e){}
-  const mlbRow = banksRows.find(b => b.sport === "mlb") || {};
-
-  // MLB staked rows (для графика и ленты ставок)
-  const rows = await q("/bet_log?select=match,match_date,selection,best_odds,result,kelly_pct,stake,stake_pct,closing_odds,closing_ts&staked=is.true&order=match_date.asc&limit=10000");
-  const dec = rows.filter(r => r.result === 1 || r.result === 0);
-  const wins = dec.filter(r => r.result === 1).length;
-
-  // кривая банка в % (стейк = min(kelly,7%) банка, компаунд)
-  let bank = 100; const curve = [100];
-  const capFor = d => (d >= "2026-06-30" ? 0.07 : 0.05);
-  for (const r of rows) {
-    if (r.result === null || r.result === -1) continue;
-    const sf = Math.min((r.kelly_pct||0)/100, capFor(r.match_date||""));
-    bank += r.result === 1 ? bank*sf*((r.best_odds||1)-1) : -bank*sf;
-    curve.push(bank);
+  // Дашборд v27 (CEO 17.08): только кошелёк пользователя + доходность по видам.
+  // Кошелёк — senya_users.daily_budget; доходность — senya_banks (bank/start_bank),
+  // тот же расчёт, что ROI в WR-блоке Статистики: цифры обязаны совпадать.
+  const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
+  let myBank = null;
+  if (u) {
+    try {
+      const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since`);
+      if (me.length) {
+        if (me[0].daily_budget) { myBank = Number(me[0].daily_budget); window.__myBank = myBank; }
+        if (me[0].tracking_since) window.__trackSince = String(me[0].tracking_since).slice(0,10);
+      }
+    } catch(e){}
   }
-  // честный CLV (только новый базис)
-  const clvRows = rows.filter(r => r.closing_odds && r.closing_ts && r.best_odds);
-  const clvs = clvRows.map(r => (r.best_odds/r.closing_odds - 1)*100);
-  const clvAvg = clvs.length ? clvs.reduce((a,b)=>a+b,0)/clvs.length : null;
-
-  const mlbBank = mlbRow.bank != null ? Number(mlbRow.bank) : null;
-  const mlbStart = mlbRow.start_bank != null ? Number(mlbRow.start_bank) : 300;
-  const mlbRoi = mlbBank != null ? (mlbBank/mlbStart - 1)*100 : (bank-100);
+  let banks = {};
+  try { (await q("/senya_banks?select=sport,bank,start_bank")).forEach(b => banks[b.sport] = b); } catch(e){}
+  const SPORTS = [["mlb","⚾",t("sportMlb")], ["tennis","🎾",t("sportTennis")], ["soccer","⚽",t("sportSoccer")]];
+  const cards = SPORTS.map(([k, ico, title]) => {
+    const bk = banks[k];
+    const roi = bk && bk.start_bank ? (Number(bk.bank)/Number(bk.start_bank) - 1)*100 : null;
+    // доллары — от кошелька ПОЛЬЗОВАТЕЛЯ (правило витрины: свои суммы не показываем)
+    const usd = (roi != null && myBank != null)
+      ? `${roi >= 0 ? "+" : "−"}$${Math.abs(roi/100*myBank).toFixed(2)}` : "";
+    return `<div class="card"><div class="k">${ico} ${title}</div>
+      <div class="v ${roi==null?"":cls(roi)}">${roi==null?t("accruing"):pct(roi)}</div>
+      <div class="d ${roi==null||!usd?"":cls(roi)}">${usd || t("profitNote")}</div></div>`;
+  });
   document.getElementById("topCards").innerHTML = `
-    <div class="card"><div class="k">${t("wrAll")}</div>
-      <div class="v">${dec.length ? (100*wins/dec.length).toFixed(1) : "—"}%</div>
-      <div class="d" style="color:var(--mut)">${wins}W · ${dec.length-wins}L · ${dec.length} ${t("betsN")}</div></div>
-    <div class="card"><div class="k">${t("profit")}</div>
-      <div class="v ${cls(mlbRoi)}">${pct(mlbRoi)}</div>
-      <div class="d" style="color:var(--mut)">${t("sinceFwd")}</div></div>
-    <div class="card"><div class="k">${t("clvTitle")}</div>
-      <div class="v ${clvAvg===null?"":cls(clvAvg)}">${clvAvg===null?t("accruing"):pct(clvAvg)}</div>
-      <div class="d" style="color:var(--mut)">${clvs.length} ${t("closes")}${clvs.length<30?t("early"):""}</div></div>
-    <div class="card"><div class="k">${t("sportsK")}</div>
-      <div class="v">3</div>
-      <div class="d" style="color:var(--mut)">${t("sportsD")}</div></div>`;
-
-  loadToday();
+    <div class="card"><div class="k">${t("myWallet")}</div>
+      <div class="v">${myBank != null ? "$" + myBank.toFixed(0) : "—"}</div>
+      <div class="d" style="color:var(--mut)">${myBank != null ? t("walletLinked") : t("walletNotLinked")}</div></div>
+    ${cards.join("")}`;
 
   loadLastBets();
-
 }
 
 
@@ -1200,60 +1222,6 @@ async function loadLastBets(){
   }).join("");
 }
 
-// ─────────── ставки сегодня ───────────
-async function loadToday(){
-  const box = document.getElementById("todayBets");
-  // «сегодня» по бейсбольному дню (US Eastern): смещение −4ч от UTC
-  const d = new Date(Date.now() - 4*3600*1000).toISOString().slice(0,10);
-  try{
-    let rows = await loadDayRows(d);
-    let tag = d;
-    if(!rows.length){
-      // CEO 13.08: блок не пустеет — держим ПОСЛЕДНИЙ игровой день, пока не
-      // начались новые ставки (иначе «улетают в статистику» и неудобно смотреть)
-      const lastDates = await Promise.all(DAY_SRC.map(([t2]) =>
-        q(`/${t2}?select=match_date&staked=is.true&order=match_date.desc&limit=1`)
-          .then(rs => (rs[0] || {}).match_date || "").catch(() => "")));
-      const last = lastDates.sort().reverse()[0];
-      if (last) { rows = await loadDayRows(last); tag = `${last} · ${t("lastPlayDay")}`; }
-    }
-    document.getElementById("todayTag").textContent = tag;
-    if(!rows.length){
-      box.innerHTML = `<div class="bet"><div class="res">🕐</div><div class="m">
-        <div class="match">${t("noBetsYet")}</div>
-        <div class="sel">${t("slateEve")}</div></div></div>`;
-      return;
-    }
-    // CEO 13.08: сводка ПЕРЕД ставками — сколько из скольких зашло и % банка
-    const dec = rows.filter(r => r.result === 1 || r.result === 0);
-    const w = dec.filter(r => r.result === 1).length;
-    const stale = rows.filter(r => (r.result === null || r.result === undefined) && isStale(r)).length;
-    const pend = rows.length - dec.length - rows.filter(r => r.result === -1).length - stale;
-    const pnlPct = rows.reduce((a, r) => {
-      const sp = share(r);
-      if (r.result === 1) return a + sp * ((oddsOf(r) || 1) - 1);
-      if (r.result === 0) return a - sp;
-      return a;
-    }, 0) * 100;
-    const head = dec.length
-      ? `<div class="bet" style="background:var(--card2)"><div class="res">📊</div>
-         <div class="m"><div class="match">${w}/${dec.length} ${t("sumHits")} (${(100*w/dec.length).toFixed(0)}%)</div>
-         <div class="sel">${[pend > 0 ? `⏳ ${pend} ${t("inPlay")}` : "", stale > 0 ? `⏸ ${stale} ${t("suspended")}` : ""].filter(Boolean).join(" · ") || t("inPlayToday")}</div></div>
-         <div class="odds"><div class="${cls(pnlPct)}"><b>${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}</b></div></div></div>`
-      : "";
-    const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;
-    const mine = window.__myBank ? ` = $${(sumPct/100*window.__myBank).toFixed(2)}` : "";
-    box.innerHTML = head + rows.map(betRow).join("") +
-      `<div class="bet" style="background:var(--card2)"><div class="res">Σ</div>
-       <div class="m"><div class="match">${t("totalOf")} ${rows.length} ${plBets(rows.length)}</div>
-       <div class="sel">${t("inPlayToday")}</div></div>
-       <div class="odds"><div><b>${sumPct.toFixed(1)}${t("ofBank")}</b></div>
-       <div class="pnl" style="color:var(--mut)">${mine}</div></div></div>`;
-  }catch(e){
-    box.innerHTML = `<div class="loading">${t("errWord")}: ${e.message}</div>`;
-  }
-}
-
 // ─────────── винрейт по ВИДАМ СПОРТА (не по стратегиям) ───────────
 // Показываем только то, на что реально ставим: бейсбол, теннис, футбол.
 // SX и Polymarket — это исследовательские зеркала, а не отдельные виды спорта,
@@ -1409,13 +1377,15 @@ async function initEarn(){
   if(!u){
     document.getElementById("refLink").textContent = t("openFromBotLink");
     document.getElementById("refList").innerHTML = "";
+    document.getElementById("ref2List").innerHTML = "";
     return;
   }
   try{
-    const rows = await q(`/senya_users?tg_id=eq.${u.id}&select=ref_code,qr_png`);
+    const rows = await q(`/senya_users?tg_id=eq.${u.id}&select=ref_code,qr_png,created_at,tracking_since`);
     if(!rows.length){
       document.getElementById("refLink").textContent = t("startBot");
       document.getElementById("refList").innerHTML = "";
+      document.getElementById("ref2List").innerHTML = "";
       return;
     }
     const link = `https://t.me/sportzhubot?start=ref_${rows[0].ref_code}`;
@@ -1428,25 +1398,57 @@ async function initEarn(){
       document.getElementById("qrHint").textContent = t("qrShow");
     }catch(e){}
 
+    // строка списка линии: имя · дата · статус оплаты (share — доля с платежа уровня)
+    const refItem = (r, share) => {
+      const nm = r.username ? "@" + r.username : (r.first_name || t("userRef"));
+      const dt = (r.created_at || "").slice(0, 10).split("-").reverse().join(".");
+      const pay = r.is_paid
+        ? `<span class="pos">${SUB_PRICE ? "+$" + (SUB_PRICE*share).toFixed(SUB_PRICE*share%1?2:0) + t("perMonth") : t("subWord")}</span>`
+        : `<span style="color:var(--mut)">${t("notPaid")}</span>`;
+      return `<div class="refitem"><span>${nm} <span style="color:var(--mut);font-size:11.5px">· ${dt}</span></span>${pay}</div>`;
+    };
+    const lineHtml = (list, share, emptyKey) => list.length
+      ? list.slice(0, 20).map(r => refItem(r, share)).join("")
+        + (list.length > 20 ? `<div class="me-sub" style="margin-top:6px">${t("andMore")} ${list.length-20}</div>` : "")
+      : `<div class="me-sub">${t(emptyKey)}</div>`;
+
+    // первая линия — мои приглашённые; вторая — приглашённые моих рефералов
     const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
-    const paid = refs.filter(r => r.is_paid).length;
-    const earned = SUB_PRICE ? paid * SUB_PRICE * REF_SHARE : 0;
-    document.getElementById("refCnt").textContent = refs.length;
-    document.getElementById("refPaid").textContent = paid;
+    let refs2 = [];
+    if (refs.length) {
+      try {
+        refs2 = await q(`/senya_users?ref_by=in.(${refs.map(r => r.tg_id).join(",")})&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
+      } catch(e){}
+    }
+    const paid1 = refs.filter(r => r.is_paid).length;
+    const paid2 = refs2.filter(r => r.is_paid).length;
+    // обороты — платежи подписки: личный = первая линия, командный = обе (CEO 17.08)
+    const turnPers = SUB_PRICE ? paid1 * SUB_PRICE : 0;
+    const turnTeam = SUB_PRICE ? (paid1 + paid2) * SUB_PRICE : 0;
+    const earned = SUB_PRICE ? paid1*SUB_PRICE*REF_L1 + paid2*SUB_PRICE*REF_L2 : 0;
+    document.getElementById("turnPers").textContent = "$" + turnPers.toFixed(0);
+    document.getElementById("turnTeam").textContent = "$" + turnTeam.toFixed(0);
+    document.getElementById("refCnt").textContent = refs.length + refs2.length;
+    document.getElementById("refPaid").textContent = paid1 + paid2;
     document.getElementById("refEarn").textContent = "$" + earned.toFixed(0);
     document.getElementById("earnTotal").textContent = "$" + earned.toFixed(0);
-    document.getElementById("refList").innerHTML = refs.length
-      ? refs.slice(0, 20).map(r => {
-          const nm = r.username ? "@" + r.username : (r.first_name || t("userRef"));
-          const dt = (r.created_at || "").slice(0, 10).split("-").reverse().join(".");
-          const pay = r.is_paid
-            ? `<span class="pos">${SUB_PRICE ? "+$" + (SUB_PRICE*REF_SHARE).toFixed(0) + t("perMonth") : t("subWord")}</span>`
-            : `<span style="color:var(--mut)">${t("notPaid")}</span>`;
-          return `<div class="refitem"><span>${nm} <span style="color:var(--mut);font-size:11.5px">· ${dt}</span></span>${pay}</div>`;
-        }).join("") + (refs.length > 20 ? `<div class="me-sub" style="margin-top:6px">${t("andMore")} ${refs.length-20}</div>` : "")
-      : `<div class="me-sub">${t("noInvites")}</div>`;
-    if(paid) document.getElementById("payNote").innerHTML =
-      `${t("paidCount")} <b>${paid}</b>. ${t("yourShare")}`;
+    document.getElementById("refList").innerHTML = lineHtml(refs, REF_L1, "noInvites");
+    document.getElementById("ref2List").innerHTML = lineHtml(refs2, REF_L2, "noLine2");
+    if(paid1 + paid2) document.getElementById("payNote").innerHTML =
+      `${t("paidCount")} <b>${paid1 + paid2}</b>. ${t("yourShare")}`;
+
+    // «игр зашло»: выигранные ставки бота с даты регистрации — у меня и у моих
+    // рефералов (с их дат), те же условия, что WR-блок (staked & result)
+    try {
+      const winDates = (await Promise.all(["bet_log","tennis_bet_log","soccer_bet_log"].map(t2 =>
+        q(`/${t2}?select=match_date&staked=is.true&result=eq.1&order=match_date.desc&limit=1000`).catch(() => [])
+      ))).flat().map(r => r.match_date || "").filter(Boolean);
+      const winsSince = d => d ? winDates.filter(x => x >= d).length : winDates.length;
+      const mySince = (rows[0].tracking_since || rows[0].created_at || "").slice(0, 10);
+      document.getElementById("gamesMine").textContent = winsSince(mySince);
+      document.getElementById("gamesRefs").textContent = refs.length
+        ? refs.reduce((a, r) => a + winsSince((r.created_at || "").slice(0, 10)), 0) : 0;
+    } catch(e){}
   }catch(e){
     document.getElementById("refLink").textContent = t("loadFail") + e.message;
   }
