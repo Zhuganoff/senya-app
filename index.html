@@ -592,7 +592,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v32 · 17.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v33 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -621,7 +621,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v32";
+const BUILD = "v33";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -679,9 +679,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v32 · 17.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v32 · 17.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v32 · 17.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v33 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v33 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v33 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -763,6 +763,7 @@ const T = {
   statYellow: ["Жёлтые карточки", "Yellow cards", "黄牌"],
   statRed: ["Красные карточки", "Red cards", "红牌"],
   walletLinked: ["сумма из Профиля", "amount from your Profile", "金额来自「个人」页"],
+
   walletNotLinked: ["кошелёк не привязан — настройка в Профиле после оплаты тарифа", "wallet not linked — set it up in Profile after subscribing", "未绑定钱包——订阅后在「个人」页设置"],
   profitNote: ["доходность банка бота", "bot bankroll return", "机器人资金收益率"],
   closes: ["закрытий", "closes", "次收盘"],
@@ -870,12 +871,20 @@ if (LANG !== "ru") document.querySelectorAll("[data-i18n]").forEach(el => {
 (function checkBuild(){
   try{
     if (sessionStorage.getItem("build_reloaded") === BUILD) return;
-    fetch("version.json?t=" + Date.now(), {cache: "no-store"})
+    // хостинг на нашем Supabase (v33, CEO 17.08): страница живёт на
+    // /rest/v1/rpc/app_page — версию спрашиваем у соседней RPC app_version;
+    // на GitHub Pages — прежний version.json
+    const onRpc = location.pathname.includes("/rpc/");
+    const vurl = onRpc
+      ? "app_version?apikey=sb_publishable_J1keRlMi77VotTCnuqGJQg_inumrH9o&t=" + Date.now()
+      : "version.json?t=" + Date.now();
+    fetch(vurl, {cache: "no-store"})
       .then(r => r.ok ? r.json() : null)
       .then(v => {
         if (v && v.build && v.build !== BUILD) {
           sessionStorage.setItem("build_reloaded", v.build);
-          location.replace(location.pathname + "?r=" + Date.now());
+          location.replace(location.pathname + location.search.replace(/&r=\d+/, "") +
+                           (location.search ? "&" : "?") + "r=" + Date.now());
         }
       }).catch(()=>{});
   }catch(e){}
