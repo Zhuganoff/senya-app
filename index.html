@@ -684,7 +684,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v41 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v42 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -713,7 +713,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v41";
+const BUILD = "v42";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -771,9 +771,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v41 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v41 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v41 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v42 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v42 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v42 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1531,9 +1531,12 @@ async function loadLastBets(){
     q(`/${t}?select=${sel}&staked=is.true&order=ts.desc&limit=12`)
       .then(rs => rs.map(r => Object.assign(r, {_ico: ico})))
       .catch(() => [])));
-  const last = packs.flat()
-    .sort((x, y) => String(y.match_date||"").localeCompare(String(x.match_date||"")))
-    .slice(0, 12);
+  // v42 (CEO 18.08): «последние ставки» = ставки ПОСЛЕДНЕГО ИГРОВОГО ДНЯ,
+  // а не хвост из 12 строк за несколько дней — иначе итог считался за два дня
+  const all = packs.flat();
+  const lastDay = all.reduce((a, r) => (r.match_date || "") > a ? r.match_date : a, "");
+  const last = all.filter(r => r.match_date === lastDay)
+    .sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || "")));
   if(!last.length){ box.innerHTML = `<div class="loading">${t("noBetsYet")}</div>`; return; }
   await loadMatchStats(last.map(r => r.match_date));
   // ИТОГ ПО ЭТИМ СТАВКАМ (CEO 18.08): прибыль в процентах и долларах, оборот,
@@ -1552,8 +1555,8 @@ async function loadLastBets(){
     const turnPct = last.reduce((a, r) => a + share(r), 0) * 100;
     const pnlUsd = pnlPct/100*bankRef, turnUsd = turnPct/100*bankRef;
     const pend = last.length - dec.length;
-    st.innerHTML = `<div class="dayhead"><span class="daydate">${last.length} ${plBets(last.length)}</span>
-        <span class="daydow">${(last[last.length-1].match_date||"").slice(5).replace("-",".")} — ${(last[0].match_date||"").slice(5).replace("-",".")}</span></div>
+    st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(lastDay)}</span>
+        <span class="daydow">${dowOf(lastDay)} · ${last.length} ${plBets(last.length)}</span></div>
       <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")} · ${pnlUsd>=0?"+":"−"}$${Math.abs(pnlUsd).toFixed(2)}</div>
       <div class="daysum">
         <span>${t("dayTurnover")}: <b>${turnPct.toFixed(1)}%</b> <b>= $${turnUsd.toFixed(2)}</b></span>
