@@ -678,7 +678,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v47 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v48 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -707,7 +707,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v47";
+const BUILD = "v48";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -762,9 +762,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v47 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v47 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v47 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v48 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v48 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v48 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1244,10 +1244,12 @@ function renderSched(){
       // порядок кф = порядок имён в строке: MLB «Away @ Home» → away/home, теннис «Home vs Away» → home/away
       const o = r.sport === "mlb" ? [r.odds_away, r.odds_home] : [r.odds_home, r.odds_away];
       const oS = (o[0] && o[1]) ? `${Number(o[0]).toFixed(2)} / ${Number(o[1]).toFixed(2)}` : "—";
-      // сыгранный матч: финальный счёт вместо кф, тап открывает окно статистики
-      const ms = msFor(r.sport, r.match);
+      // счёт показываем ТОЛЬКО у уже начавшихся матчей и строго за ЭТОТ игровой
+      // день — иначе вчерашний результат липнет к сегодняшней игре той же пары
+      const started = r.commence && Date.parse(r.commence) < Date.now();
+      const ms = started ? msFor(r.sport, r.match, (r.commence || "").slice(0,10)) : null;
       if (ms && ms.final_score) {
-        return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}">
+        return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}">
           <div class="res">🏁</div>
           <div class="m"><div class="match">${r.match || ""}</div>
           <div class="sel">${fmtTime(r.commence)} · ${t("msTap")}</div></div>
@@ -1324,9 +1326,9 @@ function betRow(r){
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
             : `<span style="color:var(--mut)">${t("inPlay")}</span>`;
   // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно
-  const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match) : null;
+  const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
   const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
-  const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}"` : "";
+  const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
     <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${gameTime(r)}</div></div>
@@ -1346,10 +1348,20 @@ async function loadMatchStats(dates){
   uniq.forEach(d => window.__msDates.add(d));
   try{
     const rs = await q(`/senya_match_stats?select=*&match_date=in.(${uniq.join(",")})`);
-    rs.forEach(r => window.__msCache[`${r.sport}|${r.match_name}`] = r);
+    // ключ ВСЕГДА с датой: та же пара играет несколько дней подряд, и без даты
+    // вчерашний счёт прилипал к сегодняшней игре (CEO 18.08: «как эта игра сюда попала»)
+    rs.forEach(r => window.__msCache[`${r.sport}|${r.match_name}|${r.match_date}`] = r);
   }catch(e){}
 }
-function msFor(sport, match){ return sport ? window.__msCache[`${sport}|${match}`] : null; }
+function msFor(sport, match, date){
+  if(!sport || !date) return null;
+  const hit = window.__msCache[`${sport}|${match}|${date}`];
+  if(hit) return hit;
+  // поздние игры: старт по UTC уже следующего дня, а игровой день — предыдущий
+  const prev = new Date(new Date(date + "T12:00:00Z").getTime() - 86400000)
+    .toISOString().slice(0,10);
+  return window.__msCache[`${sport}|${match}|${prev}`] || null;
+}
 const msAbbr = n => (n||"").trim().split(" ").pop();   // короткое имя для таблиц
 
 function msHtml(r){
@@ -1576,9 +1588,9 @@ async function loadLastBets(){
     const pnlTxt = r.result===1?`<span class="pos">+${(((oddsOf(r)||1)-1)*100).toFixed(0)}%</span>`
                  : r.result===0?`<span class="neg">−100%</span>`
                  : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`:`<span style="color:var(--mut)">${t("inPlay")}</span>`;
-    const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match) : null;
+    const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
     const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
-    const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}"` : "";
+    const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
     return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${resIco(r)}</div>
       <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
       <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
