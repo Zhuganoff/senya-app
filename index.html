@@ -677,7 +677,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v45 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v46 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -706,7 +706,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v45";
+const BUILD = "v46";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -761,9 +761,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v45 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v45 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v45 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v46 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v46 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v46 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1100,6 +1100,20 @@ document.addEventListener("DOMContentLoaded", () => {
   applyExch(localStorage.getItem("senya_exch") || "sx");
 });
 
+// ПРОФИЛЬ ТОЛЬКО ЧЕРЕЗ RPC (аудит 18.08): прямое чтение senya_users закрыто —
+// публичным ключом выгружался весь список (tg_id, username, реф-коды, суммы).
+// get_profile отдаёт свои данные, а линии — обезличенно (имя маской).
+async function profile(tgId){
+  if (window.__profile !== undefined) return window.__profile;
+  try{
+    const r = await fetch(SB + "/rpc/get_profile", {method:"POST",
+      headers: Object.assign({"Content-Type":"application/json"}, H),
+      body: JSON.stringify({p_tg_id: tgId})});
+    window.__profile = r.ok ? (await r.json()) : null;
+  }catch(e){ window.__profile = null; }
+  return window.__profile;
+}
+
 async function q(path) {
   const r = await fetch(SB + path, {headers: H});
   if (!r.ok) throw new Error(r.status);
@@ -1117,10 +1131,10 @@ async function main(){
   let myBank = null;
   if (u) {
     try {
-      const me = await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since`);
-      if (me.length) {
-        if (me[0].daily_budget) { myBank = Number(me[0].daily_budget); window.__myBank = myBank; }
-        if (me[0].tracking_since) window.__trackSince = String(me[0].tracking_since).slice(0,10);
+      const me = await profile(u.id);
+      if (me) {
+        if (me.daily_budget) { myBank = Number(me.daily_budget); window.__myBank = myBank; }
+        if (me.tracking_since) window.__trackSince = String(me.tracking_since).slice(0,10);
       }
     } catch(e){}
   }
@@ -1587,10 +1601,8 @@ async function initMe(){
   // paid_from/paid_until — новые колонки (SQL у CEO); до них — фолбэк-select.
   let me = null;
   try{
-    me = (await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since,is_paid,paid_from,paid_until`))[0];
-  }catch(e){
-    try{ me = (await q(`/senya_users?tg_id=eq.${u.id}&select=daily_budget,tracking_since,is_paid`))[0]; }catch(e2){}
-  }
+    me = await profile(u.id);
+  }catch(e){}
   const today = new Date().toISOString().slice(0,10);
   const paid = !!(me && (me.is_paid || (me.paid_until && String(me.paid_until) >= today)));
   if(paid){
@@ -1664,7 +1676,8 @@ async function initEarn(){
     return;
   }
   try{
-    const rows = await q(`/senya_users?tg_id=eq.${u.id}&select=ref_code,qr_png,created_at,tracking_since`);
+    const me = await profile(u.id);
+    const rows = me ? [me] : [];
     if(!rows.length){
       document.getElementById("refLink").textContent = t("startBot");
       document.getElementById("refList").innerHTML = "";
@@ -1688,7 +1701,7 @@ async function initEarn(){
 
     // строка списка линии: имя · дата · статус оплаты (share — доля с платежа уровня)
     const refItem = (r, share) => {
-      const nm = r.username ? "@" + r.username : (r.first_name || t("userRef"));
+      const nm = r.name || r.first_name || t("userRef");
       const dt = (r.created_at || "").slice(0, 10).split("-").reverse().join(".");
       const pay = r.is_paid
         ? `<span class="pos">${SUB_PRICE ? "+$" + (SUB_PRICE*share).toFixed(SUB_PRICE*share%1?2:0) + t("perMonth") : t("subWord")}</span>`
@@ -1701,13 +1714,8 @@ async function initEarn(){
       : `<div class="me-sub">${t(emptyKey)}</div>`;
 
     // первая линия — мои приглашённые; вторая — приглашённые моих рефералов
-    const refs = await q(`/senya_users?ref_by=eq.${u.id}&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
-    let refs2 = [];
-    if (refs.length) {
-      try {
-        refs2 = await q(`/senya_users?ref_by=in.(${refs.map(r => r.tg_id).join(",")})&select=tg_id,first_name,username,is_paid,created_at&order=created_at.desc`);
-      } catch(e){}
-    }
+    // линии приходят из RPC уже обезличенными (имя маской, без tg_id/username)
+    const refs = (me && me.l1) || [], refs2 = (me && me.l2) || [];
     const paid1 = refs.filter(r => r.is_paid).length;
     const paid2 = refs2.filter(r => r.is_paid).length;
     // обороты — платежи подписки: личный = первая линия, командный = обе (CEO 17.08)
