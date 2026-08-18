@@ -290,12 +290,15 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 /* ── нижнее меню ─────────────────────────────────────────────────────────────
    Отступ снизу берём из переменных Telegram (официальный гайд по Mini Apps),
    с откатом на env() для обычного браузера. ── */
-.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;gap:2px;overflow:hidden;
-  padding:7px var(--s2) calc(6px + var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));
-  background:var(--bg);
-  background:color-mix(in srgb,var(--bg) 88%,transparent);
-  border-top:1px solid var(--line);
-  -webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%)}
+/* v34 (CEO 18.08): панель ПРОЗРАЧНАЯ — видны только иконки. Ни фона, ни рамки,
+   ни блюра; overflow видимый, иначе приподнятая круглая кнопка обрезается. */
+.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;gap:2px;overflow:visible;
+  padding:26px var(--s2) calc(6px + var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));
+  background:transparent;border-top:0;pointer-events:none}
+.bottombar .bnav-item{pointer-events:auto}
+/* лёгкая тень под иконками: на светлом контенте они не теряются без панели */
+.bottombar svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
 .bnav-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
   background:none;border:0;border-radius:var(--r-m);padding:7px 2px 6px;cursor:pointer;
   color:var(--mut);font-size:10px;font-weight:650;letter-spacing:.01em;font-family:inherit;
@@ -313,17 +316,41 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
    активная вкладка (акцент). Цветные per-tab иконки 11.08 удалены. */
 .bnav-item svg{opacity:.62;stroke:currentColor}
 .bnav-item.active svg{opacity:1}
-/* центральная круглая кнопка «Ставки» — крупнее и выделена */
-.bnav-item.bnav-center{flex:1.15}
-.bnav-item.bnav-center .cbtn{width:52px;height:52px;margin-top:-22px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--card);border:1px solid var(--line);
-  box-shadow:0 6px 18px -6px rgba(0,0,0,.45);transition:background .16s ease,border-color .16s ease}
-.bnav-item.bnav-center svg{width:26px;height:26px;opacity:.8}
-.bnav-item.bnav-center.active .cbtn{background:linear-gradient(135deg,var(--accent),var(--accent2,var(--accent)));
-  border-color:transparent;box-shadow:0 8px 22px -6px var(--glow)}
-.bnav-item.bnav-center.active svg{stroke:#fff;opacity:1;transform:none}
+/* ── центральная кнопка «Ставки»: живой переливающийся шар (v34, CEO 18.08:
+   «как Сири — модель живая, и кнопка должна жить»). Круг целиком виден,
+   вращающийся конический градиент + дыхание + пульсирующее свечение. ── */
+.bnav-item.bnav-center{flex:1.15;justify-content:flex-start}
+.bnav-item.bnav-center .cbtn{position:relative;width:58px;height:58px;margin-top:-30px;
+  border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:transparent;
+  box-shadow:0 8px 24px -8px rgba(56,189,248,.55), 0 0 22px -6px rgba(167,139,250,.45);
+  animation:orbBreathe 3.6s ease-in-out infinite}
+.bnav-item.bnav-center .cbtn::after{content:'';position:absolute;inset:-40%;
+  background:conic-gradient(from 0deg,#38bdf8,#6366f1,#a78bfa,#f472b6,#fb923c,#34d399,#38bdf8);
+  animation:orbSpin 6s linear infinite}
+.bnav-item.bnav-center .cbtn::before{content:'';position:absolute;inset:3px;border-radius:50%;
+  background:var(--bg);opacity:.86;z-index:1}
+.bnav-item.bnav-center .cbtn svg{position:relative;z-index:2;width:25px;height:25px;
+  stroke:var(--txt);opacity:.92;filter:none}
+/* фирменная марка внутри шара (CEO 18.08: «в стиле AI Sports, мелкими буквами») */
+.orbmark{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
+  line-height:1;color:var(--txt);text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.orbmark b{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.orbmark i{font-style:normal;font-size:6px;font-weight:700;letter-spacing:.16em;
+  margin-top:2px;opacity:.75}
+.bnav-item.bnav-center.active .orbmark{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.55)}
+.bnav-item.bnav-center.active .orbmark i{opacity:.95}
+.bnav-item.bnav-center.active .cbtn{animation:orbBreathe 2.2s ease-in-out infinite;
+  box-shadow:0 10px 30px -8px rgba(56,189,248,.75), 0 0 30px -4px rgba(244,114,182,.55)}
+.bnav-item.bnav-center.active .cbtn::before{opacity:.20}
+.bnav-item.bnav-center.active .cbtn::after{animation:orbSpin 2.6s linear infinite}
+.bnav-item.bnav-center.active .cbtn svg{stroke:#fff;opacity:1;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
 .bnav-item.bnav-center.active::before{display:none}
+@keyframes orbSpin{to{transform:rotate(360deg)}}
+@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){
+  .bnav-item.bnav-center .cbtn,.bnav-item.bnav-center .cbtn::after{animation:none}}
 
 /* ── заставка ── */
 #splash{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;
@@ -592,7 +619,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v33 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v34 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -610,7 +637,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
     <svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18"/><path d="M8 2.5v4M16 2.5v4"/><path d="M7.5 13.5h3M13.5 13.5h3M7.5 17h3"/></svg>
     <span data-i18n="navSched">Игры</span></button>
   <button class="bnav-item bnav-center" data-tab="stats">
-    <span class="cbtn"><svg viewBox="0 0 24 24"><path d="M4 20V11"/><path d="M10 20V4"/><path d="M16 20v-6"/><path d="M22 20H2"/></svg></span>
+    <span class="cbtn"><span class="orbmark"><b>AI</b><i>SPORTS</i></span></span>
     <span data-i18n="navStats">Ставки</span></button>
   <button class="bnav-item" data-tab="earn">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 15 15 9"/><circle cx="9.3" cy="9.3" r="1.2"/><circle cx="14.7" cy="14.7" r="1.2"/></svg>
@@ -621,7 +648,7 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 </nav>
 
 <script>
-const BUILD = "v33";
+const BUILD = "v34";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -679,9 +706,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v33 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v33 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v33 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v34 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v34 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v34 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
