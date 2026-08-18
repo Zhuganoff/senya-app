@@ -212,6 +212,16 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .spchip.on{border-color:var(--accent);color:var(--accent);background:var(--tint1,var(--card-2))}
 .spchip.on .cnt{background:var(--accent);color:#04121b}
 .spchip.off{opacity:.45}
+/* компактный блок биржи в Профиле (CEO 18.08) */
+#exchSel{display:flex;gap:6px}
+#exchSel button{flex:1;padding:8px 6px;font-size:12.5px;font-weight:700;border-radius:999px}
+.exch-ico{width:15px;height:15px}
+.apibox{margin-top:8px;border:1px solid var(--line);border-radius:var(--r-m);padding:8px 10px;
+  background:var(--card-2)}
+.apibox summary{font-size:12px;letter-spacing:.02em}
+.apibox .binput{padding:8px 10px}
+#quickBudget{display:flex;gap:6px;margin-top:6px}
+#quickBudget button{flex:1;padding:6px 4px;font-size:12px}
 .dayrow{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .dpick{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);color:var(--txt);
   border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;text-align:center;
@@ -528,22 +538,6 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
         <div class="me-sub" id="meSub">Открой приложение из бота</div>
       </div>
     </div>
-    <div class="section" data-i18n="secSub">Подписка</div>
-    <div class="card">
-      <div class="k" data-i18n="subTitle">AI Sports Pro <span class="tag">β</span></div>
-      <div class="cur" style="font-size:30px;margin:4px 0 2px">$29<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
-      <div class="me-sub" data-i18n="subList" style="margin:6px 0 10px">
-        • Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>
-        • Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>
-        • Полная статистика и CLV в открытой базе — ничего не скрыто<br>
-        • 20% с платежей 1-й линии + 5% со 2-й — пожизненно<br>
-        • Отмена в один клик, без вопросов</div>
-      <button class="btn" id="subBtn" data-i18n="subBtn">💳 Оформить за $29/мес</button>
-      <div class="me-sub" id="subHint" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
-    </div>
-
-    <!-- v31 (CEO 17.08): бывшая вкладка «Кошелёк» живёт здесь и видна ТОЛЬКО
-         оплатившим тариф (senya_users.paid_until >= сегодня или is_paid) -->
     <div id="exchBlock" style="display:none">
     <div class="section" data-i18n="secWalletMain">Кошелёк и биржа</div>
     <div class="card">
@@ -555,7 +549,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
         <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
       </div>
       <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть биржу</a>
-      <div class="k" style="margin-top:16px" data-i18n="walletSum">Сумма кошелька</div>
+      <div class="k" style="margin-top:14px" data-i18n="walletSum">Сумма кошелька</div>
       <div class="bankrow">
         <span class="cur">$</span>
         <input type="number" id="budget" class="binput" min="20" step="10" value="300">
@@ -566,12 +560,15 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
         <button data-v="100">$100</button><button data-v="300">$300</button>
         <button data-v="500">$500</button><button data-v="1000">$1000</button>
       </div>
-      <div class="k" style="margin-top:16px" data-i18n="apiTitle">API-ключ выбранной биржи</div>
-      <div class="bankrow">
-        <input type="password" id="apiKeyInput" class="binput" style="min-width:0" placeholder="API key" autocomplete="off">
-        <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
-      </div>
-      <div class="me-sub" id="apiState" style="margin-top:6px;font-weight:700"></div>
+      <div class="me-sub" id="apiState" style="margin-top:10px;font-weight:700"></div>
+      <details class="apibox">
+        <summary class="k" style="cursor:pointer" data-i18n="apiTitle">API-ключ выбранной биржи</summary>
+        <div class="bankrow" style="margin-top:8px">
+          <input type="password" id="apiKeyInput" class="binput" style="min-width:0;font-size:13px"
+                 placeholder="API key" autocomplete="off">
+          <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
+        </div>
+      </details>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
     </div>
 
@@ -589,6 +586,22 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
       </details>
     </div>
     </div><!-- /exchBlock -->
+    <div class="section" data-i18n="secSub">Подписка</div>
+    <div class="card">
+      <div class="k" data-i18n="subTitle">AI Sports Pro <span class="tag">β</span></div>
+      <div class="cur" style="font-size:30px;margin:4px 0 2px">$29<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
+      <div class="me-sub" data-i18n="subList" style="margin:6px 0 10px">
+        • Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>
+        • Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>
+        • Полная статистика и CLV в открытой базе — ничего не скрыто<br>
+        • 20% с платежей 1-й линии + 5% со 2-й — пожизненно<br>
+        • Отмена в один клик, без вопросов</div>
+      <button class="btn" id="subBtn" data-i18n="subBtn">💳 Оформить за $29/мес</button>
+      <div class="me-sub" id="subHint" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
+    </div>
+
+    <!-- v31 (CEO 17.08): бывшая вкладка «Кошелёк» живёт здесь и видна ТОЛЬКО
+         оплатившим тариф (senya_users.paid_until >= сегодня или is_paid) -->
 
     <div class="section" data-i18n="secLook">Оформление</div>
     <div class="card">
@@ -678,7 +691,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v48 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v49 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -707,7 +720,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v48";
+const BUILD = "v49";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -762,9 +775,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v48 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v48 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v48 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v49 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v49 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v49 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
