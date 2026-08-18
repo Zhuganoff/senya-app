@@ -571,6 +571,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
         <input type="password" id="apiKeyInput" class="binput" style="min-width:0" placeholder="API key" autocomplete="off">
         <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
       </div>
+      <div class="me-sub" id="apiState" style="margin-top:6px;font-weight:700"></div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
     </div>
 
@@ -677,7 +678,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v46 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v47 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -706,7 +707,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v46";
+const BUILD = "v47";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -761,9 +762,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v46 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v46 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v46 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v47 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v47 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v47 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -824,6 +825,8 @@ const T = {
   dayTurnover: ["Оборот", "Turnover", "投注额"],
   walletStart: ["старт", "start", "起始"],
   saveViaBot: ["Сумма сохраняется командой боту:", "Save the amount via the bot command:", "通过机器人命令保存金额："],
+  apiSavedFor: ["ключ сохранён —", "key saved —", "密钥已保存 —"],
+  apiNeedFor: ["ключ не задан — введи ключ для", "no key yet — enter the key for", "尚未设置密钥——请输入"],
   exchOpen: ["↗️ Открыть биржу", "↗️ Open exchange", "↗️ 打开交易所"],
   tariffActive: ["Тариф активен", "Plan active", "套餐生效"],
   profitAll: ["Прибыль общая", "Total profit", "总盈利"],
@@ -1656,11 +1659,28 @@ async function initWallet(me){
   // API-ключ биржи: хранится ТОЛЬКО в localStorage устройства (некастодиальность),
   // на сервер не уходит; ключ свой у каждой биржи (senya_api_sx / senya_api_poly)
   const apiInp = document.getElementById("apiKeyInput");
+  const apiState = document.getElementById("apiState");
   const exchNow = () => localStorage.getItem("senya_exch") || "sx";
-  apiInp.value = localStorage.getItem("senya_api_" + exchNow()) || "";
+  // v47 (CEO 18.08): ключ у КАЖДОЙ биржи свой. Есть сохранённый — поле
+  // заполнено и горит зелёная галочка; переключил биржу без ключа — поле
+  // пустое и просит ввести. Раньше состояние не показывалось вовсе.
+  const refreshApi = () => {
+    const k = localStorage.getItem("senya_api_" + exchNow()) || "";
+    apiInp.value = k;
+    const name = exchNow() === "sx" ? "SX.bet" : "Polymarket";
+    apiState.innerHTML = k
+      ? `<span class="pos">✅ ${t("apiSavedFor")} ${name}</span>`
+      : `<span style="color:var(--mut)">${t("apiNeedFor")} ${name}</span>`;
+  };
+  refreshApi();
+  document.querySelectorAll("#exchSel button").forEach(b =>
+    b.addEventListener("click", () => setTimeout(refreshApi, 60)));
   document.getElementById("saveApiKey").addEventListener("click", () => {
-    localStorage.setItem("senya_api_" + exchNow(), apiInp.value.trim());
-    document.getElementById("apiHint").textContent = t("apiSaved");
+    const v = apiInp.value.trim();
+    if (v) localStorage.setItem("senya_api_" + exchNow(), v);
+    else localStorage.removeItem("senya_api_" + exchNow());
+    refreshApi();
+    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
   });
 
   // «Виды спорта» из кошелька УДАЛЕНЫ (CEO 17.08 v31): винрейты уже на дашборде
