@@ -518,13 +518,6 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     <div class="section" data-i18n="secLast">Последние ставки</div>
     <div id="lastStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-
-
-    <div class="proof" style="margin-top:14px" data-i18n="proofStats">
-      📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день —
-      вверх после удачного дня, вниз после неудачного. Ничего не «замораживается»
-      на красивой цифре: сегодняшние результаты попадают сюда автоматически.
-    </div>
   </div>
 
   <div id="pane-me" style="display:none">
@@ -684,7 +677,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v42 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v43 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -713,7 +706,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v42";
+const BUILD = "v43";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -765,15 +758,12 @@ const T = {
   yesterday: ["← вчера", "← prev day", "← 前一天"],
   tomorrow: ["завтра →", "next day →", "后一天 →"],
   pickDate: ["Выбери дату", "Pick a date", "选择日期"],
-  proofStats: ["📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день — вверх после удачного дня, вниз после неудачного. Ничего не «замораживается» на красивой цифре: сегодняшние результаты попадают сюда автоматически.",
-               "📈 The win rate is computed over ALL settled bets and moves every day — up after a good day, down after a bad one. Nothing gets “frozen” at a pretty number: today's results land here automatically.",
-               "📈 胜率基于全部已结算投注计算，每天都会变动——顺利时上升，失利时下降。数字不会被“冻结”在好看的位置：今天的结果会自动计入。"],
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v42 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v42 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v42 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v43 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v43 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v43 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -832,6 +822,7 @@ const T = {
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
   dayTurnover: ["Оборот", "Turnover", "投注额"],
+  walletStart: ["старт", "start", "起始"],
   exchOpen: ["↗️ Открыть биржу", "↗️ Open exchange", "↗️ 打开交易所"],
   tariffActive: ["Тариф активен", "Plan active", "套餐生效"],
   profitAll: ["Прибыль общая", "Total profit", "总盈利"],
@@ -1164,8 +1155,8 @@ async function main(){
   const pA = pnlAll*100, p24 = pnl24*100;
   document.getElementById("topCards").innerHTML = `
     <div class="card"><div class="k">${t("myWallet")}</div>
-      <div class="v">${myBank != null ? "$" + myBank.toFixed(0) : "—"}</div>
-      <div class="d" style="color:var(--mut)">${myBank != null ? t("walletLinked") : t("walletNotLinked")}</div></div>
+      <div class="v ${cls(pA)}">${"$" + ((myBank ?? BOT_BANK)*(1+pnlAll)).toFixed(2)}</div>
+      <div class="d" style="color:var(--mut)">${t("walletStart")} $${(myBank ?? BOT_BANK).toFixed(0)} · <span class="${cls(pA)}">${pct(pA)}</span>${myBank == null ? " · " + t("walletNotLinked") : ""}</div></div>
     <div class="card"><div class="k">${t("wrAll")}</div>
       <div class="v ${N && W/N>=0.5?"pos":"neg"}">${N ? (100*W/N).toFixed(1)+"%" : "—"}</div>
       <div class="d" style="color:var(--mut)">${W}W · ${N-W}L · ${N} ${t("betsN")}</div></div>
