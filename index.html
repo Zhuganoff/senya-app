@@ -495,15 +495,6 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
   <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-<div class="section" data-i18n="secDayBets">Ставки за день</div>
-  <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
-  <div class="dayrow">
-    <button class="daybtn" id="dprev" aria-label="prev">←</button>
-    <input type="date" id="dpick" class="dpick">
-    <button class="daybtn" id="dnext" aria-label="next">→</button>
-  </div>
-  <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
-  <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" style="display:none">
@@ -514,7 +505,17 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
   </div><!-- /pane-sched -->
 
   <div id="pane-stats" style="display:none">
-    <div class="section" data-i18n="secLast">Последние ставки</div>
+    <div class="section" data-i18n="secDayBets">Ставки за день</div>
+    <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
+    <div class="dayrow">
+      <button class="daybtn" id="dprev" aria-label="prev">←</button>
+      <input type="date" id="dpick" class="dpick">
+      <button class="daybtn" id="dnext" aria-label="next">→</button>
+    </div>
+    <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
+    <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
+
+    <div class="section" style="margin-top:18px" data-i18n="secLast">Последние ставки</div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
 
@@ -682,7 +683,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v39 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v40 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -711,7 +712,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v39";
+const BUILD = "v40";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -769,9 +770,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v39 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v39 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v39 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v40 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v40 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v40 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1175,7 +1176,6 @@ async function main(){
       <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")}${money(p24)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
 
-  initHistory();   // v39: «Ставки за день» живут на дашборде
 }
 
 
@@ -1264,7 +1264,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
     if (t === "stats" && !window.__statsInit) {
-      window.__statsInit = true; loadLastBets();
+      window.__statsInit = true; initHistory(); loadLastBets();
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
     if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
