@@ -677,7 +677,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v44 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v45 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -706,7 +706,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v44";
+const BUILD = "v45";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -761,9 +761,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v44 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v44 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v44 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v45 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v45 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v45 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -823,6 +823,7 @@ const T = {
   myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
   dayTurnover: ["Оборот", "Turnover", "投注额"],
   walletStart: ["старт", "start", "起始"],
+  saveViaBot: ["Сумма сохраняется командой боту:", "Save the amount via the bot command:", "通过机器人命令保存金额："],
   exchOpen: ["↗️ Открыть биржу", "↗️ Open exchange", "↗️ 打开交易所"],
   tariffActive: ["Тариф активен", "Plan active", "套餐生效"],
   profitAll: ["Прибыль общая", "Total profit", "总盈利"],
@@ -1632,20 +1633,12 @@ async function initWallet(me){
     const hint = document.getElementById("budgetHint");
     if(!u){ hint.textContent = t("openFromBot"); return; }
     const v = Math.max(20, Number(bInput.value) || 300);
-    try{
-      await fetch(SB + `/senya_users?tg_id=eq.${u.id}`, {
-        method: "PATCH", headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
-        body: JSON.stringify({daily_budget: v})});
-      window.__myBank = v;
-      if(!window.__trackSince){
-        const today = new Date().toISOString().slice(0,10);
-        window.__trackSince = today;
-        fetch(SB + `/senya_users?tg_id=eq.${u.id}`, {method:"PATCH",
-          headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
-          body: JSON.stringify({tracking_since: today})}).catch(()=>{});
-      }
-      hint.innerHTML = `${t("saved5_10")}<b>$${(v*0.05).toFixed(2)}–$${(v*0.10).toFixed(2)}</b>${t("perGame")}`;
-    }catch(e){ hint.textContent = t("saveFail") + e.message; }
+    // АУДИТ 18.08: прямая запись в базу из браузера ЗАКРЫТА (публичным ключом
+    // можно было править чужие профили). Сумма сохраняется командой боту —
+    // он пишет серверным ключом и знает, кто её прислал.
+    window.__myBank = v;
+    hint.innerHTML = `${t("saveViaBot")} <b>/bank ${v}</b>`;
+    try{ if (tg && tg.openTelegramLink) tg.openTelegramLink("https://t.me/sportzhubot"); }catch(e){}
   });
 
   // API-ключ биржи: хранится ТОЛЬКО в localStorage устройства (некастодиальность),
@@ -1685,14 +1678,11 @@ async function initEarn(){
     // senya_users.qr_png (CEO 17.08). У старых пользователей поля может не
     // быть — дорисовываем сами и сохраняем, тоже один раз и навсегда.
     window.__qrUri = rows[0].qr_png || null;
-    if(!window.__qrUri){
+    if(!window.__qrUri){          // QR рисуем локально, В БАЗУ НЕ ПИШЕМ (аудит 18.08)
       try{
         const cv = document.createElement("canvas");
         SenyaQR.draw(cv, link, {px:6, fg:"#080b11", bg:"#ffffff"});
         window.__qrUri = cv.toDataURL("image/png");
-        fetch(SB + `/senya_users?tg_id=eq.${u.id}`, {method:"PATCH",
-          headers: Object.assign({"Content-Type":"application/json","Prefer":"return=minimal"}, H),
-          body: JSON.stringify({qr_png: window.__qrUri})}).catch(()=>{});
       }catch(e){}
     }
 
