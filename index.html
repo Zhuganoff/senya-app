@@ -190,6 +190,19 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 
 /* ── история: выбор даты. v36 (CEO 18.08): дата и стрелки — одной компактной
    строкой, без карточки-обёртки ── */
+/* чипы видов спорта во вкладке «Игры» (v37): иконка + аббревиатура, без слов */
+#schedChips{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+#schedChips::-webkit-scrollbar{display:none}
+.spchip{flex:none;display:flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit;
+  background:var(--card-2);border:1px solid var(--line);border-radius:999px;
+  padding:7px 11px;color:var(--txt-2);font-size:12px;font-weight:800;letter-spacing:.03em;
+  transition:border-color .15s ease,color .15s ease,background .15s ease}
+.spchip .ic{font-size:14px;line-height:1}
+.spchip .cnt{background:var(--card-3);border-radius:999px;padding:1px 6px;font-size:10.5px;
+  font-weight:700;color:var(--mut);font-variant-numeric:tabular-nums}
+.spchip.on{border-color:var(--accent);color:var(--accent);background:var(--tint1,var(--card-2))}
+.spchip.on .cnt{background:var(--accent);color:#04121b}
+.spchip.off{opacity:.45}
 .dayrow{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .dpick{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);color:var(--txt);
   border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;text-align:center;
@@ -471,11 +484,13 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
   <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div class="section" data-i18n="secLast">Последние ставки</div>
+  <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" style="display:none">
     <div class="section" data-i18n="schedHead">Расписание игр</div>
-    <div class="daynav" id="schedChips" style="margin-bottom:10px"></div>
+    <div id="schedChips"></div>
     <div class="bets" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="proof" style="margin-top:12px" data-i18n="schedSub">время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки</div>
   </div><!-- /pane-sched -->
@@ -491,8 +506,6 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
 
-    <div class="section" data-i18n="secLast">Последние ставки</div>
-    <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
     <div class="proof" style="margin-top:14px" data-i18n="proofStats">
       📈 Винрейт считается по ВСЕМ рассчитанным ставкам и меняется каждый день —
@@ -658,7 +671,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v36 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v38 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -687,7 +700,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v36";
+const BUILD = "v38";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -745,9 +758,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v36 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v36 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v36 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v38 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v38 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v38 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -969,6 +982,8 @@ if (tg) { tg.ready(); tg.expand(); }
 // Цена подписки ещё не утверждена — пока null, начисления показываем нулём.
 const REF_L1 = 0.20;
 const REF_L2 = 0.05;
+const BOT_BANK = 300;   // общий банк ботов (bank_shared): ориентир для сумм в $,
+                        // когда у пользователя не задан свой кошелёк (CEO 18.08)
 const SUB_PRICE = 29;   // $/мес — утверждено CEO 11.08; счётчик начислений считает от неё
 
 // реф-захват: t.me/бот?startapp=ref_XXXX → сохраняем для регистрации
@@ -1155,7 +1170,16 @@ async function main(){
 
 
 // ─────────── расписание игр (senya_schedule, пишут mlb_scheduler/tennis_scheduler) ───────────
-const SCHED_SPORTS = {mlb: "⚾ MLB", tennis: "🎾 " + (LANG==="ru"?"Теннис":LANG==="zh"?"网球":"Tennis")};
+// Виды спорта во вкладке «Игры» (v37, CEO 18.08): без длинных названий —
+// иконка + короткая аббревиатура. Хоккей и баскетбол показываются заранее,
+// расписания по ним ещё нет — чип будет неактивным с честной надписью.
+const SCHED_SPORTS = [
+  ["mlb",        "⚾", "MLB"],
+  ["tennis",     "🎾", "TEN"],
+  ["soccer",     "⚽", "SOC"],
+  ["hockey",     "🏒", "NHL"],
+  ["basketball", "🏀", "NBA"],
+];
 let __schedRows = [], __schedSport = "";
 async function initSched(){
   const box = document.getElementById("schedList");
@@ -1169,21 +1193,26 @@ async function initSched(){
     return c ? [c, new Date(new Date(c).getTime() - 86400000).toISOString().slice(0,10)] : [];
   });
   await loadMatchStats(dts);
-  const sports = Object.keys(SCHED_SPORTS).filter(sp => __schedRows.some(r => r.sport === sp));
-  if (!sports.length) { box.innerHTML = `<div class="loading">${t("schedEmpty")}</div>`; return; }
-  __schedSport = sports[0];
+  // чипы показываем ВСЕГДА все виды; выбран первый, у которого есть игры
+  const withGames = SCHED_SPORTS.filter(([sp]) => __schedRows.some(r => r.sport === sp));
+  __schedSport = (withGames[0] || SCHED_SPORTS[0])[0];
   const chips = document.getElementById("schedChips");
-  chips.innerHTML = sports.map(sp =>
-    `<button class="nav" data-sp="${sp}">${SCHED_SPORTS[sp]}</button>`).join("");
+  chips.innerHTML = SCHED_SPORTS.map(([sp, ico, abbr]) => {
+    const n = __schedRows.filter(r => r.sport === sp).length;
+    return `<button class="spchip${n ? "" : " off"}" data-sp="${sp}">
+      <span class="ic">${ico}</span><span class="ab">${abbr}</span>
+      ${n ? `<span class="cnt">${n}</span>` : ""}</button>`;
+  }).join("");
   chips.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
     __schedSport = b.dataset.sp; renderSched();
+    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
   }));
   renderSched();
 }
 function renderSched(){
   const box = document.getElementById("schedList");
-  document.querySelectorAll("#schedChips .nav").forEach(b =>
-    b.style.borderColor = b.dataset.sp === __schedSport ? "var(--accent)" : "var(--line)");
+  document.querySelectorAll("#schedChips .spchip").forEach(b =>
+    b.classList.toggle("on", b.dataset.sp === __schedSport));
   const rows = __schedRows.filter(r => r.sport === __schedSport);
   if (!rows.length) { box.innerHTML = `<div class="loading">${t("schedEmpty")}</div>`; return; }
   const byLg = {};
@@ -1443,16 +1472,19 @@ async function loadDay(d){
       if(r.result===0) return a - sp;
       return a;
     },0)*100;
-    const pnl = window.__myBank ? pnlPct/100*window.__myBank : null;
-    // v36 (CEO 18.08): крупная дата + суммы в долларах (оборот и прибыль).
-    // Доллары считаются от кошелька пользователя; кошелька нет — только проценты.
+    // v38 (CEO 18.08): суммы в долларах показываем ВСЕГДА. Банк-ориентир —
+    // кошелёк пользователя, а если он не задан — общий банк ботов ($300):
+    // в bet_log у боевых строк stake не хранится (только доля), поэтому
+    // доллары считаются из процента, а не суммированием стейков.
+    const bankRef = window.__myBank || BOT_BANK;
+    const pnl = pnlPct/100*bankRef;
     const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;        // оборот дня, % банка
-    const stakeUsd = window.__myBank ? sumPct/100*window.__myBank : null;
+    const stakeUsd = sumPct/100*bankRef;
     stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
         <span class="daydow">${dowOf(d)}</span></div>
-      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}${pnl!=null?` · ${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}`:""}</div>
+      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")} · ${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}</div>
       <div class="daysum">
-        <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b>${stakeUsd!=null?` <b>= $${stakeUsd.toFixed(2)}</b>`:""}</span>
+        <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b> <b>= $${stakeUsd.toFixed(2)}</b></span>
         <span>${rows.length} ${plBets(rows.length)} · <b>${w}W-${dec.length-w}L</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}</span>
       </div>`;
     box.innerHTML = rows.map(betRow).join("");
@@ -1463,9 +1495,10 @@ async function loadDay(d){
 
 function initHistory(){
   const pick = document.getElementById("dpick");
-  const today = new Date(Date.now() - 6*3600*1000);   // «вчера» по бейсбольному дню
+  // v38 (CEO 18.08): вкладка открывается на СЕГОДНЯШНЕМ дне (было — вчера)
+  const today = new Date(Date.now() - 6*3600*1000);   // бейсбольный день
   const iso = d => d.toISOString().slice(0,10);
-  pick.value = iso(new Date(today.getTime() - 24*3600*1000));
+  pick.value = iso(today);
   pick.max = iso(today);
   loadDay(pick.value);
   pick.addEventListener("change", () => loadDay(pick.value));
