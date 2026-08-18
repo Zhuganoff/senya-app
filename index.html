@@ -495,6 +495,15 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
   <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+    <div class="section" data-i18n="secDayBets">Ставки за день</div>
+  <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
+  <div class="dayrow">
+    <button class="daybtn" id="dprev" aria-label="prev">←</button>
+    <input type="date" id="dpick" class="dpick">
+    <button class="daybtn" id="dnext" aria-label="next">→</button>
+  </div>
+  <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
+  <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" style="display:none">
@@ -505,17 +514,9 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
   </div><!-- /pane-sched -->
 
   <div id="pane-stats" style="display:none">
-    <div class="section" data-i18n="secDayBets">Ставки за день</div>
-    <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
-    <div class="dayrow">
-      <button class="daybtn" id="dprev" aria-label="prev">←</button>
-      <input type="date" id="dpick" class="dpick">
-      <button class="daybtn" id="dnext" aria-label="next">→</button>
-    </div>
-    <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
-    <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
 
-    <div class="section" style="margin-top:18px" data-i18n="secLast">Последние ставки</div>
+    <div class="section" data-i18n="secLast">Последние ставки</div>
+    <div id="lastStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
 
@@ -683,7 +684,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v40 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v41 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -712,7 +713,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v40";
+const BUILD = "v41";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -770,9 +771,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v40 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v40 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v40 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v41 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v41 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v41 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1175,7 +1176,7 @@ async function main(){
       <div class="v ${cls(p24)}">${pct(p24)}</div>
       <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")}${money(p24)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
-
+  initHistory();   // выбор дня и отчёт по датам живут на дашборде (CEO 18.08)
 }
 
 
@@ -1264,7 +1265,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
     if (t === "stats" && !window.__statsInit) {
-      window.__statsInit = true; initHistory(); loadLastBets();
+      window.__statsInit = true; loadLastBets();
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
     if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
@@ -1535,6 +1536,30 @@ async function loadLastBets(){
     .slice(0, 12);
   if(!last.length){ box.innerHTML = `<div class="loading">${t("noBetsYet")}</div>`; return; }
   await loadMatchStats(last.map(r => r.match_date));
+  // ИТОГ ПО ЭТИМ СТАВКАМ (CEO 18.08): прибыль в процентах и долларах, оборот,
+  // W-L — без всякого выбора даты; даты и разбор по дням живут на дашборде
+  const st = document.getElementById("lastStat");
+  if (st) {
+    const bankRef = window.__myBank || BOT_BANK;
+    const dec = last.filter(r => r.result === 1 || r.result === 0);
+    const w = dec.filter(r => r.result === 1).length;
+    const pnlPct = last.reduce((a, r) => {
+      const sp = share(r);
+      if (r.result === 1) return a + sp*((oddsOf(r)||1)-1);
+      if (r.result === 0) return a - sp;
+      return a;
+    }, 0) * 100;
+    const turnPct = last.reduce((a, r) => a + share(r), 0) * 100;
+    const pnlUsd = pnlPct/100*bankRef, turnUsd = turnPct/100*bankRef;
+    const pend = last.length - dec.length;
+    st.innerHTML = `<div class="dayhead"><span class="daydate">${last.length} ${plBets(last.length)}</span>
+        <span class="daydow">${(last[last.length-1].match_date||"").slice(5).replace("-",".")} — ${(last[0].match_date||"").slice(5).replace("-",".")}</span></div>
+      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")} · ${pnlUsd>=0?"+":"−"}$${Math.abs(pnlUsd).toFixed(2)}</div>
+      <div class="daysum">
+        <span>${t("dayTurnover")}: <b>${turnPct.toFixed(1)}%</b> <b>= $${turnUsd.toFixed(2)}</b></span>
+        <span><b>${w}W-${dec.length-w}L</b>${pend ? ` · ${pend} ${t("inPlay")}` : ""}</span>
+      </div>`;
+  }
   box.innerHTML = last.map(r => {
     const pnlTxt = r.result===1?`<span class="pos">+${(((oddsOf(r)||1)-1)*100).toFixed(0)}%</span>`
                  : r.result===0?`<span class="neg">−100%</span>`
