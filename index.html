@@ -188,16 +188,40 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
   margin-top:var(--s2);font-variant-numeric:tabular-nums}
 .trend{margin-top:6px;font-size:11.5px;font-weight:600}
 
-/* ── история: выбор даты ── */
-.dpick{width:100%;background:var(--card-2);border:1px solid var(--line);color:var(--txt);
-  border-radius:var(--r-m);padding:11px var(--s3);font-size:15px;font-weight:650;
+/* ── история: выбор даты. v36 (CEO 18.08): дата и стрелки — одной компактной
+   строкой, без карточки-обёртки ── */
+.dayrow{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.dpick{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);color:var(--txt);
+  border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;text-align:center;
   font-family:inherit;color-scheme:dark}
 body.light .dpick{color-scheme:light}
+.daybtn{flex:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-family:inherit;
+  background:var(--card-2);border:1px solid var(--line);color:var(--txt-2);
+  font-size:15px;font-weight:700;line-height:1;transition:background .15s ease,color .15s ease}
+.daybtn:active{background:var(--card-3);color:var(--accent)}
 .daynav{display:flex;gap:var(--s2);margin-top:var(--s2)}
 .nav{flex:1;background:var(--card-2);border:1px solid var(--line);color:var(--txt-2);
   border-radius:var(--r-m);padding:10px;font-size:12.5px;font-weight:650;
   font-family:inherit;cursor:pointer}
 .nav:active{background:var(--card-3)}
+/* ── карточка итога дня: крупная дата + лёгкое переливание, как у кнопки ── */
+.daycard{position:relative;overflow:hidden}
+.daycard::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 47%,
+    rgba(255,255,255,.05) 55%,transparent 70%);
+  background-size:260% 100%;animation:daySheen 5.5s ease-in-out infinite}
+body.light .daycard::after{background:linear-gradient(115deg,transparent 30%,
+  rgba(56,189,248,.16) 47%,rgba(167,139,250,.10) 55%,transparent 70%);background-size:260% 100%}
+@keyframes daySheen{0%{background-position:150% 0}60%,100%{background-position:-60% 0}}
+@media (prefers-reduced-motion:reduce){.daycard::after{animation:none}}
+.dayhead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.daydate{font-size:20px;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(100deg,var(--accent),var(--accent2,var(--accent)));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.daydow{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.08em}
+.daysum{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px;font-size:13px;font-weight:700}
+.daysum span{color:var(--txt-2)}
+.daysum b{font-variant-numeric:tabular-nums}
 
 /* ── кнопки и формы ── */
 .btn{width:100%;border:none;border-radius:var(--r-m);padding:12px;cursor:pointer;
@@ -306,10 +330,12 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 /* лёгкая тень под иконками: на светлом контенте они не теряются без панели */
 .bottombar svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
 body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
-.bnav-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+.bnav-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
   background:none;border:0;border-radius:var(--r-m);padding:7px 2px 6px;cursor:pointer;
-  color:var(--mut);font-size:10px;font-weight:650;letter-spacing:.01em;font-family:inherit;
+  color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.005em;font-family:inherit;
+  text-shadow:0 1px 2px rgba(0,0,0,.30);   /* читаемость на прозрачной панели (CEO 18.08) */
   transition:color .16s ease,background .16s ease}
+body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 .bnav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;
   stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .16s ease}
 .bnav-item.active{color:var(--accent)}
@@ -456,18 +482,15 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
 
   <div id="pane-stats" style="display:none">
     <div class="section" data-i18n="secDayBets">Ставки за день</div>
-    <div class="card" style="margin-bottom:12px">
+    <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
+    <div class="dayrow">
+      <button class="daybtn" id="dprev" aria-label="prev">←</button>
       <input type="date" id="dpick" class="dpick">
-      <div class="daynav">
-        <button class="nav" id="dprev" data-i18n="yesterday">← вчера</button>
-        <button class="nav" id="dnext" data-i18n="tomorrow">завтра →</button>
-      </div>
+      <button class="daybtn" id="dnext" aria-label="next">→</button>
     </div>
-    <div id="dayStat" class="card" style="margin-bottom:10px"></div>
+    <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
 
-    <div class="section" style="margin-top:18px" data-i18n="secWr">Винрейт по видам спорта</div>
-    <div id="wrList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secLast">Последние ставки</div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
 
@@ -635,7 +658,7 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v35 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v36 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -664,7 +687,7 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
 </nav>
 
 <script>
-const BUILD = "v35";
+const BUILD = "v36";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -722,9 +745,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v35 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v35 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v35 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v36 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v36 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v36 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -782,6 +805,7 @@ const T = {
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
+  dayTurnover: ["Оборот", "Turnover", "投注额"],
   exchOpen: ["↗️ Открыть биржу", "↗️ Open exchange", "↗️ 打开交易所"],
   tariffActive: ["Тариф активен", "Plan active", "套餐生效"],
   profitAll: ["Прибыль общая", "Total profit", "总盈利"],
@@ -1201,7 +1225,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
     if (t === "stats" && !window.__statsInit) {
-      window.__statsInit = true; initHistory(); initWinrate();
+      window.__statsInit = true; initHistory();
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
     if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
@@ -1357,6 +1381,26 @@ function gameTime(r){
   return "";
 }
 
+// дата дня для карточки: «18 августа» + день недели (v36, CEO 18.08)
+const MONTHS = {ru: ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"],
+                en: ["January","February","March","April","May","June","July","August","September","October","November","December"],
+                zh: ["1月","2月","3月","4月","5月","6月","7月","8月","9月","10月","11月","12月"]};
+const DOWS = {ru: ["вс","пн","вт","ср","чт","пт","сб"],
+              en: ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+              zh: ["周日","周一","周二","周三","周四","周五","周六"]};
+function fmtDay(d){
+  const p = String(d||"").split("-");
+  if(p.length !== 3) return d || "";
+  const mon = (MONTHS[LANG] || MONTHS.ru)[Number(p[1])-1] || p[1];
+  return LANG === "en" ? `${mon} ${Number(p[2])}`
+       : LANG === "zh" ? `${mon}${Number(p[2])}日`
+       : `${Number(p[2])} ${mon}`;
+}
+function dowOf(d){
+  const dt = new Date(d + "T12:00:00Z");
+  return isNaN(dt) ? "" : (DOWS[LANG] || DOWS.ru)[dt.getUTCDay()];
+}
+
 function fmtTime(iso){
   if(!iso) return "";
   // метка без зоны — это UTC из базы: без 'Z' браузер счёл бы её локальной
@@ -1384,7 +1428,9 @@ async function loadDay(d){
     const rows = await loadDayRows(d);
     await loadMatchStats(rows.map(r => r.match_date).concat(d));
     if(!rows.length){
-      stat.innerHTML = `<div class="k">${d}</div><div class="d" style="color:var(--mut)">${t("noBetsDay")}</div>`;
+      stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
+          <span class="daydow">${dowOf(d)}</span></div>
+        <div class="d" style="color:var(--mut);margin-top:4px">${t("noBetsDay")}</div>`;
       box.innerHTML = `<div class="loading">${t("dayOff")}</div>`;
       return;
     }
@@ -1398,9 +1444,17 @@ async function loadDay(d){
       return a;
     },0)*100;
     const pnl = window.__myBank ? pnlPct/100*window.__myBank : null;
-    stat.innerHTML = `<div class="k">${d}</div>
-      <div class="v ${cls(pnlPct)}">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}</div>
-      <div class="d" style="color:var(--mut)">${rows.length} ${plBets(rows.length)} · ${w}W-${dec.length-w}L${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}${pnl!=null?` · ${t("yourTotal")} $${pnl.toFixed(2)}`:""}</div>`;
+    // v36 (CEO 18.08): крупная дата + суммы в долларах (оборот и прибыль).
+    // Доллары считаются от кошелька пользователя; кошелька нет — только проценты.
+    const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;        // оборот дня, % банка
+    const stakeUsd = window.__myBank ? sumPct/100*window.__myBank : null;
+    stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
+        <span class="daydow">${dowOf(d)}</span></div>
+      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}${pnl!=null?` · ${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}`:""}</div>
+      <div class="daysum">
+        <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b>${stakeUsd!=null?` <b>= $${stakeUsd.toFixed(2)}</b>`:""}</span>
+        <span>${rows.length} ${plBets(rows.length)} · <b>${w}W-${dec.length-w}L</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}</span>
+      </div>`;
     box.innerHTML = rows.map(betRow).join("");
   }catch(e){
     box.innerHTML = `<div class="loading">${t("errWord")}: ${e.message}</div>`;
@@ -1452,68 +1506,8 @@ async function loadLastBets(){
   }).join("");
 }
 
-// ─────────── винрейт по ВИДАМ СПОРТА (не по стратегиям) ───────────
-// Показываем только то, на что реально ставим: бейсбол, теннис, футбол.
-// SX и Polymarket — это исследовательские зеркала, а не отдельные виды спорта,
-// в этой вкладке им не место (замечание CEO 08.08).
-const WR_SRC = [
-  ["bet_log",        "⚾", t("sportMlb"),    "result,match_date", "mlb"],
-  ["tennis_bet_log", "🎾", t("sportTennis"), "result,match_date", "tennis"],
-  ["soccer_bet_log", "⚽", t("sportSoccer"), "result,match_date", "soccer"],
-];
-
-async function initWinrate(){
-  const box = document.getElementById("wrList");
-  const today = new Date(Date.now() - 4*3600*1000).toISOString().slice(0,10);
-  try{
-    let banks = {};
-    try{ (await q("/senya_banks?select=sport,bank,start_bank")).forEach(b => banks[b.sport] = b); }catch(e){}
-    const cards = await Promise.all(WR_SRC.map(async ([tbl, ico, title, sel, sportKey]) => {
-      let rows = [];
-      try{
-        rows = await q(`/${tbl}?select=${sel}&staked=is.true&result=in.(0,1)&order=match_date.asc&limit=10000`);
-      }catch(e){ return `<div class="wrcard"><div class="wr-head"><span>${ico} <b>${title}</b></span>
-        <span style="color:var(--mut)">${t("noData")}</span></div></div>`; }
-
-      const n = rows.length;
-      if(!n) return `<div class="wrcard"><div class="wr-head"><span>${ico} <b>${title}</b></span>
-        <span style="color:var(--mut)">${t("noBetsSport")}</span></div></div>`;
-
-      const wrOf = a => a.length ? 100*a.filter(r=>r.result===1).length/a.length : 0;
-      const w = rows.filter(r=>r.result===1).length;
-      const wr = wrOf(rows);
-
-      const bk = banks[sportKey];
-      const roi = bk && bk.start_bank ? (Number(bk.bank)/Number(bk.start_bank)-1)*100 : null;
-
-      // честное движение цифры: сколько она сдвинулась за сегодняшние расчёты,
-      // а если сегодня расчётов не было — за последнюю треть ставок
-      const todays = rows.filter(r=>r.match_date===today);
-      let trend = `<div class="trend" style="color:var(--mut)">${t("noCalcToday")}</div>`;
-      if(todays.length){
-        const before = rows.filter(r=>r.match_date!==today);
-        const d = wr - (before.length ? wrOf(before) : wr);
-        trend = `<div class="trend ${d>=0?"pos":"neg"}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(1)} ${t("ppToday")} (${todays.length} ${plBets(todays.length)})</div>`;
-      } else if(n >= 9){
-        const cut = n - Math.max(3, Math.floor(n/3));
-        const d = wrOf(rows.slice(cut)) - wrOf(rows.slice(0, cut));
-        trend = `<div class="trend ${d>=0?"pos":"neg"}">${d>=0?"▲":"▼"} ${Math.abs(d).toFixed(1)} ${t("ppLast")} ${n-cut} ${plBets(n-cut)}</div>`;
-      }
-      const young = n < 10
-        ? `<div class="trend" style="color:var(--mut)">${t("smallSample")}</div>` : "";
-
-      return `<div class="wrcard">
-        <div class="wr-head"><span>${ico} <b>${title}</b></span>
-          <span class="wr-val ${wr>=50?"pos":"neg"}">${wr.toFixed(1)}%</span></div>
-        <div class="wr-bar"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div>
-        <div class="wr-foot"><span>${w}W · ${n-w}L · ${n} ${t("settledN")}</span>
-          <span class="${roi==null?"":cls(roi)}">${roi==null?"":pct(roi)+t("ofBankSuffix")}</span></div>
-        ${trend}${young}
-      </div>`;
-    }));
-    box.innerHTML = cards.join("");
-  }catch(e){ box.innerHTML = `<div class="loading">${t("errWord")}: ${e.message}</div>`; }
-}
+// Винрейт по видам живёт ТОЛЬКО на дашборде (CEO 18.08): из вкладки «Ставки»
+// блок убран, там остаются одни ставки. Источник — SRC внутри main().
 
 // ─────────── личный кабинет (v31: сюда переехал «Кошелёк», вкладки больше нет) ───────────
 async function initMe(){
