@@ -222,6 +222,31 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .apibox .binput{padding:8px 10px}
 #quickBudget{display:flex;gap:6px;margin-top:6px}
 #quickBudget button{flex:1;padding:6px 4px;font-size:12px}
+/* подтверждение сохранения ключа: объёмный круг + прочерченная галочка (v50) */
+.okwrap{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;background:rgba(3,7,13,.35);backdrop-filter:blur(3px);
+  animation:okFade .45s ease both}
+.okwrap.hide{animation:okFadeOut .4s ease both}
+.okball{width:120px;height:120px;border-radius:50%;position:relative;transform-style:preserve-3d;
+  background:radial-gradient(circle at 32% 28%,#5ef2a4,#16a34a 55%,#0b7a37 100%);
+  box-shadow:0 22px 50px -18px rgba(22,163,74,.9), inset 0 -10px 22px rgba(0,0,0,.28),
+             inset 0 10px 18px rgba(255,255,255,.35);
+  animation:okSpin 1.1s cubic-bezier(.2,.9,.25,1) both}
+.okball::after{content:'';position:absolute;inset:-14px;border-radius:50%;
+  border:2px solid rgba(94,242,164,.55);animation:okRing 1.1s ease-out both}
+.okball svg{position:absolute;inset:0;margin:auto;width:64px;height:64px}
+.okball path{fill:none;stroke:#fff;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:60;stroke-dashoffset:60;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));
+  animation:okDraw .45s .45s ease forwards}
+@keyframes okSpin{0%{transform:perspective(600px) rotateY(-180deg) rotateX(25deg) scale(.5);opacity:0}
+  60%{transform:perspective(600px) rotateY(12deg) rotateX(-6deg) scale(1.08);opacity:1}
+  100%{transform:perspective(600px) rotateY(0) rotateX(0) scale(1)}}
+@keyframes okRing{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+@keyframes okDraw{to{stroke-dashoffset:0}}
+@keyframes okFade{from{opacity:0}to{opacity:1}}
+@keyframes okFadeOut{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .okball,.okball::after,.okball path{animation-duration:.01s}}
 .dayrow{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .dpick{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);color:var(--txt);
   border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;text-align:center;
@@ -691,7 +716,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v49 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v50 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -720,7 +745,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v49";
+const BUILD = "v50";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -775,9 +800,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v49 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v49 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v49 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v50 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v50 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v50 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
@@ -1706,9 +1731,20 @@ async function initWallet(me){
     else localStorage.removeItem("senya_api_" + exchNow());
     refreshApi();
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
+    if (v) showSavedOk();      // объёмная галочка-подтверждение (CEO 18.08)
   });
 
   // «Виды спорта» из кошелька УДАЛЕНЫ (CEO 17.08 v31): винрейты уже на дашборде
+}
+
+// подтверждение сохранения ключа: объёмный зелёный шар с прочерченной галочкой
+function showSavedOk(){
+  const w = document.createElement("div");
+  w.className = "okwrap";
+  w.innerHTML = `<div class="okball"><svg viewBox="0 0 100 100">
+    <path d="M26 52 L44 70 L76 33"/></svg></div>`;
+  document.body.appendChild(w);
+  setTimeout(() => { w.classList.add("hide"); setTimeout(() => w.remove(), 420); }, 1250);
 }
 
 // ─────────── начисления и выплаты за рефералов ───────────
