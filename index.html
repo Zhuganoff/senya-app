@@ -290,11 +290,18 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 /* ── нижнее меню ─────────────────────────────────────────────────────────────
    Отступ снизу берём из переменных Telegram (официальный гайд по Mini Apps),
    с откатом на env() для обычного браузера. ── */
-/* v34 (CEO 18.08): панель ПРОЗРАЧНАЯ — видны только иконки. Ни фона, ни рамки,
-   ни блюра; overflow видимый, иначе приподнятая круглая кнопка обрезается. */
+/* v34-v35 (CEO 18.08): панель ПРОЗРАЧНАЯ — видны только иконки; под ней
+   размытие фона. Ни цвета, ни рамки; overflow видимый, иначе приподнятая
+   круглая кнопка обрезается. */
 .bottombar{position:fixed;left:0;right:0;bottom:0;z-index:900;display:flex;gap:2px;overflow:visible;
-  padding:26px var(--s2) calc(6px + var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));
+  padding:16px var(--s2) calc(6px + var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));
   background:transparent;border-top:0;pointer-events:none}
+/* размытие фона ПОД прозрачной панелью (CEO 18.08): своя подложка без цвета,
+   растушёвана кверху — контент за меню размыт, а границы панели не видно */
+.bottombar::before{content:'';position:absolute;inset:0;z-index:-1;background:transparent;
+  -webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 34%,#000 100%);
+  mask-image:linear-gradient(to bottom,transparent 0,#000 34%,#000 100%)}
 .bottombar .bnav-item{pointer-events:auto}
 /* лёгкая тень под иконками: на светлом контенте они не теряются без панели */
 .bottombar svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
@@ -312,15 +319,24 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
 .bnav-item.active svg{transform:translateY(-1px)}
 .exch-ico{width:16px;height:16px;object-fit:contain;background:#fff;border-radius:5px;
   padding:2px;vertical-align:-4px;margin-right:2px}
-/* v32 (CEO 17.08): меню ОДНОТОННОЕ — иконки серые, цвет получает ТОЛЬКО
-   активная вкладка (акцент). Цветные per-tab иконки 11.08 удалены. */
+/* Меню ОДНОТОННОЕ (CEO 17.08), но у АКТИВНОЙ вкладки — свой фирменный цвет
+   (CEO 18.08 «цветные иконки ты не сделал»): неактивные серые, открытая —
+   цветная, иконка и подпись одним тоном. */
 .bnav-item svg{opacity:.62;stroke:currentColor}
 .bnav-item.active svg{opacity:1}
+.bnav-item.active[data-tab="dash"]{color:#38bdf8}
+.bnav-item.active[data-tab="sched"]{color:#fb923c}
+.bnav-item.active[data-tab="earn"]{color:#34d399}
+.bnav-item.active[data-tab="me"]{color:#f472b6}
+.bnav-item.active[data-tab="dash"]::before{background:#38bdf8;box-shadow:0 2px 10px #38bdf880}
+.bnav-item.active[data-tab="sched"]::before{background:#fb923c;box-shadow:0 2px 10px #fb923c80}
+.bnav-item.active[data-tab="earn"]::before{background:#34d399;box-shadow:0 2px 10px #34d39980}
+.bnav-item.active[data-tab="me"]::before{background:#f472b6;box-shadow:0 2px 10px #f472b680}
 /* ── центральная кнопка «Ставки»: живой переливающийся шар (v34, CEO 18.08:
    «как Сири — модель живая, и кнопка должна жить»). Круг целиком виден,
    вращающийся конический градиент + дыхание + пульсирующее свечение. ── */
 .bnav-item.bnav-center{flex:1.15;justify-content:flex-start}
-.bnav-item.bnav-center .cbtn{position:relative;width:58px;height:58px;margin-top:-30px;
+.bnav-item.bnav-center .cbtn{position:relative;width:56px;height:56px;margin-top:-14px;
   border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
   background:transparent;
   box-shadow:0 8px 24px -8px rgba(56,189,248,.55), 0 0 22px -6px rgba(167,139,250,.45);
@@ -619,7 +635,7 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
     Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v34 · 18.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v35 · 18.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -648,7 +664,7 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
 </nav>
 
 <script>
-const BUILD = "v34";
+const BUILD = "v35";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -706,9 +722,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
               "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
               "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v34 · 18.08.2026</span>",
-         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v34 · 18.08.2026</span>",
-         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v34 · 18.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · дебаты моделей → код решает по EV и Келли<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v35 · 18.08.2026</span>",
+         "Autonomous AI analyst · model debates → code decides by EV and Kelly<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v35 · 18.08.2026</span>",
+         "自主 AI 分析师 · 模型辩论 → 代码按 EV 与凯利公式决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v35 · 18.08.2026</span>"],
   navDash: ["Дашборд", "Dashboard", "仪表盘"], navEarn: ["Рефералы", "Referrals", "推荐"],
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
