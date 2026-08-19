@@ -254,6 +254,21 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
 /* ── история: выбор даты. v36 (CEO 18.08): дата и стрелки — одной компактной
    строкой, без карточки-обёртки ── */
 /* чипы видов спорта во вкладке «Игры» (v37): иконка + аббревиатура, без слов */
+/* Шапка вкладки «Игры»: сегодняшний слейт в анализе (v56, CEO 19.08) */
+.sched-hero{position:relative;margin-bottom:12px;padding:14px 16px;border-radius:16px;
+  background:linear-gradient(135deg,rgba(56,189,248,.10),rgba(167,139,250,.10) 50%,rgba(244,114,182,.09));
+  border:1px solid rgba(148,163,184,.16);overflow:hidden}
+.sched-hero::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(60% 120% at 12% 0%,rgba(56,189,248,.14),transparent 60%)}
+.sched-hero .sh-t{position:relative;font-size:16.5px;font-weight:800;letter-spacing:-.01em;
+  background:linear-gradient(90deg,#38bdf8,#a78bfa 55%,#f472b6);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.sched-hero .sh-s{position:relative;margin-top:3px;font-size:12px;color:var(--muted);font-weight:550}
+.sched-hero .sh-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;
+  background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.8);vertical-align:1px;
+  animation:shPulse 2.2s ease-in-out infinite}
+@keyframes shPulse{0%,100%{opacity:1}50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.sched-hero .sh-dot{animation:none}}
 #schedChips{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 #schedChips::-webkit-scrollbar{display:none}
 .spchip{flex:none;display:flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit;
@@ -569,6 +584,24 @@ body.splash-on{overflow:hidden}
     radial-gradient(circle at 31% 69%,rgba(167,243,208,.4) 0 1px,transparent 1.5px);
   animation:spStars 2.8s ease-in-out infinite alternate}
 #splash.hide{opacity:0;visibility:hidden}
+/* Большая Медведица в правом верхнем углу: семь звёзд ковша поверх звёздного фона.
+   Размеры точек отражают реальную яркость (Мегрец — самая слабая, Дубхе и Алиот —
+   самые яркие), рядом с Мицаром — крошечный Алькор. */
+.sp-dipper{position:absolute;top:6.5%;right:4.5%;z-index:-1;width:min(42vw,186px);height:auto;
+  opacity:0;pointer-events:none;filter:drop-shadow(0 0 6px rgba(186,230,253,.32));
+  animation:spDipperIn 1.5s ease-out .25s forwards}
+.sp-dipper line{stroke:rgba(186,230,253,.34);stroke-width:.7;stroke-linecap:round}
+.sp-dipper circle{fill:#eaf4ff;animation:spDipperTwinkle 3.4s ease-in-out infinite alternate}
+.sp-dipper circle:nth-of-type(2){animation-delay:.5s}
+.sp-dipper circle:nth-of-type(3){animation-delay:1.1s}
+.sp-dipper circle:nth-of-type(4){animation-delay:.3s}
+.sp-dipper circle:nth-of-type(5){animation-delay:1.6s}
+.sp-dipper circle:nth-of-type(6){animation-delay:.9s}
+.sp-dipper circle:nth-of-type(7){animation-delay:2.1s}
+.sp-dipper circle.alcor{animation-delay:1.9s}
+@keyframes spDipperIn{from{opacity:0}to{opacity:.78}}
+@keyframes spDipperTwinkle{from{opacity:.6}to{opacity:1}}
+@media (max-width:380px){.sp-dipper{width:46vw;top:5%}}
 .sp-lock{position:relative;width:100%;text-align:center;transform:translateY(-8px)}
 .sp-logo{position:relative;width:min(100vw,420px);height:106px;margin:0 auto;
   animation:spLaunch .42s cubic-bezier(.55,0,.8,.35) 1.96s forwards}
@@ -635,7 +668,9 @@ body.splash-on{overflow:hidden}
 @media (max-width:380px){.sp-orb-wrap{left:calc(50% - 62px)}.sp-word{left:calc(50% - 5px);font-size:23px}}
 @media (prefers-reduced-motion:reduce){
   #splash::before,#splash::after,.sp-logo,.sp-orb-wrap,.sp-orb,.sp-orb::before,
-  .sp-ai,.sp-flare,.sp-wave,.sp-word,.sp-word::after,.sp-tag,.sp-proof,.sp-skip{animation:none!important}
+  .sp-ai,.sp-flare,.sp-wave,.sp-word,.sp-word::after,.sp-tag,.sp-proof,.sp-skip,
+  .sp-dipper,.sp-dipper circle{animation:none!important}
+  .sp-dipper{opacity:.78}
   .sp-orb{opacity:1;transform:scale(1)}.sp-ai,.sp-word,.sp-tag,.sp-proof,.sp-skip{opacity:1;filter:none}
   .sp-word{transform:translateY(-50%) translateX(0)}.sp-word::after{transform:scaleX(1)}}
 </style>
@@ -644,6 +679,17 @@ body.splash-on{overflow:hidden}
 <!-- ЗАСТАВКА «ЖИВОЙ СИГНАЛ»: спектр центральной кнопки превращается в логотип,
      затем сфера уходит к нижней навигации. Только CSS, без тяжёлых медиа. -->
 <div id="splash">
+  <svg class="sp-dipper" viewBox="0 0 104 62" aria-hidden="true">
+    <line x1="8" y1="15" x2="26" y2="24"/><line x1="26" y1="24" x2="43" y2="30"/>
+    <line x1="43" y1="30" x2="60" y2="34"/><line x1="60" y1="34" x2="63" y2="52"/>
+    <line x1="63" y1="52" x2="92" y2="49"/><line x1="92" y1="49" x2="88" y2="30"/>
+    <line x1="88" y1="30" x2="60" y2="34"/>
+    <circle cx="8" cy="15" r="1.7"/><circle cx="26" cy="24" r="2"/>
+    <circle cx="43" cy="30" r="2.3"/><circle cx="60" cy="34" r="1.4"/>
+    <circle cx="63" cy="52" r="1.9"/><circle cx="92" cy="49" r="2"/>
+    <circle cx="88" cy="30" r="2.4"/>
+    <circle class="alcor" cx="28.6" cy="21.4" r=".85" opacity=".7"/>
+  </svg>
   <div class="sp-lock">
     <div class="sp-logo">
       <div class="sp-orb-wrap">
@@ -687,7 +733,10 @@ body.splash-on{overflow:hidden}
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" class="pane-glass pane-sched" style="display:none">
-    <div class="section" data-i18n="schedHead">Расписание игр</div>
+    <div class="sched-hero glass-sheen">
+      <div class="sh-t"><span class="sh-dot"></span><span data-i18n="schedHero">Сегодняшние игры в анализе</span></div>
+      <div class="sh-s" data-i18n="schedHeroSub">AI разбирает каждый матч перед стартом — ставка или обоснованный пропуск</div>
+    </div>
     <div id="schedChips"></div>
     <div class="bets glass-sheen" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="proof" style="margin-top:12px" data-i18n="schedSub">время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки</div>
@@ -859,7 +908,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v56 · 19.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v57 · 19.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -888,7 +937,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v56";
+const BUILD = "v57";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -944,9 +993,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v56 · 19.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v56 · 19.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v56 · 19.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v57 · 19.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v57 · 19.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v57 · 19.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
@@ -968,6 +1017,10 @@ const T = {
   navStats: ["Ставки", "Bets", "投注"], navMe: ["Профиль", "Profile", "我的"],
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
   schedHead: ["Расписание игр", "Game schedule", "比赛赛程"],
+  schedHero: ["Сегодняшние игры в анализе", "Today's games under analysis", "今日赛事分析中"],
+  schedHeroSub: ["AI разбирает каждый матч перед стартом — ставка или обоснованный пропуск",
+    "AI reviews every match before the start — a bet or a reasoned skip",
+    "AI 在开赛前分析每场比赛——下注或有依据的跳过"],
   schedSub: ["время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки",
              "start times in your timezone (profile settings) · live odds for the first / second side of the row",
              "开始时间为你的时区（个人资料设置）· 实时赔率：行内第一方 / 第二方获胜"],
@@ -1475,7 +1528,9 @@ let __schedRows = [], __schedSport = "";
 async function initSched(){
   const box = document.getElementById("schedList");
   try {
-    const since = new Date(Date.now() - 4*3600*1000).toISOString();
+    // Только ПРЕДСТОЯЩИЕ матчи (CEO 19.08): вкладка — слейт, который бот ещё
+    // будет анализировать; стартовавшие и сыгранные из списка уходят.
+    const since = new Date().toISOString();
     __schedRows = await q(`/senya_schedule?select=*&commence=gte.${since}&order=commence.asc`);
   } catch(e) { __schedRows = []; }
   // счёт сыгранных: даты матчей ± сутки (день MLB — ET, теннис — UTC)
