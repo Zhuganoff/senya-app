@@ -100,11 +100,21 @@ b{font-weight:700}
 
 /* ── шапка ── */
 header{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s5)}
-.logo{width:42px;height:42px;flex:none;border-radius:13px;padding:8px;display:flex;
-  align-items:center;justify-content:center;
-  background:linear-gradient(140deg,var(--accent2),var(--accent));
-  box-shadow:0 6px 20px var(--glow)}
-.logo svg{width:100%;height:100%}
+.logo{position:relative;width:44px;height:44px;flex:none;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;overflow:hidden;isolation:isolate;
+  background:#090b15;box-shadow:0 7px 22px -7px rgba(56,189,248,.75),
+  0 0 18px -7px rgba(244,114,182,.68)}
+.logo::before{content:'';position:absolute;inset:-42%;z-index:0;
+  background:conic-gradient(from 0deg,#38bdf8,#6366f1,#a78bfa,#f472b6,#fb923c,#34d399,#38bdf8);
+  animation:headerOrbSpin 10s linear infinite}
+.logo::after{content:'';position:absolute;inset:3px;z-index:1;border-radius:50%;
+  background:radial-gradient(circle at 34% 27%,rgba(255,255,255,.16),transparent 30%),
+    radial-gradient(circle at 50% 60%,#171a2d 0%,#090b15 68%,#05060b 100%);
+  box-shadow:inset 0 0 13px rgba(99,102,241,.28)}
+.logo-ai{position:relative;z-index:2;color:#fff;font-size:15px;font-weight:850;
+  letter-spacing:-.02em;text-shadow:0 0 8px rgba(255,255,255,.48)}
+@keyframes headerOrbSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.logo::before{animation:none}}
 h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-items:center;gap:var(--s2)}
 .sub{font-size:12.5px;color:var(--mut);margin-top:1px}
 .badge-live{font-size:9.5px;font-weight:700;letter-spacing:.09em;padding:2px 7px;
@@ -615,10 +625,7 @@ body.splash-on{overflow:hidden}
 
 <div class="wrap">
   <header>
-    <div class="logo"><svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M60 8 L104 26 V60 C104 86 84 104 60 112 C36 104 16 86 16 60 V26 Z" stroke="#04140f" stroke-width="6" stroke-linejoin="round" opacity=".28"/>
-      <polyline points="32,78 47,64 60,71 76,46 92,36" stroke="#04140f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="92" cy="36" r="8" fill="#04140f"/></svg></div>
+    <div class="logo" aria-hidden="true"><span class="logo-ai">AI</span></div>
     <div>
       <h1>AI Sports<span class="badge-live">LIVE</span></h1>
       <div class="sub" data-i18n="headSub">Каждая ставка — в открытой базе. Проверь сам.</div>
@@ -815,7 +822,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v54 · 19.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v55 · 19.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -844,7 +851,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v54";
+const BUILD = "v55";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -900,9 +907,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v54 · 19.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v54 · 19.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v54 · 19.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v55 · 19.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v55 · 19.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v55 · 19.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
