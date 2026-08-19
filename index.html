@@ -143,6 +143,43 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .grid .card:last-child{grid-column:1/-1}
 .grid .card:last-child .v{font-size:20px}
 
+/* ── единая стеклянная система (v56) ────────────────────────────────────────
+   У каждой вкладки свой спокойный цвет глубины. Движущийся блик есть только
+   на одной главной поверхности раздела — интерфейс живой, но не мельтешит. */
+.pane-glass{--glass-a:rgba(56,189,248,.14);--glass-b:rgba(167,139,250,.08)}
+.pane-dash{--glass-a:rgba(56,189,248,.16);--glass-b:rgba(99,102,241,.09)}
+.pane-sched{--glass-a:rgba(251,146,60,.15);--glass-b:rgba(244,114,182,.07)}
+.pane-stats{--glass-a:rgba(56,189,248,.15);--glass-b:rgba(167,139,250,.10)}
+.pane-earn{--glass-a:rgba(52,211,153,.14);--glass-b:rgba(56,189,248,.08)}
+.pane-me{--glass-a:rgba(244,114,182,.13);--glass-b:rgba(167,139,250,.10)}
+.pane-glass .card,.pane-glass .bets,.pane-glass .wrcard,.pane-glass .me-card,
+.pane-glass .v3box,.pane-glass #sports{
+  position:relative;isolation:isolate;overflow:hidden;
+  background:
+    radial-gradient(120% 110% at -8% -28%,var(--glass-a),transparent 50%),
+    radial-gradient(95% 85% at 112% 118%,var(--glass-b),transparent 52%),
+    linear-gradient(150deg,color-mix(in srgb,var(--card-2) 78%,transparent),
+      color-mix(in srgb,var(--card) 90%,transparent));
+  border-color:color-mix(in srgb,var(--line-2) 72%,rgba(255,255,255,.12));
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.055);
+  -webkit-backdrop-filter:blur(18px) saturate(125%);
+  backdrop-filter:blur(18px) saturate(125%)}
+body.light .pane-glass .card,body.light .pane-glass .bets,
+body.light .pane-glass .wrcard,body.light .pane-glass .me-card,
+body.light .pane-glass .v3box,body.light .pane-glass #sports{
+  border-color:color-mix(in srgb,var(--line-2) 78%,rgba(255,255,255,.7));
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9)}
+.glass-sheen::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;
+  background:linear-gradient(112deg,transparent 31%,rgba(255,255,255,.13) 46%,
+    rgba(255,255,255,.04) 55%,transparent 69%);
+  background-size:280% 100%;animation:glassSheen 7.2s ease-in-out infinite}
+body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%,
+  color-mix(in srgb,var(--accent) 15%,transparent) 46%,
+  color-mix(in srgb,var(--accent2) 8%,transparent) 55%,transparent 69%);
+  background-size:280% 100%}
+@keyframes glassSheen{0%{background-position:155% 0}54%,100%{background-position:-65% 0}}
+@media (prefers-reduced-motion:reduce){.glass-sheen::after{animation:none;opacity:.25}}
+
 /* ── пилюли и метки ── */
 .tag{font-size:10px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:999px;
   background:var(--glow);color:var(--accent)}
@@ -632,7 +669,7 @@ body.splash-on{overflow:hidden}
     </div>
   </header>
 
-  <div id="pane-dash" style="display:none">
+  <div id="pane-dash" class="pane-glass pane-dash" style="display:none">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="v3Section">Новая стратегия V3</div>
   <div id="v3Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
@@ -649,22 +686,22 @@ body.splash-on{overflow:hidden}
   <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
   </div><!-- /pane-dash -->
 
-  <div id="pane-sched" style="display:none">
+  <div id="pane-sched" class="pane-glass pane-sched" style="display:none">
     <div class="section" data-i18n="schedHead">Расписание игр</div>
     <div id="schedChips"></div>
-    <div class="bets" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+    <div class="bets glass-sheen" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="proof" style="margin-top:12px" data-i18n="schedSub">время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки</div>
   </div><!-- /pane-sched -->
 
-  <div id="pane-stats">
+  <div id="pane-stats" class="pane-glass pane-stats">
 
     <div class="section" data-i18n="secLast">Последние ставки</div>
     <div id="lastStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   </div>
 
-  <div id="pane-me" style="display:none">
-    <div class="me-card">
+  <div id="pane-me" class="pane-glass pane-me" style="display:none">
+    <div class="me-card glass-sheen">
       <div class="ava" id="ava">?</div>
       <div class="me-info">
         <div class="me-name" id="meName">Гость</div>
@@ -765,9 +802,9 @@ body.splash-on{overflow:hidden}
 
   </div><!-- /pane-me -->
 
-  <div id="pane-earn" style="display:none">
+  <div id="pane-earn" class="pane-glass pane-earn" style="display:none">
     <div class="section" data-i18n="secLink">Твоя ссылка</div>
-    <div class="card">
+    <div class="card glass-sheen">
       <div class="reflink" id="refLink">—</div>
       <div class="refrow">
         <button class="btn" id="copyRef" data-i18n="copyLink">🔗 Реферальная ссылка</button>
@@ -822,7 +859,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v55 · 19.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v56 · 19.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -851,7 +888,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v55";
+const BUILD = "v56";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -907,9 +944,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v55 · 19.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v55 · 19.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v55 · 19.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v56 · 19.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v56 · 19.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v56 · 19.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
@@ -1404,7 +1441,7 @@ async function main(){
   const money = p => myBank != null ? ` = ${p>=0?"+":"−"}$${Math.abs(p/100*myBank).toFixed(2)}` : "";
   const pA = pnlAll*100, p24 = pnl24*100;
   document.getElementById("topCards").innerHTML = `
-    <div class="card"><div class="k">${t("myWallet")}</div>
+    <div class="card glass-sheen"><div class="k">${t("myWallet")}</div>
       <div class="v ${cls(pA)}">${"$" + ((myBank ?? BOT_BANK)*(1+pnlAll)).toFixed(2)}</div>
       <div class="d" style="color:var(--mut)">${t("walletStart")} $${(myBank ?? BOT_BANK).toFixed(0)} · <span class="${cls(pA)}">${pct(pA)}</span>${myBank == null ? " · " + t("walletNotLinked") : ""}</div></div>
     <div class="card"><div class="k">${t("wrAll")}</div>
