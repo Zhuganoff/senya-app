@@ -468,14 +468,15 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 /* ── центральная кнопка «Ставки»: живой переливающийся шар (v34, CEO 18.08:
    «как Сири — модель живая, и кнопка должна жить»). Круг целиком виден,
    вращающийся конический градиент + дыхание + пульсирующее свечение. ── */
-.bnav-item.bnav-center{flex:1.08;justify-content:flex-start}
-.bnav-item.bnav-center .cbtn{position:relative;width:48px;height:48px;margin-top:-9px;
+.bnav-item.bnav-center{flex:1.15;justify-content:flex-start}
+.bnav-item.bnav-center .cbtn{position:relative;width:56px;height:56px;margin-top:-14px;
   border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
   background:transparent;
-  box-shadow:0 7px 18px -9px var(--accent);animation:none}
+  box-shadow:0 8px 24px -8px rgba(56,189,248,.55), 0 0 22px -6px rgba(167,139,250,.45);
+  animation:orbBreathe 3.6s ease-in-out infinite}
 .bnav-item.bnav-center .cbtn::after{content:'';position:absolute;inset:-40%;
-  background:conic-gradient(from 0deg,var(--accent2),#60a5fa,var(--accent),var(--accent2));
-  animation:none}
+  background:conic-gradient(from 0deg,#38bdf8,#6366f1,#a78bfa,#f472b6,#fb923c,#34d399,#38bdf8);
+  animation:orbSpin 6s linear infinite}
 .bnav-item.bnav-center .cbtn::before{content:'';position:absolute;inset:3px;border-radius:50%;
   background:var(--bg);opacity:.86;z-index:1}
 .bnav-item.bnav-center .cbtn svg{position:relative;z-index:2;width:25px;height:25px;
@@ -483,20 +484,20 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 /* фирменная марка внутри шара (CEO 18.08: «в стиле AI Sports, мелкими буквами») */
 .orbmark{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
   line-height:1;color:var(--txt);text-shadow:0 1px 3px rgba(0,0,0,.35)}
-.orbmark b{font-size:15px;font-weight:800;letter-spacing:-.02em}
+.orbmark b{font-size:17px;font-weight:800;letter-spacing:-.02em}
 .orbmark i{font-style:normal;font-size:6px;font-weight:700;letter-spacing:.16em;
   margin-top:2px;opacity:.75}
 .bnav-item.bnav-center.active .orbmark{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.55)}
 .bnav-item.bnav-center.active .orbmark i{opacity:.95}
-.bnav-item.bnav-center.active .cbtn{animation:orbBreathe 4.8s ease-in-out infinite;
-  box-shadow:0 9px 24px -8px var(--accent)}
+.bnav-item.bnav-center.active .cbtn{animation:orbBreathe 2.2s ease-in-out infinite;
+  box-shadow:0 10px 30px -8px rgba(56,189,248,.75), 0 0 30px -4px rgba(244,114,182,.55)}
 .bnav-item.bnav-center.active .cbtn::before{opacity:.20}
-.bnav-item.bnav-center.active .cbtn::after{animation:orbSpin 14s linear infinite}
+.bnav-item.bnav-center.active .cbtn::after{animation:orbSpin 2.6s linear infinite}
 .bnav-item.bnav-center.active .cbtn svg{stroke:#fff;opacity:1;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
 .bnav-item.bnav-center.active::before{display:none}
 @keyframes orbSpin{to{transform:rotate(360deg)}}
-@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @media (prefers-reduced-motion:reduce){
   .bnav-item.bnav-center .cbtn,.bnav-item.bnav-center .cbtn::after{animation:none}}
 
