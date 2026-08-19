@@ -37,7 +37,7 @@
   /* базовая палитра — «Лёд» (выбор CEO 11.08): язык биржевых терминалов */
   --bg:#0a0e15;--bg-2:#0d121b;
   --card:#141b26;--card-2:#1a2231;--card-3:#212b3d;
-  --txt:#eef3fa;--txt-2:#aebacd;--mut:#7183a0;
+  --txt:#eef3fa;--txt-2:#b8c4d6;--mut:#7d8eaa;
   --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);
   --green:#22c55e;--green-2:#16a34a;--red:#f43f5e;--amber:#f59e0b;
   --accent:#38bdf8;--accent2:#06b6d4;
@@ -50,7 +50,7 @@
 body.light{
   --bg:#f6f8fb;--bg-2:#eef2f7;
   --card:#ffffff;--card-2:#f4f7fa;--card-3:#e9eff5;
-  --txt:#0d1521;--txt-2:#41506a;--mut:#6b7a92;
+  --txt:#0d1521;--txt-2:#34445f;--mut:#5b6b84;
   --line:rgba(13,21,33,.09);--line-2:rgba(13,21,33,.16);
   --green:#15a34a;--green-2:#0f8a3e;--red:#dc2f4b;--amber:#b45309;
   --accent:#0284c7;--accent2:#0891b2;
@@ -147,7 +147,14 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .bet{display:flex;align-items:center;gap:11px;padding:12px var(--s4);
   border-bottom:1px solid var(--line);border-left:3px solid transparent;position:relative}
 .bet:last-child{border-bottom:none}
-.bet .res{font-size:17px;flex:none;width:24px;text-align:center}
+.bet .res{font-size:14px;font-weight:900;line-height:1;flex:none;width:26px;height:26px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  color:var(--mut);background:var(--card-3);border:1px solid var(--line)}
+.bet.win .res{color:var(--green);background:color-mix(in srgb,var(--green) 13%,var(--card-3));
+  border-color:color-mix(in srgb,var(--green) 28%,var(--line))}
+.bet.lose .res{color:var(--red);background:color-mix(in srgb,var(--red) 12%,var(--card-3));
+  border-color:color-mix(in srgb,var(--red) 26%,var(--line))}
+.bet.void .res{color:var(--txt-2)}
 .bet .m{flex:1;min-width:0}
 .bet .match{font-size:14.5px;font-weight:700;letter-spacing:-.015em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -377,6 +384,16 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 .v3paper{flex:none;font-size:9.5px;font-weight:850;letter-spacing:.08em;
   padding:4px 8px;border-radius:999px;color:var(--accent);
   background:var(--glow);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.v3state{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3);
+  padding:var(--s2) var(--s3);border-radius:var(--r-m);background:var(--card-3);
+  color:var(--txt-2);font-size:11.5px;font-weight:650}
+.v3dot{width:7px;height:7px;border-radius:50%;flex:none;background:var(--green);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 12%,transparent)}
+.v3state.stale .v3dot{background:var(--amber);
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 12%,transparent)}
+.v3state b{color:var(--txt);font-size:11.5px}
+.v3state span:last-child{margin-left:auto;color:var(--mut);font-size:10.5px;
+  white-space:nowrap;font-variant-numeric:tabular-nums}
 .v3metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:12px}
 .v3metric{min-width:0;background:var(--card-3);border-radius:var(--r-m);padding:9px 6px;text-align:center}
 .v3metric b{display:block;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;
@@ -385,6 +402,9 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 .v3list{margin-top:10px;border-top:1px solid var(--line)}
 .v3row{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--line)}
 .v3row:last-child{border-bottom:0;padding-bottom:0}
+.v3row>div:first-child{width:24px;height:24px;flex:none;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;background:var(--card-3);color:var(--txt-2);
+  border:1px solid var(--line);font-size:12px;font-weight:900}
 .v3row .m{flex:1;min-width:0}
 .v3row .match{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .v3row .meta{font-size:10.5px;color:var(--mut);margin-top:3px;white-space:nowrap;
@@ -421,6 +441,7 @@ body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
   color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.005em;font-family:inherit;
   text-shadow:0 1px 2px rgba(0,0,0,.30);   /* читаемость на прозрачной панели (CEO 18.08) */
   transition:color .16s ease,background .16s ease}
+.bnav-item:focus,.bnav-item:focus-visible{outline:none}
 body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 .bnav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;
   stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .16s ease}
@@ -447,15 +468,14 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 /* ── центральная кнопка «Ставки»: живой переливающийся шар (v34, CEO 18.08:
    «как Сири — модель живая, и кнопка должна жить»). Круг целиком виден,
    вращающийся конический градиент + дыхание + пульсирующее свечение. ── */
-.bnav-item.bnav-center{flex:1.15;justify-content:flex-start}
-.bnav-item.bnav-center .cbtn{position:relative;width:56px;height:56px;margin-top:-14px;
+.bnav-item.bnav-center{flex:1.08;justify-content:flex-start}
+.bnav-item.bnav-center .cbtn{position:relative;width:48px;height:48px;margin-top:-9px;
   border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
   background:transparent;
-  box-shadow:0 8px 24px -8px rgba(56,189,248,.55), 0 0 22px -6px rgba(167,139,250,.45);
-  animation:orbBreathe 3.6s ease-in-out infinite}
+  box-shadow:0 7px 18px -9px var(--accent);animation:none}
 .bnav-item.bnav-center .cbtn::after{content:'';position:absolute;inset:-40%;
-  background:conic-gradient(from 0deg,#38bdf8,#6366f1,#a78bfa,#f472b6,#fb923c,#34d399,#38bdf8);
-  animation:orbSpin 6s linear infinite}
+  background:conic-gradient(from 0deg,var(--accent2),#60a5fa,var(--accent),var(--accent2));
+  animation:none}
 .bnav-item.bnav-center .cbtn::before{content:'';position:absolute;inset:3px;border-radius:50%;
   background:var(--bg);opacity:.86;z-index:1}
 .bnav-item.bnav-center .cbtn svg{position:relative;z-index:2;width:25px;height:25px;
@@ -463,20 +483,20 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 /* фирменная марка внутри шара (CEO 18.08: «в стиле AI Sports, мелкими буквами») */
 .orbmark{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
   line-height:1;color:var(--txt);text-shadow:0 1px 3px rgba(0,0,0,.35)}
-.orbmark b{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.orbmark b{font-size:15px;font-weight:800;letter-spacing:-.02em}
 .orbmark i{font-style:normal;font-size:6px;font-weight:700;letter-spacing:.16em;
   margin-top:2px;opacity:.75}
 .bnav-item.bnav-center.active .orbmark{color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.55)}
 .bnav-item.bnav-center.active .orbmark i{opacity:.95}
-.bnav-item.bnav-center.active .cbtn{animation:orbBreathe 2.2s ease-in-out infinite;
-  box-shadow:0 10px 30px -8px rgba(56,189,248,.75), 0 0 30px -4px rgba(244,114,182,.55)}
+.bnav-item.bnav-center.active .cbtn{animation:orbBreathe 4.8s ease-in-out infinite;
+  box-shadow:0 9px 24px -8px var(--accent)}
 .bnav-item.bnav-center.active .cbtn::before{opacity:.20}
-.bnav-item.bnav-center.active .cbtn::after{animation:orbSpin 2.6s linear infinite}
+.bnav-item.bnav-center.active .cbtn::after{animation:orbSpin 14s linear infinite}
 .bnav-item.bnav-center.active .cbtn svg{stroke:#fff;opacity:1;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.5))}
 .bnav-item.bnav-center.active::before{display:none}
 @keyframes orbSpin{to{transform:rotate(360deg)}}
-@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes orbBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
 @media (prefers-reduced-motion:reduce){
   .bnav-item.bnav-center .cbtn,.bnav-item.bnav-center .cbtn::after{animation:none}}
 
@@ -555,10 +575,10 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 
   <div id="pane-dash" style="display:none">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-  <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
-  <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="v3Section">Новая стратегия V3</div>
   <div id="v3Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
+  <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secDayBets">Ставки за день</div>
   <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
   <div class="dayrow">
@@ -645,12 +665,10 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
       <div class="k" data-i18n="subTitle">AI Sports Pro <span class="tag">β</span></div>
       <div class="cur" style="font-size:30px;margin:4px 0 2px">$29<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
       <div class="me-sub" data-i18n="subList" style="margin:6px 0 10px">
-        • Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>
-        • Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>
-        • Полная статистика и CLV в открытой базе — ничего не скрыто<br>
-        • 20% с платежей 1-й линии + 5% со 2-й — пожизненно<br>
-        • Отмена в один клик, без вопросов</div>
-      <button class="btn" id="subBtn" data-i18n="subBtn">💳 Оформить за $29/мес</button>
+        • Ставки MLB, тенниса и футбола в реальном времени<br>
+        • Размер каждой ставки под твой банк<br>
+        • Открытая статистика, CLV и реферальная программа 20% + 5%</div>
+      <button class="btn" id="subBtn" data-i18n="subBtn">Узнать о запуске</button>
       <div class="me-sub" id="subHint" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
     </div>
 
@@ -741,11 +759,11 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 
   <div class="proof" data-i18n="proofMain">
     🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной
-    базы результатов — той же, куда бот пишет каждую ставку в момент размещения.
-    Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.
+    базы результатов. Каждая ставка фиксируется в момент размещения. Технические
+    исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v52 · 19.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.55">сборка v53 · 19.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -774,7 +792,7 @@ body.light .bnav-item{text-shadow:0 1px 2px rgba(255,255,255,.75)}
 </nav>
 
 <script>
-const BUILD = "v52";
+const BUILD = "v53";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -826,22 +844,25 @@ const T = {
   yesterday: ["← вчера", "← prev day", "← 前一天"],
   tomorrow: ["завтра →", "next day →", "后一天 →"],
   pickDate: ["Выбери дату", "Pick a date", "选择日期"],
-  proofMain: ["🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной базы результатов — той же, куда бот пишет каждую ставку в момент размещения. Цена входа, цена закрытия, результат — ничего нельзя подрисовать задним числом.",
-              "🔍 <b>Transparency:</b> this page reads straight from the public results database — the same one the bot writes every bet to at placement time. Entry price, closing price, result — nothing can be retouched after the fact.",
-              "🔍 <b>透明：</b>本页数据直接读取公开结果数据库——机器人在下注瞬间就把每笔投注写入其中。入场赔率、收盘赔率、结果——事后无法涂改。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v52 · 19.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v52 · 19.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v52 · 19.08.2026</span>"],
+  proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
+              "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
+              "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.55\">сборка v53 · 19.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.55\">build v53 · 19.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.55\">build v53 · 19.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
-  v3Paper: ["PAPER ONLY", "PAPER ONLY", "仅模拟"],
+  v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
   v3Virtual: ["Виртуально, реальные деньги: $0", "Virtual, real money: $0", "模拟运行，真实资金：$0"],
   v3Separate: ["Отдельный результат — не входит в прибыль старой стратегии", "Separate result — excluded from the old strategy P&L", "单独统计——不计入旧策略盈亏"],
+  v3Scanning: ["Сканирование активно", "Scanning active", "扫描运行中"],
+  v3Waiting: ["Ожидается обновление", "Update pending", "等待更新"],
+  v3Cadence: ["каждые 10 мин", "every 10 min", "每 10 分钟"],
   v3Decisions: ["решений", "decisions", "决策"],
   v3Bets: ["ставок", "bets", "投注"],
   v3Skips: ["пропусков", "skips", "跳过"],
   v3Pnl: ["P&L", "P&L", "盈亏"],
-  v3NoSignals: ["Пока нет решений в текущем игровом дне. Стратегия продолжает проверять рынки по расписанию.", "No decisions in the current betting day yet. The strategy continues scanning markets on schedule.", "当前比赛日尚无决策。策略会继续按计划扫描市场。"],
+  v3NoSignals: ["Новых решений пока нет. Система продолжает проверять цены; ставка появится только при положительном исполнимом edge и прохождении риск-лимитов.", "No new decisions yet. Prices are still being checked; a bet appears only with positive executable edge and after all risk limits pass.", "暂无新决策。系统会继续检查价格；只有可执行优势为正且通过全部风控限制时才会生成投注。"],
   v3Unavailable: ["Источник V3 временно недоступен", "V3 feed is temporarily unavailable", "V3 数据暂时不可用"],
   v3Unsafe: ["Источник заблокирован: разрешён только режим PAPER_ONLY", "Feed blocked: PAPER_ONLY mode is required", "数据已拦截：仅允许 PAPER_ONLY 模式"],
   v3Updated: ["обновлено", "updated", "更新于"],
@@ -854,6 +875,10 @@ const T = {
              "start times in your timezone (profile settings) · live odds for the first / second side of the row",
              "开始时间为你的时区（个人资料设置）· 实时赔率：行内第一方 / 第二方获胜"],
   schedEmpty: ["Игр нет — либо расписание дня ещё собирается", "No games — or today's schedule is still being built", "暂无比赛——或今日赛程仍在生成中"],
+  schedMorning: ["Утро", "Morning", "早晨"],
+  schedDay: ["День", "Day", "白天"],
+  schedEvening: ["Вечер", "Evening", "晚间"],
+  schedNight: ["Ночь", "Night", "夜间"],
   suspended: ["перенесена/остановлена", "postponed/suspended", "延期/中断"],
   secApi: ["Подключение API", "API connection", "API 连接"],
   secWalletMain: ["Общий кошелёк", "Main wallet", "总钱包"],
@@ -973,16 +998,16 @@ const T = {
   secSub: ["Подписка", "Subscription", "订阅"],
   subTitle: ["AI Sports Pro <span class=\"tag\">β</span>", "AI Sports Pro <span class=\"tag\">β</span>", "AI Sports Pro <span class=\"tag\">β</span>"],
   subPerMon: ["/мес", "/mo", "／月"],
-  subList: ["• Все ставки бота в реальном времени — MLB, теннис, футбол: коэффициент, размер и окно входа до старта<br>• Размер каждой ставки под ТВОЙ банк — Келли считает за тебя<br>• Полная статистика и CLV в открытой базе — ничего не скрыто<br>• 20% с платежей 1-й линии + 5% со 2-й — пожизненно<br>• Отмена в один клик, без вопросов",
-            "• Every bot bet in real time — MLB, tennis, soccer: odds, size and an entry window before the start<br>• Each bet sized to YOUR bankroll — Kelly does the math<br>• Full stats and CLV in an open database — nothing hidden<br>• 20% of 1st-line payments + 5% of 2nd — for life<br>• Cancel in one click, no questions asked",
-            "• 机器人所有投注实时推送——MLB、网球、足球：赔率、注额与开赛前入场窗口<br>• 每注按你的资金量身定制——凯利公式替你计算<br>• 公开数据库中的完整统计与 CLV——毫无隐藏<br>• 第一层付款的 20% + 第二层的 5%——终身有效<br>• 一键取消，无需理由"],
-  subBtn: ["💳 Оформить за $29/мес", "💳 Subscribe for $29/mo", "💳 订阅 每月 $29"],
+  subList: ["• Ставки MLB, тенниса и футбола в реальном времени<br>• Размер каждой ставки под твой банк<br>• Открытая статистика, CLV и реферальная программа 20% + 5%",
+            "• Live MLB, tennis and soccer bets<br>• Every bet sized to your bankroll<br>• Open stats, CLV and a 20% + 5% referral program",
+            "• 实时 MLB、网球与足球投注<br>• 每笔投注按你的资金规模计算<br>• 公开统计、CLV 与 20% + 5% 推荐计划"],
+  subBtn: ["Узнать о запуске", "Launch updates", "获取上线通知"],
   subSoon: ["Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.",
             "Payments aren't live yet — the bot will message you first when they are. Everything is free to watch for now.",
             "支付尚未开通——开通时机器人会第一时间通知你。目前全部内容免费开放。"],
-  subSoonClick: ["⏳ Скоро! Бот напишет первым, когда оплата включится.",
-                 "⏳ Coming soon! The bot will message you first when payments go live.",
-                 "⏳ 即将上线！支付开通时机器人会第一时间通知你。"],
+  subSoonClick: ["Готово — бот сообщит, когда подписка запустится.",
+                 "Done — the bot will message you when subscriptions launch.",
+                 "完成——订阅上线时机器人会通知你。"],
   tzTitle: ["Часовой пояс", "Time zone", "时区"],
   tzAuto: ["Авто (как на устройстве)", "Auto (device)", "自动（跟随设备）"],
   tzNote: ["Время ставок показывается в этом поясе. «Авто» — как на устройстве.",
@@ -1234,12 +1259,12 @@ async function loadV3(){
       ? `${Number(x)>=0?"+":""}${(100*Number(x)).toFixed(2)}%` : "—";
     const entries = [];
     (feed.bets || []).slice(-5).reverse().forEach(r => entries.push({
-      icon: r.result===1?"✅":r.result===0?"❌":"📝",
+      icon: r.result===1?"✓":r.result===0?"×":"·",
       match: r.match, meta: `${r.market||""} · @${r.odds??"—"} · ${v3Num(100*Number(bank.stake_pct||0),1)}%`,
       right: edgePct(r.net_edge), kind: r.result===1?"pos":r.result===0?"neg":""
     }));
     (feed.skips || []).slice(-5).reverse().forEach(r => entries.push({
-      icon:"⏭", match:r.match, meta:`${r.market||""} · ${r.reason_code||"SKIP"}`,
+      icon:"→", match:r.match, meta:`${r.market||""} · ${r.reason_code||"SKIP"}`,
       right:edgePct(r.net_edge), kind:""
     }));
     const list = entries.slice(0,6).map(r => `<div class="v3row">
@@ -1247,9 +1272,13 @@ async function loadV3(){
       <div class="meta">${v3Esc(r.meta)}</div></div>
       <div class="edge ${r.kind}">${t("v3Edge")}<br>${v3Esc(r.right)}</div></div>`).join("");
     const upd = rows[0].updated_at || feed.generated_ts;
+    const updMs = Date.parse(upd || ""), fresh = Number.isFinite(updMs) && Date.now()-updMs < 25*60*1000;
+    const state = `<div class="v3state${fresh?"":" stale"}"><span class="v3dot"></span>
+      <b>${t(fresh?"v3Scanning":"v3Waiting")}</b><span>${t("v3Cadence")}</span></div>`;
     box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("v3Title")}</div>
       <div class="v3sub">${t("v3Virtual")} · ${v3Esc(feed.session||"")}</div></div>
       <span class="v3paper">${t("v3Paper")}</span></div>
+      ${state}
       <div class="v3metrics">
         <div class="v3metric"><b>${v3Num(z.decisions)}</b><span>${t("v3Decisions")}</span></div>
         <div class="v3metric"><b>${v3Num(z.bets)}</b><span>${t("v3Bets")}</span></div>
@@ -1261,6 +1290,8 @@ async function loadV3(){
   }catch(e){
     box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("v3Title")}</div>
       <div class="v3sub">${t("v3Virtual")}</div></div><span class="v3paper">${t("v3Paper")}</span></div>
+      <div class="v3state stale"><span class="v3dot"></span><b>${t("v3Waiting")}</b>
+        <span>${t("v3Cadence")}</span></div>
       <div class="v3empty">${t("v3Unavailable")}</div>
       <div class="v3notice">${t("v3Separate")}</div>`;
   }
@@ -1376,12 +1407,23 @@ function renderSched(){
     b.classList.toggle("on", b.dataset.sp === __schedSport));
   const rows = __schedRows.filter(r => r.sport === __schedSport);
   if (!rows.length) { box.innerHTML = `<div class="loading">${t("schedEmpty")}</div>`; return; }
-  const byLg = {};
-  rows.forEach(r => (byLg[r.league || "—"] = byLg[r.league || "—"] || []).push(r));
+  const partOf = iso => {
+    const h = Number((fmtTime(iso)||"00:00").slice(0,2));
+    return h < 6 ? ["schedNight","☾"] : h < 12 ? ["schedMorning","◌"]
+      : h < 18 ? ["schedDay","◐"] : ["schedEvening","◒"];
+  };
+  const byPart = {};
+  const partOrder = [];
+  rows.forEach(r => {
+    const key = partOf(r.commence)[0];
+    if(!byPart[key]) partOrder.push(key);
+    (byPart[key] = byPart[key] || []).push(r);
+  });
   let html = "";
-  for (const lg of Object.keys(byLg)){
-    html += `<div class="section" style="margin-top:12px;font-size:13px">${lg}</div>`;
-    html += byLg[lg].map(r => {
+  for (const key of partOrder){
+    const mark = partOf(byPart[key][0].commence)[1];
+    html += `<div class="section" style="margin-top:12px;font-size:13px">${mark} ${t(key)}</div>`;
+    html += byPart[key].map(r => {
       // порядок кф = порядок имён в строке: MLB «Away @ Home» → away/home, теннис «Home vs Away» → home/away
       const o = r.sport === "mlb" ? [r.odds_away, r.odds_home] : [r.odds_home, r.odds_away];
       const oS = (o[0] && o[1]) ? `${Number(o[0]).toFixed(2)} / ${Number(o[1]).toFixed(2)}` : "—";
@@ -1391,14 +1433,14 @@ function renderSched(){
       const ms = started ? msFor(r.sport, r.match, (r.commence || "").slice(0,10)) : null;
       if (ms && ms.final_score) {
         return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}">
-          <div class="res">🏁</div>
+          <div class="res">✓</div>
           <div class="m"><div class="match">${r.match || ""}</div>
-          <div class="sel">${fmtTime(r.commence)} · ${t("msTap")}</div></div>
+          <div class="sel">${fmtTime(r.commence)} · ${r.league||"—"} · ${t("msTap")}</div></div>
           <div class="odds"><div class="bscore" style="margin:0">${ms.final_score}</div></div></div>`;
       }
-      return `<div class="bet"><div class="res">🕐</div>
+      return `<div class="bet"><div class="res">◷</div>
         <div class="m"><div class="match">${r.match || ""}</div>
-        <div class="sel">${fmtTime(r.commence)}</div></div>
+        <div class="sel">${fmtTime(r.commence)} · ${r.league||"—"}</div></div>
         <div class="odds"><div>${oS}</div></div></div>`;
     }).join("");
   }
@@ -1439,7 +1481,7 @@ function plBets(n){
   return (a>10&&a<20)||b===0||b>4 ? "ставок" : b===1 ? "ставка" : "ставки";
 }
 function rowCls(r){ return r.result===1 ? "win" : r.result===0 ? "lose" : r.result===-1 ? "void" : ""; }
-function resIco(r){ return r.result===1?"✅":r.result===0?"❌":r.result===-1?"↩️":(isStale(r)?"⏸":"⏳"); }
+function resIco(r){ return r.result===1?"✓":r.result===0?"×":r.result===-1?"↶":(isStale(r)?"Ⅱ":"·"); }
 // ставка «висит»: результата нет, а игра стартовала больше 6 часов назад
 // (дождь/перенос — кейс Lajal 12.08) → честная пометка вместо вечного «в игре»
 function isStale(r){
@@ -1734,7 +1776,7 @@ async function loadLastBets(){
     const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
     return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${resIco(r)}</div>
       <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
-      <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()} · ${r.match_date||""}</div></div>
+      <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${gameTime(r)}</div></div>
       <div class="odds"><div>@${oddsOf(r)??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
   }).join("");
 }
