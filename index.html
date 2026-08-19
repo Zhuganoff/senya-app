@@ -584,24 +584,30 @@ body.splash-on{overflow:hidden}
     radial-gradient(circle at 31% 69%,rgba(167,243,208,.4) 0 1px,transparent 1.5px);
   animation:spStars 2.8s ease-in-out infinite alternate}
 #splash.hide{opacity:0;visibility:hidden}
-/* Большая Медведица в правом верхнем углу: семь звёзд ковша поверх звёздного фона.
-   Размеры точек отражают реальную яркость (Мегрец — самая слабая, Дубхе и Алиот —
-   самые яркие), рядом с Мицаром — крошечный Алькор. */
-.sp-dipper{position:absolute;top:6.5%;right:4.5%;z-index:-1;width:min(42vw,186px);height:auto;
-  opacity:0;pointer-events:none;filter:drop-shadow(0 0 6px rgba(186,230,253,.32));
-  animation:spDipperIn 1.5s ease-out .25s forwards}
-.sp-dipper line{stroke:rgba(186,230,253,.34);stroke-width:.7;stroke-linecap:round}
-.sp-dipper circle{fill:#eaf4ff;animation:spDipperTwinkle 3.4s ease-in-out infinite alternate}
-.sp-dipper circle:nth-of-type(2){animation-delay:.5s}
-.sp-dipper circle:nth-of-type(3){animation-delay:1.1s}
-.sp-dipper circle:nth-of-type(4){animation-delay:.3s}
-.sp-dipper circle:nth-of-type(5){animation-delay:1.6s}
-.sp-dipper circle:nth-of-type(6){animation-delay:.9s}
-.sp-dipper circle:nth-of-type(7){animation-delay:2.1s}
-.sp-dipper circle.alcor{animation-delay:1.9s}
-@keyframes spDipperIn{from{opacity:0}to{opacity:.78}}
-@keyframes spDipperTwinkle{from{opacity:.6}to{opacity:1}}
-@media (max-width:380px){.sp-dipper{width:46vw;top:5%}}
+/* Созвездие Тельца в правом верхнем углу (v58, CEO 19.08): без линий, как в
+   реальном небе. Позиции звёзд — из реальных RA/Dec, размер — по яркости:
+   Альдебаран (оранжевый) ярче всех, дальше Эльнат, ζ Tau; V-образные Гиады —
+   «морда быка», два рога, справа — россыпь Плеяд. Мерцание лёгкое, вразнобой. */
+.sp-taurus{position:absolute;top:5.5%;right:4%;z-index:-1;width:min(46vw,204px);height:auto;
+  opacity:0;pointer-events:none;filter:drop-shadow(0 0 5px rgba(186,230,253,.26));
+  animation:spTaurIn 1.6s ease-out .25s forwards}
+.sp-taurus circle{fill:#eaf4ff;animation:spTaurTwinkle 4.2s ease-in-out infinite alternate}
+.sp-taurus circle.ald{fill:#ffd8ad}
+.sp-taurus circle:nth-of-type(2){animation-delay:.7s;animation-duration:3.6s}
+.sp-taurus circle:nth-of-type(3){animation-delay:1.4s}
+.sp-taurus circle:nth-of-type(4){animation-delay:.4s;animation-duration:4.8s}
+.sp-taurus circle:nth-of-type(5){animation-delay:2.2s}
+.sp-taurus circle:nth-of-type(6){animation-delay:1.1s;animation-duration:3.8s}
+.sp-taurus circle:nth-of-type(7){animation-delay:2.9s}
+.sp-taurus circle:nth-of-type(8){animation-delay:.9s;animation-duration:5.1s}
+.sp-taurus circle:nth-of-type(9){animation-delay:1.8s}
+.sp-taurus circle:nth-of-type(10){animation-delay:3.3s;animation-duration:3.5s}
+.sp-taurus circle:nth-of-type(11){animation-delay:2.5s}
+.sp-taurus circle:nth-of-type(12){animation-delay:1.6s;animation-duration:4.6s}
+.sp-taurus circle:nth-of-type(n+13){animation-delay:2s;animation-duration:5.4s}
+@keyframes spTaurIn{from{opacity:0}to{opacity:.8}}
+@keyframes spTaurTwinkle{from{opacity:.5}to{opacity:1}}
+@media (max-width:380px){.sp-taurus{width:50vw;top:4.5%}}
 .sp-lock{position:relative;width:100%;text-align:center;transform:translateY(-8px)}
 .sp-logo{position:relative;width:min(100vw,420px);height:106px;margin:0 auto;
   animation:spLaunch .42s cubic-bezier(.55,0,.8,.35) 1.96s forwards}
@@ -669,8 +675,8 @@ body.splash-on{overflow:hidden}
 @media (prefers-reduced-motion:reduce){
   #splash::before,#splash::after,.sp-logo,.sp-orb-wrap,.sp-orb,.sp-orb::before,
   .sp-ai,.sp-flare,.sp-wave,.sp-word,.sp-word::after,.sp-tag,.sp-proof,.sp-skip,
-  .sp-dipper,.sp-dipper circle{animation:none!important}
-  .sp-dipper{opacity:.78}
+  .sp-taurus,.sp-taurus circle{animation:none!important}
+  .sp-taurus{opacity:.8}
   .sp-orb{opacity:1;transform:scale(1)}.sp-ai,.sp-word,.sp-tag,.sp-proof,.sp-skip{opacity:1;filter:none}
   .sp-word{transform:translateY(-50%) translateX(0)}.sp-word::after{transform:scaleX(1)}}
 </style>
@@ -679,16 +685,20 @@ body.splash-on{overflow:hidden}
 <!-- ЗАСТАВКА «ЖИВОЙ СИГНАЛ»: спектр центральной кнопки превращается в логотип,
      затем сфера уходит к нижней навигации. Только CSS, без тяжёлых медиа. -->
 <div id="splash">
-  <svg class="sp-dipper" viewBox="0 0 104 62" aria-hidden="true">
-    <line x1="8" y1="15" x2="26" y2="24"/><line x1="26" y1="24" x2="43" y2="30"/>
-    <line x1="43" y1="30" x2="60" y2="34"/><line x1="60" y1="34" x2="63" y2="52"/>
-    <line x1="63" y1="52" x2="92" y2="49"/><line x1="92" y1="49" x2="88" y2="30"/>
-    <line x1="88" y1="30" x2="60" y2="34"/>
-    <circle cx="8" cy="15" r="1.7"/><circle cx="26" cy="24" r="2"/>
-    <circle cx="43" cy="30" r="2.3"/><circle cx="60" cy="34" r="1.4"/>
-    <circle cx="63" cy="52" r="1.9"/><circle cx="92" cy="49" r="2"/>
-    <circle cx="88" cy="30" r="2.4"/>
-    <circle class="alcor" cx="28.6" cy="21.4" r=".85" opacity=".7"/>
+  <svg class="sp-taurus" viewBox="0 0 120 92" aria-hidden="true">
+    <!-- рога: Эльнат (β) и ζ Tau -->
+    <circle cx="15" cy="4" r="1.9"/><circle cx="6" cy="36" r="1.5"/>
+    <!-- Гиады, V-образная «морда»: Альдебаран, θ², ε (Айн), δ, γ -->
+    <circle class="ald" cx="56" cy="56" r="2.5"/><circle cx="62" cy="58" r="1.1"/>
+    <circle cx="62" cy="44" r="1.1"/><circle cx="67" cy="51" r="1"/>
+    <circle cx="70" cy="60" r="1.1"/>
+    <!-- тело: λ, ξ, ο Tau -->
+    <circle cx="85" cy="73" r="1.1"/><circle cx="113" cy="85" r="1"/>
+    <circle cx="115" cy="88" r="1"/>
+    <!-- Плеяды: Альциона и россыпь -->
+    <circle cx="96" cy="23" r="1.3"/><circle cx="93.5" cy="21" r=".7" opacity=".8"/>
+    <circle cx="98" cy="20.5" r=".65" opacity=".75"/><circle cx="97.5" cy="25.5" r=".6" opacity=".7"/>
+    <circle cx="94" cy="24.6" r=".55" opacity=".7"/><circle cx="99.6" cy="23.2" r=".5" opacity=".65"/>
   </svg>
   <div class="sp-lock">
     <div class="sp-logo">
@@ -908,7 +918,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v57 · 19.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v58 · 19.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -937,7 +947,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v57";
+const BUILD = "v58";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -993,9 +1003,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v57 · 19.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v57 · 19.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v57 · 19.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v58 · 19.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v58 · 19.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v58 · 19.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
