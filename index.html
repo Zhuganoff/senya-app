@@ -729,6 +729,8 @@ body.splash-on{overflow:hidden}
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="v3Section">Новая стратегия V3</div>
   <div id="v3Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div class="section" data-i18n="n2Section">Стратегия New_02</div>
+  <div id="n2Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
   <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secDayBets">Ставки за день</div>
@@ -918,7 +920,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v61 · 20.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v62 · 20.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -947,7 +949,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v61";
+const BUILD = "v62";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1003,10 +1005,18 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v61 · 20.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v61 · 20.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v61 · 20.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v62 · 20.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v62 · 20.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v62 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
+  n2Section: ["Стратегия New_02", "Strategy New_02", "New_02 策略"],
+  n2Note: ["рыночный сигнал + согласие AI-дебатов · виртуально, $0",
+           "market signal + AI-debate agreement · virtual, $0",
+           "市场信号 + AI 辩论一致 · 虚拟，$0"],
+  n2Empty: ["Сегодня ставок нет — сигнал рынка и дебаты пока не совпали.",
+            "No bets today — market signal and debates have not agreed yet.",
+            "今日暂无投注——市场信号与辩论尚未一致。"],
+  n2Bank: ["банк", "bank", "资金"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
   v3Virtual: ["Виртуально, реальные деньги: $0", "Virtual, real money: $0", "模拟运行，真实资金：$0"],
@@ -1404,6 +1414,34 @@ function v3Esc(v){
 function v3Num(v, d=0){
   const n = Number(v); return Number.isFinite(n) ? n.toFixed(d) : "—";
 }
+async function loadN2(){
+  const box = document.getElementById("n2Panel");
+  if(!box) return;
+  try{
+    const rows = await q("/app_assets?select=content,updated_at&name=eq.new_strategies_feed&limit=1");
+    if(!rows.length) throw new Error("empty");
+    const feed = typeof rows[0].content === "string" ? JSON.parse(rows[0].content) : rows[0].content;
+    // та же жёсткая защита, что у V3: только бумажный контур
+    if(!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_money_usd) !== 0){
+      box.innerHTML = `<div class="v3empty neg">${t("v3Unsafe")}</div>`;
+      return;
+    }
+    const s = feed.new02 || {};
+    const bets = s.bets || [];
+    const ico = sp => sp === "mlb" ? "⚾" : "🎾";
+    const rIco = r => r === 1 ? "✅" : r === 0 ? "❌" : r === -1 ? "↩️" : "⏳";
+    const list = bets.map(b => `<div class="v3row">
+      <div>${rIco(b.result)}</div><div class="m"><div class="match">${ico(b.sport)} ${v3Esc(b.selection)} @${v3Num(b.odds,3)}</div>
+      <div class="meta">EV ${v3Num(b.ep = b.ev_pct,1)}%${b.debate_p != null ? ` · дебаты p=${v3Num(b.debate_p,2)}` : ""}</div></div>
+      <div class="edge ${b.result === 1 ? "pos" : b.result === 0 ? "neg" : ""}">${b.result === 1 ? "+$" + v3Num(b.stake*(b.odds-1),2) : b.result === 0 ? "−$" + v3Num(b.stake,2) : "⏳"}</div></div>`).join("");
+    const banks = [s.bank_mlb != null ? `⚾ $${v3Num(s.bank_mlb,2)}` : "",
+                   s.bank_tennis != null ? `🎾 $${v3Num(s.bank_tennis,2)}` : ""].filter(Boolean).join(" · ");
+    box.innerHTML = `<div class="v3sub">${t("n2Note")}</div>
+      ${list || `<div class="v3empty">${t("n2Empty")}</div>`}
+      ${banks ? `<div class="v3sub" style="margin-top:8px">${t("n2Bank")}: ${banks} (старт $300)</div>` : ""}`;
+  }catch(e){ box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
+}
+
 async function loadV3(){
   const box = document.getElementById("v3Panel");
   if(!box) return;
@@ -1531,6 +1569,7 @@ async function main(){
       <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")}${money(p24)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
   loadV3();
+  loadN2();
   initHistory();   // выбор дня и отчёт по датам живут на дашборде (CEO 18.08)
 }
 
