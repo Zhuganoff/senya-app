@@ -922,7 +922,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v64 · 20.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v65 · 20.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -951,7 +951,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v64";
+const BUILD = "v65";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1007,9 +1007,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v64 · 20.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v64 · 20.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v64 · 20.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v65 · 20.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v65 · 20.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v65 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   n2Section: ["Стратегия New_02", "Strategy New_02", "New_02 策略"],
   n2Note: ["рыночный сигнал + согласие AI-дебатов · виртуально, $0",
@@ -1957,29 +1957,34 @@ function initHistory(){
 
 // «Анализ ставок» (v63, CEO 20.08): тот же вид, что у V3, но данные ОСНОВНОЙ
 // стратегии за игровой день; вместо P&L — сумма поставленных денег.
-async function loadBetAnalysis(day, dayBets){
+async function loadBetAnalysis(allBets){
+  // v65 (CEO 20.08): блок живёт ТЕКУЩИМ днём, как вкладка «Игры» — только
+  // предстоящие матчи в анализе; ставки/пропуски копятся по ходу дня.
   const box = document.getElementById("baPanel");
   if (!box) return;
   try {
     const sched = await q("/senya_schedule?select=sport,match,commence").catch(() => []);
+    const nowIso = new Date().toISOString();
+    const gameDay = new Date(Date.now() - 6*3600*1000).toISOString().slice(0, 10);
     const sess = c => { const d = new Date(new Date(c).getTime() - 6*3600*1000);
                         return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
-    const dayGames = sched.filter(r => r.commence && sess(r.commence) === day);
-    const analyzed = dayGames.length;
-    const betMatches = new Set(dayBets.map(r => r.match)).size;
-    const skipped = Math.max(0, analyzed - betMatches);
+    const upcoming = sched.filter(r => r.commence && r.commence >= nowIso).length;
+    const startedToday = sched.filter(r => r.commence && r.commence < nowIso
+                                      && sess(r.commence) === gameDay);
+    const dayBets = allBets.filter(r => (r.match_date || "") >= gameDay);
+    const betMatches = new Set(dayBets.map(r => r.match));
+    const skipped = startedToday.filter(r => !betMatches.has(r.match)).length;
     const bankRef = window.__myBank || BOT_BANK;
     const stakedUsd = dayBets.reduce((a, r) => a + share(r), 0) * bankRef;
     box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("baTitle")}</div>
-      <div class="v3sub">${t("baSub")} · ${v3Esc(day)}</div></div>
+      <div class="v3sub">${t("baSub")} · ${v3Esc(gameDay)}</div></div>
       <span class="v3paper">${t("v3Paper")}</span></div>
       <div class="v3metrics">
-        <div class="v3metric"><b>${analyzed}</b><span>${t("v3Decisions")}</span></div>
+        <div class="v3metric"><b>${upcoming}</b><span>${t("v3Decisions")}</span></div>
         <div class="v3metric"><b>${dayBets.length}</b><span>${t("v3Bets")}</span></div>
         <div class="v3metric"><b>${skipped}</b><span>${t("v3Skips")}</span></div>
         <div class="v3metric"><b>$${stakedUsd.toFixed(2)}</b><span>${t("baStaked")}</span></div>
-      </div>
-      ${analyzed && !dayBets.length ? `<div class="v3empty">${t("noPickDay")}</div>` : ""}`;
+      </div>`;
   } catch(e) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
 
@@ -2000,7 +2005,7 @@ async function loadLastBets(){
   // карточка обновляется на его дату с честной фразой, а не висит на позавчера
   const yUTC = new Date(Date.now() - 24*3600*1000).toISOString().slice(0, 10);
   const emptyDay = lastDay < yUTC ? yUTC : null;
-  loadBetAnalysis(emptyDay || lastDay, emptyDay ? [] : last);
+  loadBetAnalysis(all);
   const st0 = document.getElementById("lastStat");
   if (emptyDay && st0) {
     st0.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(emptyDay)}</span>
