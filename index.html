@@ -269,6 +269,8 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
   animation:shPulse 2.2s ease-in-out infinite}
 @keyframes shPulse{0%,100%{opacity:1}50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.sched-hero .sh-dot{animation:none}}
+.gdt{font-size:14px;font-weight:800;color:#2f7df6;letter-spacing:.01em}
+body.light .gdt{color:#1d4ed8}
 #schedChips{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 #schedChips::-webkit-scrollbar{display:none}
 .spchip{flex:none;display:flex;align-items:center;gap:5px;cursor:pointer;font-family:inherit;
@@ -922,7 +924,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v65 · 20.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -951,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v65";
+const BUILD = "v66";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1007,9 +1009,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v65 · 20.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v65 · 20.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v65 · 20.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   n2Section: ["Стратегия New_02", "Strategy New_02", "New_02 策略"],
   n2Note: ["рыночный сигнал + согласие AI-дебатов · виртуально, $0",
@@ -1601,10 +1603,12 @@ let __schedRows = [], __schedSport = "";
 async function initSched(){
   const box = document.getElementById("schedList");
   try {
-    // Только ПРЕДСТОЯЩИЕ матчи (CEO 19.08): вкладка — слейт, который бот ещё
-    // будет анализировать; стартовавшие и сыгранные из списка уходят.
+    // Только ПРЕДСТОЯЩИЕ матчи (CEO 19.08) и только ТЕКУЩИЙ игровой день
+    // (CEO 20.08): окно 20 часов вперёд — ночная часть слейта видна,
+    // завтрашний вечер (например, футбол пятницы) появится в свой день.
     const since = new Date().toISOString();
-    __schedRows = await q(`/senya_schedule?select=*&commence=gte.${since}&order=commence.asc`);
+    const until = new Date(Date.now() + 20*3600*1000).toISOString();
+    __schedRows = await q(`/senya_schedule?select=*&commence=gte.${since}&commence=lte.${until}&order=commence.asc`);
   } catch(e) { __schedRows = []; }
   // счёт сыгранных: даты матчей ± сутки (день MLB — ET, теннис — UTC)
   const dts = __schedRows.flatMap(r => {
@@ -1661,12 +1665,12 @@ function renderSched(){
         return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}">
           <div class="res">✓</div>
           <div class="m"><div class="match">${r.match || ""}</div>
-          <div class="sel">${fmtTime(r.commence)} · ${r.league||"—"} · ${t("msTap")}</div></div>
+          <div class="sel"><span class="gdt">${fmtGDate(r.commence)} · ${fmtTime(r.commence)}</span> · ${r.league||"—"} · ${t("msTap")}</div></div>
           <div class="odds"><div class="bscore" style="margin:0">${ms.final_score}</div></div></div>`;
       }
       return `<div class="bet"><div class="res">◷</div>
         <div class="m"><div class="match">${r.match || ""}</div>
-        <div class="sel">${fmtTime(r.commence)} · ${r.league||"—"}</div></div>
+        <div class="sel"><span class="gdt">${fmtGDate(r.commence)} · ${fmtTime(r.commence)}</span> · ${r.league||"—"}</div></div>
         <div class="odds"><div>${oS}</div></div></div>`;
     }).join("");
   }
@@ -1882,6 +1886,17 @@ function fmtTime(iso){
   const t = new Date(d.getTime() + Number(tz)*3600*1000);
   return String(t.getUTCHours()).padStart(2,"0") + ":" + String(t.getUTCMinutes()).padStart(2,"0");
 }
+function fmtGDate(iso){
+  if(!iso) return "";
+  if(!/Z$|[+-]\d\d:?\d\d$/.test(iso)) iso += "Z";
+  const d = new Date(iso);
+  if(isNaN(d)) return "";
+  const tz = localStorage.getItem("senya_tz") || "auto";
+  const x = tz === "auto" ? d : new Date(d.getTime() + Number(tz)*3600*1000);
+  const dd = tz === "auto" ? x.getDate() : x.getUTCDate();
+  const mm = (tz === "auto" ? x.getMonth() : x.getUTCMonth()) + 1;
+  return String(dd).padStart(2,"0") + "." + String(mm).padStart(2,"0");
+}
 async function loadDayRows(d){
   const packs = await Promise.all(DAY_SRC.map(([t,ico,sel]) =>
     q(`/${t}?select=${sel}&staked=is.true&match_date=eq.${d}&order=ts.asc`)
@@ -1968,7 +1983,9 @@ async function loadBetAnalysis(allBets){
     const gameDay = new Date(Date.now() - 6*3600*1000).toISOString().slice(0, 10);
     const sess = c => { const d = new Date(new Date(c).getTime() - 6*3600*1000);
                         return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
-    const upcoming = sched.filter(r => r.commence && r.commence >= nowIso).length;
+    const untilIso = new Date(Date.now() + 20*3600*1000).toISOString();
+    const upcoming = sched.filter(r => r.commence && r.commence >= nowIso
+                                  && r.commence <= untilIso).length;
     const startedToday = sched.filter(r => r.commence && r.commence < nowIso
                                       && sess(r.commence) === gameDay);
     const dayBets = allBets.filter(r => (r.match_date || "") >= gameDay);
