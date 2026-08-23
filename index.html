@@ -760,8 +760,6 @@ body.splash-on{overflow:hidden}
 
     <div class="section" data-i18n="baTitle">Анализ ставок</div>
     <div id="baPanel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-    <div class="section" data-i18n="coreSection">Core MLB · вероятностная стратегия</div>
-    <div id="coreMlbPanel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secLast">Последние ставки</div>
     <div id="lastStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
@@ -926,7 +924,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v68 · 22.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -955,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v70";
+const BUILD = "v71";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1011,20 +1009,10 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v68 · 22.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v68 · 22.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v68 · 22.08.2026</span>"],
+  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
+         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
+         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
-  coreSection: ["Core MLB · вероятностная стратегия", "Core MLB · probability strategy", "Core MLB · 概率策略"],
-  coreTitle: ["Core MLB", "Core MLB", "Core MLB"],
-  coreSub: ["Вероятность исхода + исполнимая цена SX", "Outcome probability + executable SX price", "赛果概率 + SX 可执行价格"],
-  coreRule: ["каждая ставка 5–10% виртуального банка · максимум 10 ставок за игровой день · максимум 5 одновременно",
-             "each bet is 5–10% of the virtual bank · max 10 bets per game day · max 5 open at once",
-             "每注为虚拟资金的 5–10% · 每个比赛日最多10注 · 同时最多5注"],
-  coreBank: ["виртуальный банк", "virtual bank", "虚拟资金"],
-  coreResults: ["выигрыши–проигрыши", "wins–losses", "胜–负"],
-  coreSeparate: ["Отдельный Core-результат — не входит в старую стратегию", "Separate Core result — excluded from the old strategy", "Core 单独统计——不计入旧策略"],
-  coreUnavailable: ["Источник Core MLB пока не опубликован", "Core MLB feed has not been published yet", "Core MLB 数据尚未发布"],
   n2Section: ["Стратегия New_02", "Strategy New_02", "New_02 策略"],
   n2Note: ["рыночный сигнал + согласие AI-дебатов · виртуально, $0",
            "market signal + AI-debate agreement · virtual, $0",
@@ -1467,80 +1455,6 @@ async function loadN2(){
   }catch(e){ box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
 
-async function loadCoreMlb(){
-  const box = document.getElementById("coreMlbPanel");
-  if(!box) return;
-  try{
-    // v69: единая лента Core на три вида спорта (core_feed). Пока она не
-    // опубликована, показываем прежнюю MLB-ленту — витрина не должна пустеть.
-    let rows = await q("/app_assets?select=content,updated_at&name=eq.core_feed&limit=1");
-    if(!rows.length) rows = await q("/app_assets?select=content,updated_at&name=eq.core_mlb_feed&limit=1");
-    if(!rows.length) throw new Error("empty");
-    const feed = typeof rows[0].content === "string" ? JSON.parse(rows[0].content) : rows[0].content;
-    // Core показывается только как отдельный PAPER-контур. Любая попытка
-    // передать ненулевые реальные деньги блокирует весь блок до рендера.
-    if(!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_money_usd) !== 0
-        || Number(feed.real_stake || 0) !== 0
-        || (feed.bets || []).some(b => Number(b.real_stake || 0) !== 0)){
-      box.innerHTML = `<div class="v3empty neg">${t("v3Unsafe")}</div>`;
-      return;
-    }
-    const z = feed.totals || {}, bank = feed.bank || {};
-    const pnl = Number(z.pnl_usd || 0);
-    const edgePct = x => x != null && Number.isFinite(Number(x))
-      ? `${Number(x)>=0?"+":""}${(100*Number(x)).toFixed(2)}%` : "—";
-    const entries = [];
-    (feed.bets || []).slice().reverse().forEach(b => {
-      const icon = b.result===1 ? "✓" : b.result===0 ? "×" : b.result===-1 ? "↶" : "·";
-      const stakePct = b.stake_pct != null ? `${v3Num(b.stake_pct,1)}%` : "—";
-      const betPnl = Number(b.pnl_usd_paper);
-      const isSettled = b.result != null && Number.isFinite(betPnl);
-      const resultLabel = b.result===1 ? t("win") : b.result===0 ? t("lose")
-        : b.result===-1 ? t("voided") : t("inPlay");
-      entries.push({icon, match:b.match,
-        meta:`${b.selection||b.side||""} · @${b.odds??"—"} · ${stakePct} ($${v3Num(b.stake_usd_paper,2)}) · edge ${edgePct(b.edge)}`,
-        label:resultLabel, right:isSettled ? `${betPnl>=0?"+":"−"}$${Math.abs(betPnl).toFixed(2)}` : "⏳",
-        kind:b.result===1?"pos":b.result===0?"neg":""});
-    });
-    (feed.skips || []).slice(0,5).forEach(r => entries.push({
-      icon:"→", match:r.match, meta:`${r.status||"NO_BET"} · ${r.reason||""}`,
-      label:t("v3Edge"), right:edgePct(r.edge), kind:""
-    }));
-    const list = entries.slice(0,20).map(r => `<div class="v3row">
-      <div>${r.icon}</div><div class="m"><div class="match">${v3Esc(r.match)}</div>
-      <div class="meta">${v3Esc(r.meta)}</div></div>
-      <div class="edge ${r.kind}">${v3Esc(r.label||t("v3Edge"))}<br>${v3Esc(r.right)}</div></div>`).join("");
-    // Капитал общий, а учёт по видам РАЗДЕЛЬНЫЙ — показываем обе вещи сразу.
-    const bySport = feed.by_sport || null;
-    const sportsRow = bySport ? `<div class="v3metrics">` + Object.keys(bySport).map(k => {
-      const s2 = bySport[k], sp = Number(s2.pnl_usd || 0);
-      return `<div class="v3metric"><b class="${cls(sp)}">${v3Esc(s2.emoji||"")} ${v3Num(s2.wins)}–${v3Num(s2.losses)}</b>` +
-             `<span>${v3Esc(s2.title||k)} · ${sp>=0?"+":"−"}$${Math.abs(sp).toFixed(2)}</span></div>`;
-    }).join("") + `</div>` : "";
-    const upd = rows[0].updated_at || feed.generated_ts;
-    box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("coreTitle")}</div>
-      <div class="v3sub">${t("coreSub")} · ${v3Esc(feed.session||"")}</div></div>
-      <span class="v3paper">${t("v3Paper")}</span></div>
-      <div class="v3state"><span class="v3dot"></span><b>${t("v3Scanning")}</b><span>${t("v3Cadence")}</span></div>
-      <div class="v3metrics">
-        <div class="v3metric"><b>${v3Num(z.matches)}</b><span>${t("v3Decisions")}</span></div>
-        <div class="v3metric"><b>${v3Num(z.skipped)}</b><span>${t("v3Skips")}</span></div>
-        <div class="v3metric"><b>${v3Num(z.bets)}</b><span>${t("v3Bets")}</span></div>
-        <div class="v3metric"><b>${v3Num(z.wins)}W–${v3Num(z.losses)}L</b><span>${t("coreResults")}</span></div>
-        <div class="v3metric"><b class="${cls(pnl)}">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}</b><span>${t("v3Pnl")}</span></div>
-      </div>
-      ${sportsRow}
-      ${list ? `<div class="v3list">${list}</div>` : `<div class="v3empty">${t("v3NoSignals")}</div>`}
-      <div class="v3notice">${t("coreBank")}: $${v3Num(bank.current,2)} · ${t("coreRule")}</div>
-      <div class="v3notice">${t("coreSeparate")} · ${t("v3Updated")} ${v3Esc(fmtTime(upd))}</div>`;
-  }catch(e){
-    box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("coreTitle")}</div>
-      <div class="v3sub">${t("coreSub")}</div></div><span class="v3paper">${t("v3Paper")}</span></div>
-      <div class="v3empty">${t("coreUnavailable")}</div>
-      <div class="v3notice">${t("coreSeparate")}</div>`;
-  }
-}
-
 async function loadV3(){
   const box = document.getElementById("v3Panel");
   if(!box) return;
@@ -1577,17 +1491,10 @@ async function loadV3(){
       icon:"→", match:r.match, meta:`${r.market||""} · ${r.reason_code||"SKIP"}`,
       right:edgePct(r.net_edge), kind:""
     }));
-    const list = entries.slice(0,20).map(r => `<div class="v3row">
+    const list = entries.slice(0,6).map(r => `<div class="v3row">
       <div>${r.icon}</div><div class="m"><div class="match">${v3Esc(r.match)}</div>
       <div class="meta">${v3Esc(r.meta)}</div></div>
       <div class="edge ${r.kind}">${t("v3Edge")}<br>${v3Esc(r.right)}</div></div>`).join("");
-    // Капитал общий, а учёт по видам РАЗДЕЛЬНЫЙ — показываем обе вещи сразу.
-    const bySport = feed.by_sport || null;
-    const sportsRow = bySport ? `<div class="v3metrics">` + Object.keys(bySport).map(k => {
-      const s2 = bySport[k], sp = Number(s2.pnl_usd || 0);
-      return `<div class="v3metric"><b class="${cls(sp)}">${v3Esc(s2.emoji||"")} ${v3Num(s2.wins)}–${v3Num(s2.losses)}</b>` +
-             `<span>${v3Esc(s2.title||k)} · ${sp>=0?"+":"−"}$${Math.abs(sp).toFixed(2)}</span></div>`;
-    }).join("") + `</div>` : "";
     const upd = rows[0].updated_at || feed.generated_ts;
     const updMs = Date.parse(upd || ""), fresh = Number.isFinite(updMs) && Date.now()-updMs < 25*60*1000;
     const state = `<div class="v3state${fresh?"":" stale"}"><span class="v3dot"></span>
@@ -1630,58 +1537,53 @@ async function main(){
       }
     } catch(e){}
   }
-  // v69 (правило владельца 23.08): ЕДИНЫЙ источник — ассет core_feed.
-  // Раньше дашборд считал из старых таблиц bet_log/tennis_bet_log/
-  // soccer_bet_log: там ставок Core нет, поэтому показывались 0 ставок и
-  // «346 пропущено» из чужого контура, а прибыль не прибавлялась.
+  // v71: ЕДИНЫЙ источник — ассет core_feed. Разметка карточек и блоков
+  // не менялась: заменён только слой данных (дизайн заморожен, MINI_APP §0).
   let feed = null;
   try {
     const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1");
     if (rows.length) feed = typeof rows[0].content === "string"
       ? JSON.parse(rows[0].content) : rows[0].content;
   } catch(e){}
-  if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0) {
-    document.getElementById("topCards").innerHTML =
-      `<div class="card" style="grid-column:1/-1"><div class="k">${t("myWallet")}</div>
-        <div class="v">—</div><div class="d" style="color:var(--mut)">${t("coreUnavailable")}</div></div>`;
-    document.getElementById("dashSports").innerHTML = "";
-    loadV3(); loadCoreMlb(); loadN2(); initHistory();
-    return;
-  }
+  if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0) feed = null;
   window.__coreFeed = feed;
-  const z = feed.totals || {}, bank = feed.bank || {}, day = feed.session || {};
-  const decided = (z.wins || 0) + (z.losses || 0);
-  const wrAll = decided ? 100*(z.wins || 0)/decided : null;
-  const pnlAllUsd = Number(z.pnl_usd || 0);
-  const pnlDayUsd = Number(day.pnl_usd || 0);
-  const bankNow = Number(bank.current || 0), bankStart = Number(bank.start || 0);
-  const growth = bankStart ? 100*(bankNow/bankStart - 1) : 0;
-  const sportRows = Object.keys(feed.by_sport || {}).map(k => {
-    const sp = feed.by_sport[k];
-    const n = (sp.wins || 0) + (sp.losses || 0);
-    const wr = n ? 100*sp.wins/n : 0;
+  const z = (feed && feed.totals) || {}, fb = (feed && feed.bank) || {},
+        day = (feed && feed.session) || {};
+  const bySport = (feed && feed.by_sport) || {};
+  const bankNow = Number(fb.current || 0), bankStart = Number(fb.start || 0);
+  const pnlAll = bankStart ? (bankNow / bankStart - 1) : 0;
+  const pA = pnlAll * 100;
+  const p24 = bankStart ? 100 * Number(day.pnl_usd || 0) / bankStart : 0;
+  const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
+  const lastDay = day.date || "";
+  const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
+  const sportRows = Object.keys(bySport).map(k => {
+    const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
+    const wr = n ? 100*w/n : 0;
     return `<div class="sport"><div class="ico">${v3Esc(sp.emoji || "")}</div>
-      <div class="info"><div class="nm">${v3Esc(sp.title || k)}</div>
-      <div class="st">${sp.wins}W-${sp.losses}L · ${sp.bets} ${plBets(sp.bets)} · ${sp.matches} ${t("v3Decisions")}</div>
+      <div class="info"><div class="nm">${v3Esc(SPORT_T[k] || sp.title || k)}</div>
+      <div class="st">${w}W-${n-w}L · ${n} ${plBets(n)}</div>
       <div class="wr-bar" style="margin-top:6px"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div></div>
       <div class="bank"><div class="b ${wr>=50?"pos":"neg"}">${n?wr.toFixed(0)+"%":"—"}</div></div></div>`;
   });
+  const usd = v => `${v>=0?"+":"−"}$${Math.abs(Number(v||0)).toFixed(2)}`;
+  const money = () => ` = ${usd(z.pnl_usd)}`;
+  const roiS = z.roi_pct != null ? ` · ROI ${z.roi_pct>=0?"+":""}${Number(z.roi_pct).toFixed(2)}%` : "";
   document.getElementById("topCards").innerHTML = `
     <div class="card glass-sheen"><div class="k">${t("myWallet")}</div>
-      <div class="v ${cls(growth)}">$${bankNow.toFixed(2)}</div>
-      <div class="d" style="color:var(--mut)">${t("walletStart")} $${bankStart.toFixed(2)} · <span class="${cls(growth)}">${pct(growth)}</span></div></div>
+      <div class="v ${cls(pA)}">$${bankNow.toFixed(2)}</div>
+      <div class="d" style="color:var(--mut)">${t("walletStart")} $${bankStart.toFixed(2)} · <span class="${cls(pA)}">${pct(pA)}</span></div></div>
     <div class="card"><div class="k">${t("wrAll")}</div>
-      <div class="v ${wrAll != null && wrAll>=50?"pos":"neg"}">${wrAll != null ? wrAll.toFixed(1)+"%" : "—"}</div>
-      <div class="d" style="color:var(--mut)">${z.wins||0}W · ${z.losses||0}L · ${z.bets||0} ${t("betsN")}</div></div>
+      <div class="v ${N && W/N>=0.5?"pos":"neg"}">${N ? (100*W/N).toFixed(1)+"%" : "—"}</div>
+      <div class="d" style="color:var(--mut)">${W}W · ${N-W}L · ${N} ${t("betsN")}</div></div>
     <div class="card"><div class="k">${t("profitAll")}</div>
-      <div class="v ${cls(pnlAllUsd)}">${pnlAllUsd>=0?"+":"−"}$${Math.abs(pnlAllUsd).toFixed(2)}</div>
-      <div class="d ${cls(pnlAllUsd)}">ROI ${z.roi_pct != null ? z.roi_pct.toFixed(2)+"%" : "—"} · ${t("v3Skips")}: ${z.skipped != null ? z.skipped : "—"}</div></div>
+      <div class="v ${cls(pA)}">${pct(pA)}</div>
+      <div class="d ${cls(pA)}">${t("ofBankShort")}${money()}${roiS}</div></div>
     <div class="card" style="grid-column:1/-1"><div class="k">${t("profit24")}</div>
-      <div class="v ${cls(pnlDayUsd)}">${pnlDayUsd>=0?"+":"−"}$${Math.abs(pnlDayUsd).toFixed(2)}</div>
-      <div class="d ${cls(pnlDayUsd)}">${v3Esc(day.date||"")} · ${day.bets||0} ${plBets(day.bets||0)} · ${day.wins||0}W-${day.losses||0}L · ${t("v3Skips")}: ${day.skipped||0}</div></div>`;
+      <div class="v ${cls(p24)}">${pct(p24)}</div>
+      <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")} = ${usd(day.pnl_usd)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
   loadV3();
-  loadCoreMlb();
   loadN2();
   initHistory();   // выбор дня и отчёт по датам живут на дашборде (CEO 18.08)
 }
@@ -1827,8 +1729,10 @@ function oddsOf(r){ return r.best_odds ?? r.odds ?? null; }
 // ─────────── история по дням ───────────
 function betRow(r){
   const ico = resIco(r);
-  const clv = (r.closing_ts && r.closing_odds && r.best_odds)
-    ? ` · CLV ${(((r.best_odds/r.closing_odds)-1)*100>=0?"+":"")}${(((r.best_odds/r.closing_odds)-1)*100).toFixed(1)}%` : "";
+  const clv = r.clv_pct != null
+    ? ` · CLV ${r.clv_pct>=0?"+":""}${Number(r.clv_pct).toFixed(1)}%`
+    : ((r.closing_ts && r.closing_odds && r.best_odds)
+       ? ` · CLV ${(((r.best_odds/r.closing_odds)-1)*100>=0?"+":"")}${(((r.best_odds/r.closing_odds)-1)*100).toFixed(1)}%` : "");
   // размер — в ПРОЦЕНТАХ банка (у каждого свой), плюс сумма под личный банк
   const sh = share(r);
   const pctS = sh ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "";
@@ -1844,7 +1748,7 @@ function betRow(r){
   const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
-    <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${gameTime(r)}</div></div>
+    <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${gameTime(r)}${r.pnl!=null?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
@@ -2073,107 +1977,73 @@ function initHistory(){
 // «Анализ ставок» (v63, CEO 20.08): тот же вид, что у V3, но данные ОСНОВНОЙ
 // стратегии за игровой день; вместо P&L — сумма поставленных денег.
 async function loadBetAnalysis(allBets){
-  // v65 (CEO 20.08): блок живёт ТЕКУЩИМ днём, как вкладка «Игры» — только
-  // предстоящие матчи в анализе; ставки/пропуски копятся по ходу дня.
+  // v71: те же четыре плитки блока v66 — заменён только источник данных.
+  // Пропуски считаются по УНИКАЛЬНЫМ событиям текущего игрового дня из ленты
+  // Core; старые таблицы здесь больше не участвуют.
   const box = document.getElementById("baPanel");
   if (!box) return;
   try {
-    const sched = await q("/senya_schedule?select=sport,match,commence").catch(() => []);
-    const nowIso = new Date().toISOString();
-    const gameDay = new Date(Date.now() - 6*3600*1000).toISOString().slice(0, 10);
-    const sess = c => { const d = new Date(new Date(c).getTime() - 6*3600*1000);
-                        return isNaN(d) ? "" : d.toISOString().slice(0, 10); };
-    const untilIso = new Date(Date.now() + 20*3600*1000).toISOString();
-    const upcoming = sched.filter(r => r.commence && r.commence >= nowIso
-                                  && r.commence <= untilIso).length;
-    const startedToday = sched.filter(r => r.commence && r.commence < nowIso
-                                      && sess(r.commence) === gameDay);
-    const dayBets = allBets.filter(r => (r.match_date || "") >= gameDay);
-    const betMatches = new Set(dayBets.map(r => r.match));
-    const skipped = startedToday.filter(r => !betMatches.has(r.match)).length;
-    const bankRef = window.__myBank || BOT_BANK;
-    const stakedUsd = dayBets.reduce((a, r) => a + share(r), 0) * bankRef;
+    const feed = window.__coreFeed;
+    if (!feed) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; return; }
+    const day = feed.session || {}, fb = feed.bank || {};
+    const rule = `${fb.stake_min_pct}–${fb.stake_max_pct}${t("ofBank")} · ` +
+                 `${fb.max_daily_bets}/${t("v3Bets")} · ${fb.max_concurrent} ${t("inPlay")}`;
     box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("baTitle")}</div>
-      <div class="v3sub">${t("baSub")} · ${v3Esc(gameDay)}</div></div>
+      <div class="v3sub">${v3Esc(day.date || "")} · ${v3Esc(rule)}</div></div>
       <span class="v3paper">${t("v3Paper")}</span></div>
       <div class="v3metrics">
-        <div class="v3metric"><b>${upcoming}</b><span>${t("v3Decisions")}</span></div>
-        <div class="v3metric"><b>${dayBets.length}</b><span>${t("v3Bets")}</span></div>
-        <div class="v3metric"><b>${skipped}</b><span>${t("v3Skips")}</span></div>
-        <div class="v3metric"><b>$${stakedUsd.toFixed(2)}</b><span>${t("baStaked")}</span></div>
+        <div class="v3metric"><b>${v3Num(day.matches)}</b><span>${t("v3Decisions")}</span></div>
+        <div class="v3metric"><b>${v3Num(day.bets)}</b><span>${t("v3Bets")}</span></div>
+        <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
+        <div class="v3metric"><b>$${v3Num(day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
       </div>`;
   } catch(e) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
 
 // последние ставки по ВСЕМ видам спорта (раньше здесь был только бейсбол)
 async function loadLastBets(){
+  // v71: список ставок берётся из ЕДИНОГО ассета core_feed. Разметка строки
+  // (betRow) и контейнер #bets не менялись — заменён только источник.
   const box = document.getElementById("bets");
-  const packs = await Promise.all(DAY_SRC.map(([t, ico, sel]) =>
-    q(`/${t}?select=${sel}&staked=is.true&order=ts.desc&limit=12`)
-      .then(rs => rs.map(r => Object.assign(r, {_ico: ico})))
-      .catch(() => [])));
-  // v42 (CEO 18.08): «последние ставки» = ставки ПОСЛЕДНЕГО ИГРОВОГО ДНЯ,
-  // а не хвост из 12 строк за несколько дней — иначе итог считался за два дня
-  const all = packs.flat();
-  const lastDay = all.reduce((a, r) => (r.match_date || "") > a ? r.match_date : a, "");
-  const last = all.filter(r => r.match_date === lastDay)
+  const feed = window.__coreFeed;
+  loadBetAnalysis(null);
+  if (!feed) { box.innerHTML = `<div class="loading">${t("noBetsYet")}</div>`; return; }
+  const day = feed.session || {};
+  const ICO = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ "};
+  const last = (feed.bets || []).filter(b => !day.date
+      || String(b.commence || "").slice(0,10) === day.date
+      || String(b.opened_ts || "").slice(0,10) === day.date)
+    .map(b => ({
+      _ico: ICO[b.sport] || "", match: b.match, selection: b.selection || b.side,
+      best_odds: b.odds, stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
+      stake: b.stake_usd_paper, result: b.result,
+      pnl: b.pnl_usd_paper, match_date: String(b.commence || "").slice(0,10),
+      ts: b.opened_ts, closing_ts: null, closing_odds: null,
+      clv_pct: b.clv_pct,
+    }))
     .sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || "")));
-  // v63 (CEO 20.08): если ПОСЛЕДНИЙ завершённый игровой день прошёл без ставок —
-  // карточка обновляется на его дату с честной фразой, а не висит на позавчера
-  const yUTC = new Date(Date.now() - 24*3600*1000).toISOString().slice(0, 10);
-  const emptyDay = lastDay < yUTC ? yUTC : null;
-  loadBetAnalysis(all);
-  const st0 = document.getElementById("lastStat");
-  if (emptyDay && st0) {
-    st0.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(emptyDay)}</span>
-        <span class="daydow">${dowOf(emptyDay)} · 0 ${plBets(0)}</span></div>
+  const st = document.getElementById("lastStat");
+  if (!last.length) {
+    if (st) st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(day.date||"")}</span>
+        <span class="daydow">${dowOf(day.date||"")} · 0 ${plBets(0)}</span></div>
       <div class="daysum" style="margin-top:6px"><span>${t("noPickDay")}</span></div>`;
+    box.innerHTML = `<div class="loading">${t("awaitBets")}</div>`;
+    return;
   }
-  // v64 (CEO 20.08): день сменился — прошлые игры из «Ставок» уходят
-  // (они остаются в статистике на дашборде); здесь ждём ставки нового дня
-  if (emptyDay) { box.innerHTML = `<div class="loading">${t("awaitBets")}</div>`; return; }
-  if(!last.length){ box.innerHTML = `<div class="loading">${t("noBetsYet")}</div>`; return; }
   await loadMatchStats(last.map(r => r.match_date));
-  // ИТОГ ПО ЭТИМ СТАВКАМ (CEO 18.08): прибыль в процентах и долларах, оборот,
-  // W-L — без всякого выбора даты; даты и разбор по дням живут на дашборде
-  const st = emptyDay ? null : document.getElementById("lastStat");
   if (st) {
-    const bankRef = window.__myBank || BOT_BANK;
-    const dec = last.filter(r => r.result === 1 || r.result === 0);
-    const w = dec.filter(r => r.result === 1).length;
-    const pnlPct = last.reduce((a, r) => {
-      const sp = share(r);
-      if (r.result === 1) return a + sp*((oddsOf(r)||1)-1);
-      if (r.result === 0) return a - sp;
-      return a;
-    }, 0) * 100;
-    const turnPct = last.reduce((a, r) => a + share(r), 0) * 100;
-    const pnlUsd = pnlPct/100*bankRef, turnUsd = turnPct/100*bankRef;
-    const pend = last.length - dec.length;
-    st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(lastDay)}</span>
-        <span class="daydow">${dowOf(lastDay)} · ${last.length} ${plBets(last.length)}</span></div>
-      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")} · ${pnlUsd>=0?"+":"−"}$${Math.abs(pnlUsd).toFixed(2)}</div>
-      <div class="daysum">
-        <span>${t("dayTurnover")}: <b>${turnPct.toFixed(1)}%</b> <b>= $${turnUsd.toFixed(2)}</b></span>
-        <span><b>${w}W-${dec.length-w}L</b>${pend ? ` · ${pend} ${t("inPlay")}` : ""}</span>
-      </div>`;
+    const w = last.filter(r => r.result === 1).length;
+    const l = last.filter(r => r.result === 0).length;
+    const pnl = Number(day.pnl_usd || 0), turn = Number(day.turnover_usd || 0);
+    const roi = day.roi_pct != null ? ` · ROI ${day.roi_pct>=0?"+":""}${Number(day.roi_pct).toFixed(2)}%` : "";
+    st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(day.date||"")}</span>
+        <span class="daydow">${dowOf(day.date||"")} · ${last.length} ${plBets(last.length)}</span></div>
+      <div class="v ${cls(pnl)}" style="margin-top:2px">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}${roi}</div>
+      <div class="daysum" style="margin-top:6px"><span>${w}W-${l}L</span>
+        <span>${t("baStaked")}: $${turn.toFixed(2)}</span></div>`;
   }
-  box.innerHTML = last.map(r => {
-    const pnlTxt = r.result===1?`<span class="pos">+${(((oddsOf(r)||1)-1)*100).toFixed(0)}%</span>`
-                 : r.result===0?`<span class="neg">−100%</span>`
-                 : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`:`<span style="color:var(--mut)">${t("inPlay")}</span>`;
-    const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
-    const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
-    const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
-    return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${resIco(r)}</div>
-      <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
-      <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${gameTime(r)}</div></div>
-      <div class="odds"><div>@${oddsOf(r)??"—"}</div><div class="pnl">${pnlTxt}</div></div></div>`;
-  }).join("");
+  box.innerHTML = last.map(betRow).join("");
 }
-
-// Винрейт по видам живёт ТОЛЬКО на дашборде (CEO 18.08): из вкладки «Ставки»
-// блок убран, там остаются одни ставки. Источник — SRC внутри main().
 
 // ─────────── личный кабинет (v31: сюда переехал «Кошелёк», вкладки больше нет) ───────────
 async function initMe(){
