@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v71";
+const BUILD = "v72";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1346,7 +1346,10 @@ document.querySelectorAll("#langSel button").forEach(b =>
 document.addEventListener("DOMContentLoaded", () => {
   // 19.08 (CEO): приложение открывается сразу на вкладке «Ставки», поэтому её
   // данные тянем на старте — ленивая загрузка сработала бы только по клику.
-  if (!window.__statsInit) { window.__statsInit = true; try { loadLastBets(); } catch(e) {} }
+  // v72: стартовая вкладка «Ставки» больше не «схватывает» пустое состояние —
+  // loadLastBets() сам ждёт общую ленту. Флаг лишь помечает, что вкладку уже
+  // рисовали, чтобы main() обновил её сразу после прихода данных.
+  window.__statsInit = true; try { loadLastBets(); } catch(e) {}
   document.querySelectorAll("#themeSel button").forEach(b =>
     b.addEventListener("click", () => applyTheme(b.dataset.t)));
   document.querySelectorAll("#palSel button").forEach(b =>
@@ -1522,6 +1525,32 @@ async function loadV3(){
   }
 }
 
+// v72: ЕДИНЫЙ путь загрузки ленты. Раньше initStats() дергал loadLastBets()
+// раньше, чем main() успевал присвоить window.__coreFeed: вкладка «Ставки»
+// видела null, рисовала пустоту и навсегда фиксировалась флагом __statsInit.
+// Теперь и main(), и вкладка ждут ОДНО обещание; ошибка не проглатывается.
+window.__coreFeed = null;
+window.__coreFeedError = null;
+function coreFeed(force){
+  if (!force && window.__coreFeedPromise) return window.__coreFeedPromise;
+  window.__coreFeedPromise = (async () => {
+    try {
+      const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1");
+      if (!rows.length) throw new Error("core_feed пуст");
+      const feed = typeof rows[0].content === "string"
+        ? JSON.parse(rows[0].content) : rows[0].content;
+      if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0)
+        throw new Error("лента не PAPER_ONLY");
+      window.__coreFeed = feed; window.__coreFeedError = null;
+      return feed;
+    } catch (e) {
+      window.__coreFeedError = e; window.__coreFeed = null;
+      throw e;
+    }
+  })();
+  return window.__coreFeedPromise;
+}
+
 async function main(){
   // Дашборд v29 (CEO 17.08, третья редакция): общий винрейт → общая прибыль
   // (% банка и $ от кошелька пользователя, вся история и за сутки) → винрейт
@@ -1540,13 +1569,7 @@ async function main(){
   // v71: ЕДИНЫЙ источник — ассет core_feed. Разметка карточек и блоков
   // не менялась: заменён только слой данных (дизайн заморожен, MINI_APP §0).
   let feed = null;
-  try {
-    const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1");
-    if (rows.length) feed = typeof rows[0].content === "string"
-      ? JSON.parse(rows[0].content) : rows[0].content;
-  } catch(e){}
-  if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0) feed = null;
-  window.__coreFeed = feed;
+  try { feed = await coreFeed(); } catch(e) { feed = null; }
   const z = (feed && feed.totals) || {}, fb = (feed && feed.bank) || {},
         day = (feed && feed.session) || {};
   const bySport = (feed && feed.by_sport) || {};
@@ -1583,6 +1606,8 @@ async function main(){
       <div class="v ${cls(p24)}">${pct(p24)}</div>
       <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")} = ${usd(day.pnl_usd)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
+  // Вкладка «Ставки» могла открыться раньше ленты — перерисовываем её сейчас.
+  if (feed && window.__statsInit) loadLastBets();
   loadV3();
   loadN2();
   initHistory();   // выбор дня и отчёт по датам живут на дашборде (CEO 18.08)
@@ -1690,7 +1715,9 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     window.scrollTo({top: 0, behavior: "instant"});
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
-    if (t === "stats" && !window.__statsInit) {
+    if (t === "stats") {
+      // Флаг больше НЕ блокирует перерисовку: он лишь помечает, что вкладку
+      // уже открывали (чтобы main() знал, что её нужно обновить после ленты).
       window.__statsInit = true; loadLastBets();
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
@@ -2005,9 +2032,17 @@ async function loadLastBets(){
   // v71: список ставок берётся из ЕДИНОГО ассета core_feed. Разметка строки
   // (betRow) и контейнер #bets не менялись — заменён только источник.
   const box = document.getElementById("bets");
-  const feed = window.__coreFeed;
+  // Пока лента едет — честное «Загрузка…», а не «ставок нет».
+  box.innerHTML = `<div class="loading">${t("loading")}</div>`;
+  let feed = null;
+  try {
+    feed = await coreFeed();
+  } catch (e) {
+    box.innerHTML = `<div class="loading">${t("coreUnavailable")}: ${v3Esc(String(e && e.message || e))}</div>`;
+    loadBetAnalysis(null);
+    return;
+  }
   loadBetAnalysis(null);
-  if (!feed) { box.innerHTML = `<div class="loading">${t("noBetsYet")}</div>`; return; }
   const day = feed.session || {};
   const ICO = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ "};
   const last = (feed.bets || []).filter(b => !day.date
