@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v72";
+const BUILD = "v73";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1531,11 +1531,16 @@ async function loadV3(){
 // Теперь и main(), и вкладка ждут ОДНО обещание; ошибка не проглатывается.
 window.__coreFeed = null;
 window.__coreFeedError = null;
+const CORE_FEED_TTL_MS = 30000;   // короткий TTL: открытая вкладка видит обновление
 function coreFeed(force){
-  if (!force && window.__coreFeedPromise) return window.__coreFeedPromise;
+  const fresh = window.__coreFeedAt && (Date.now() - window.__coreFeedAt) < CORE_FEED_TTL_MS;
+  if (!force && fresh && window.__coreFeedPromise) return window.__coreFeedPromise;
+  window.__coreFeedAt = Date.now();
   window.__coreFeedPromise = (async () => {
     try {
-      const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1");
+      // cache-bust: иначе CDN/веб-вью отдаёт прежнюю ленту открытой странице
+      const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1"
+                           + "&cb=" + Date.now());
       if (!rows.length) throw new Error("core_feed пуст");
       const feed = typeof rows[0].content === "string"
         ? JSON.parse(rows[0].content) : rows[0].content;
@@ -1928,12 +1933,23 @@ function fmtGDate(iso){
   const mm = (tz === "auto" ? x.getMonth() : x.getUTCMonth()) + 1;
   return String(dd).padStart(2,"0") + "." + String(mm).padStart(2,"0");
 }
-async function loadDayRows(d){
-  const packs = await Promise.all(DAY_SRC.map(([t,ico,sel]) =>
-    q(`/${t}?select=${sel}&staked=is.true&match_date=eq.${d}&order=ts.asc`)
-      .then(rs => rs.map(r => Object.assign(r, {_ico: ico})))
-      .catch(() => [])));
-  return packs.flat();
+// v73: строки дня берутся из ЕДИНОГО ассета core_feed (сессия + история),
+// а не из старых таблиц. Копирования и перезаписи истории нет: сессии уже
+// посчитаны в ленте по append-only журналу кошелька.
+const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ "};
+function feedBetToRow(b){
+  return {_ico: ICO_BY_SPORT[b.sport] || "", match: b.match,
+          selection: b.selection || b.side, best_odds: b.odds,
+          stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
+          stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
+          match_date: b.session_date || String(b.commence || "").slice(0,10),
+          ts: b.opened_ts, commence: b.commence,
+          closing_ts: null, closing_odds: null, clv_pct: b.clv_pct};
+}
+function feedSession(feed, d){
+  if (!feed) return null;
+  if ((feed.session || {}).date === d) return feed.session;
+  return (feed.history || []).find(h => h.date === d) || null;
 }
 
 async function loadDay(d){
@@ -1941,7 +1957,9 @@ async function loadDay(d){
   const stat = document.getElementById("dayStat");
   box.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try{
-    const rows = await loadDayRows(d);
+    const feed = await coreFeed();
+    const sess = feedSession(feed, d);
+    const rows = ((sess && sess.bets_list) || []).map(feedBetToRow);
     await loadMatchStats(rows.map(r => r.match_date).concat(d));
     if(!rows.length){
       stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
@@ -1952,27 +1970,18 @@ async function loadDay(d){
     }
     const dec = rows.filter(r=>r.result===1||r.result===0);
     const w = dec.filter(r=>r.result===1).length;
-    // P&L дня — в ПРОЦЕНТАХ банка: у каждого пользователя своя сумма
-    const pnlPct = rows.reduce((a,r)=>{
-      const sp = share(r);
-      if(r.result===1) return a + sp*((oddsOf(r)||1)-1);
-      if(r.result===0) return a - sp;
-      return a;
-    },0)*100;
-    // v38 (CEO 18.08): суммы в долларах показываем ВСЕГДА. Банк-ориентир —
-    // кошелёк пользователя, а если он не задан — общий банк ботов ($300):
-    // в bet_log у боевых строк stake не хранится (только доля), поэтому
-    // доллары считаются из процента, а не суммированием стейков.
-    const bankRef = window.__myBank || BOT_BANK;
-    const pnl = pnlPct/100*bankRef;
-    const sumPct = rows.reduce((a,r)=>a+share(r),0)*100;        // оборот дня, % банка
-    const stakeUsd = sumPct/100*bankRef;
+    const pnl = Number(sess.pnl_usd || 0);
+    const start = Number((feed.bank || {}).start || 0);
+    const pnlPct = start ? 100*pnl/start : 0;
+    const stakeUsd = Number(sess.turnover_usd || 0);
+    const sumPct = start ? 100*stakeUsd/start : 0;
+    const openUsd = Number(sess.open_exposure_usd || 0);
     stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
         <span class="daydow">${dowOf(d)}</span></div>
       <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")} · ${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}</div>
       <div class="daysum">
         <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b> <b>= $${stakeUsd.toFixed(2)}</b></span>
-        <span>${rows.length} ${plBets(rows.length)} · <b>${w}W-${dec.length-w}L</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}</span>
+        <span>${rows.length} ${plBets(rows.length)} · <b>${w}W-${dec.length-w}L</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")} $${openUsd.toFixed(2)}`:""}</span>
       </div>`;
     box.innerHTML = rows.map(betRow).join("");
   }catch(e){
@@ -2036,7 +2045,7 @@ async function loadLastBets(){
   box.innerHTML = `<div class="loading">${t("loading")}</div>`;
   let feed = null;
   try {
-    feed = await coreFeed();
+    feed = await coreFeed(true);   // вход во вкладку всегда перечитывает ленту
   } catch (e) {
     box.innerHTML = `<div class="loading">${t("coreUnavailable")}: ${v3Esc(String(e && e.message || e))}</div>`;
     loadBetAnalysis(null);
@@ -2044,18 +2053,12 @@ async function loadLastBets(){
   }
   loadBetAnalysis(null);
   const day = feed.session || {};
-  const ICO = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ "};
-  const last = (feed.bets || []).filter(b => !day.date
-      || String(b.commence || "").slice(0,10) === day.date
-      || String(b.opened_ts || "").slice(0,10) === day.date)
-    .map(b => ({
-      _ico: ICO[b.sport] || "", match: b.match, selection: b.selection || b.side,
-      best_odds: b.odds, stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
-      stake: b.stake_usd_paper, result: b.result,
-      pnl: b.pnl_usd_paper, match_date: String(b.commence || "").slice(0,10),
-      ts: b.opened_ts, closing_ts: null, closing_odds: null,
-      clv_pct: b.clv_pct,
-    }))
+  // v73: строго ТЕКУЩАЯ сессия по полю session_date из ленты. Догадок по
+  // commence/opened_ts больше нет — ночная ставка после полуночи UTC
+  // принадлежит своей сессии, а не следующей.
+  const last = ((day.bets_list) || (feed.bets || [])
+      .filter(b => b.session_date === day.date))
+    .map(feedBetToRow)
     .sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || "")));
   const st = document.getElementById("lastStat");
   if (!last.length) {
