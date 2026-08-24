@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v74";
+const BUILD = "v75";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1538,9 +1538,12 @@ function coreFeed(force){
   window.__coreFeedAt = Date.now();
   window.__coreFeedPromise = (async () => {
     try {
-      // cache-bust: иначе CDN/веб-вью отдаёт прежнюю ленту открытой странице
-      const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1"
-                           + "&cb=" + Date.now());
+      // ВАЖНО: никаких «случайных» параметров в строке запроса. PostgREST
+      // считает любой неизвестный параметр фильтром по колонке и отвечает
+      // 400 PGRST100 — именно так «cb=<время>» уронил загрузку ленты в v73/v74
+      // и банк с историей переставали отображаться. Свежесть обеспечивают
+      // TTL и принудительный перезапрос, а не мусор в URL.
+      const rows = await q("/app_assets?select=content&name=eq.core_feed&limit=1");
       if (!rows.length) throw new Error("core_feed пуст");
       const feed = typeof rows[0].content === "string"
         ? JSON.parse(rows[0].content) : rows[0].content;
