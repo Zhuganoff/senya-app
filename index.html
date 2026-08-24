@@ -951,7 +951,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v76";
+const BUILD = "v77";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1156,6 +1156,7 @@ const T = {
   slateEve: ["Слейт идёт вечером · ставим только при EV ≥ 1.5%", "The slate runs in the evening · we only bet at EV ≥ 1.5%", "晚间选注 · 仅在 EV ≥ 1.5% 时下注"],
   totalOf: ["Всего", "Total", "共"],
   inPlayToday: ["в игре сегодня", "in play today", "今日进行中"],
+  archiveDay: ["архив", "archive", "存档"],
   noBetsDay: ["Ставок не было — бот не нашёл value. Это тоже результат.", "No bets — the bot found no value. That's a result too.", "没有投注——机器人未找到价值。这同样是结果。"],
   dayOff: ["Выходной", "Day off", "休息日"],
   yourTotal: ["твой итог", "your total", "你的合计"],
@@ -1897,17 +1898,24 @@ async function loadDay(d){
     }
     const dec = rows.filter(r=>r.result===1||r.result===0);
     const w = dec.filter(r=>r.result===1).length;
-    const pnl = Number(sess.pnl_usd || 0);
+    // v77: дни ДО объединения кошелька (архив прежних контуров) считаются
+    // только в ДОЛЯХ БАНКА: у каждого контура был свой банк, поэтому суммы в
+    // долларах здесь были бы выдумкой. Их результат уже внутри стартового
+    // баланса единого кошелька — второй раз он никуда не прибавляется.
     const start = Number((feed.bank || {}).start || 0);
-    const pnlPct = start ? 100*pnl/start : 0;
-    const stakeUsd = Number(sess.turnover_usd || 0);
-    const sumPct = start ? 100*stakeUsd/start : 0;
     const openUsd = Number(sess.open_exposure_usd || 0);
+    const pnlPct = sess.legacy ? Number(sess.pnl_pct || 0)
+                 : (start ? 100*Number(sess.pnl_usd || 0)/start : 0);
+    const sumPct = sess.legacy ? Number(sess.turnover_pct || 0)
+                 : (start ? 100*Number(sess.turnover_usd || 0)/start : 0);
+    const pnlS = sess.legacy ? ""
+               : ` · ${Number(sess.pnl_usd||0)>=0?"+":"−"}$${Math.abs(Number(sess.pnl_usd||0)).toFixed(2)}`;
+    const sumS = sess.legacy ? "" : ` <b>= $${Number(sess.turnover_usd||0).toFixed(2)}</b>`;
     stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
-        <span class="daydow">${dowOf(d)}</span></div>
-      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")} · ${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}</div>
+        <span class="daydow">${dowOf(d)}${sess.legacy?` · ${t("archiveDay")}`:""}</span></div>
+      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}${pnlS}</div>
       <div class="daysum">
-        <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b> <b>= $${stakeUsd.toFixed(2)}</b></span>
+        <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b>${sumS}</span>
         <span>${rows.length} ${plBets(rows.length)} · <b>${w}W-${dec.length-w}L</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")} $${openUsd.toFixed(2)}`:""}</span>
       </div>`;
     box.innerHTML = rows.map(betRow).join("");
