@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v73";
+const BUILD = "v74";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1989,13 +1989,27 @@ async function loadDay(d){
   }
 }
 
-function initHistory(){
+async function initHistory(){
   const pick = document.getElementById("dpick");
   // v38 (CEO 18.08): вкладка открывается на СЕГОДНЯШНЕМ дне (было — вчера)
   const today = new Date(Date.now() - 6*3600*1000);   // бейсбольный день
   const iso = d => d.toISOString().slice(0,10);
-  pick.value = iso(today);
   pick.max = iso(today);
+  // v74: открываем последний день, где ставки ЕСТЬ. Раньше история всегда
+  // стартовала с сегодня, и в день без ставок пользователь видел пустой
+  // экран, решая, что истории нет вовсе. Разметка не менялась — только
+  // выбор начальной даты в том же элементе.
+  let start = iso(today);
+  try {
+    const feed = await coreFeed();
+    const days = [feed.session].concat(feed.history || [])
+      .filter(d => d && d.date && Number(d.bets || 0) > 0)
+      .map(d => d.date)
+      .sort()
+      .reverse();
+    if (days.length) start = days[0] > pick.max ? pick.max : days[0];
+  } catch(e){}
+  pick.value = start;
   loadDay(pick.value);
   pick.addEventListener("change", () => loadDay(pick.value));
   const shift = n => {
