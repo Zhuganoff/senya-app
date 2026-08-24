@@ -729,8 +729,6 @@ body.splash-on{overflow:hidden}
 
   <div id="pane-dash" class="pane-glass pane-dash" style="display:none">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-  <div class="section" data-i18n="v3Section">Новая стратегия V3</div>
-  <div id="v3Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="n2Section">Стратегия New_02</div>
   <div id="n2Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
@@ -953,7 +951,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v75";
+const BUILD = "v76";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1458,79 +1456,6 @@ async function loadN2(){
   }catch(e){ box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
 
-async function loadV3(){
-  const box = document.getElementById("v3Panel");
-  if(!box) return;
-  try{
-    const rows = await q("/app_assets?select=content,updated_at&name=eq.market_edge_v3_feed&limit=1");
-    if(!rows.length) throw new Error("empty");
-    const feed = typeof rows[0].content === "string" ? JSON.parse(rows[0].content) : rows[0].content;
-    // Жёсткая защита витрины: этот блок никогда не показывает реальный контур.
-    if(!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_money_usd) !== 0){
-      box.innerHTML = `<div class="v3empty neg">${t("v3Unsafe")}</div>`;
-      return;
-    }
-    const z = feed.totals || {}, bank = feed.bank || {};
-    const invalidN = Number(z.invalidated || 0);
-    const pnl = Number(z.pnl_usd || 0), edgePct = x => x != null && Number.isFinite(Number(x))
-      ? `${Number(x)>=0?"+":""}${(100*Number(x)).toFixed(2)}%` : "—";
-    const entries = [];
-    (feed.bets || []).slice(-5).reverse().forEach(r => entries.push({
-      icon: r.result===1?"✓":r.result===0?"×":"·",
-      match: r.match, meta: `${r.market||""} · @${r.odds??"—"} · ${v3Num(100*Number(bank.stake_pct||0),1)}%`,
-      right: edgePct(r.net_edge), kind: r.result===1?"pos":r.result===0?"neg":""
-    }));
-    // Сначала показываем рынки, для которых edge действительно посчитан; чисто
-    // технические несовпадения линий остаются в счётчиках/кодах, но не забивают
-    // карточку пятью похожими строками одного матча.
-    const rankedSkips = [...(feed.skips || [])].sort((a,b) => {
-      const an = Number(a.net_edge), bn = Number(b.net_edge);
-      const ah = a.net_edge != null && Number.isFinite(an);
-      const bh = b.net_edge != null && Number.isFinite(bn);
-      if(ah !== bh) return bh-ah;
-      return ah ? bn-an : 0;
-    });
-    rankedSkips.slice(0,5).forEach(r => entries.push({
-      icon:"→", match:r.match, meta:`${r.market||""} · ${r.reason_code||"SKIP"}`,
-      right:edgePct(r.net_edge), kind:""
-    }));
-    const list = entries.slice(0,6).map(r => `<div class="v3row">
-      <div>${r.icon}</div><div class="m"><div class="match">${v3Esc(r.match)}</div>
-      <div class="meta">${v3Esc(r.meta)}</div></div>
-      <div class="edge ${r.kind}">${t("v3Edge")}<br>${v3Esc(r.right)}</div></div>`).join("");
-    const upd = rows[0].updated_at || feed.generated_ts;
-    const updMs = Date.parse(upd || ""), fresh = Number.isFinite(updMs) && Date.now()-updMs < 25*60*1000;
-    const state = `<div class="v3state${fresh?"":" stale"}"><span class="v3dot"></span>
-      <b>${t(fresh?"v3Scanning":"v3Waiting")}</b><span>${t("v3Cadence")}</span></div>`;
-    box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("v3Title")}</div>
-      <div class="v3sub">${t("v3Virtual")} · ${v3Esc(feed.session||"")}</div></div>
-      <span class="v3paper">${t("v3Paper")}</span></div>
-      ${state}
-      <div class="v3metrics">
-        <div class="v3metric"><b>${v3Num(z.matches != null ? z.matches : z.decisions)}</b><span>${t("v3Decisions")}</span></div>
-        <div class="v3metric"><b>${v3Num(z.bets)}</b><span>${t("v3Bets")}</span></div>
-        <div class="v3metric"><b>${v3Num(z.matches_skipped != null ? z.matches_skipped : z.skips)}</b><span>${t("v3Skips")}</span></div>
-        <div class="v3metric"><b class="${cls(pnl)}">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}</b><span>${t("v3Pnl")}</span></div>
-      </div>
-      ${list ? `<div class="v3list">${list}</div>` : `<div class="v3empty">${t("v3NoSignals")}</div>`}
-      ${invalidN>0 ? `<div class="v3notice">${v3Esc(t("v3Invalidated").replace("{n}",v3Num(invalidN)))}</div>` : ""}
-      <div class="v3notice">${t("v3Separate")} · ${t("v3Updated")} ${v3Esc(fmtTime(upd))}</div>`;
-  }catch(e){
-    box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("v3Title")}</div>
-      <div class="v3sub">${t("v3Virtual")}</div></div><span class="v3paper">${t("v3Paper")}</span></div>
-      <div class="v3state stale"><span class="v3dot"></span><b>${t("v3Waiting")}</b>
-        <span>${t("v3Cadence")}</span></div>
-      <div class="v3empty">${t("v3Unavailable")}</div>
-      <div class="v3notice">${t("v3Separate")}</div>`;
-  }
-}
-
-// v72: ЕДИНЫЙ путь загрузки ленты. Раньше initStats() дергал loadLastBets()
-// раньше, чем main() успевал присвоить window.__coreFeed: вкладка «Ставки»
-// видела null, рисовала пустоту и навсегда фиксировалась флагом __statsInit.
-// Теперь и main(), и вкладка ждут ОДНО обещание; ошибка не проглатывается.
-window.__coreFeed = null;
-window.__coreFeedError = null;
 const CORE_FEED_TTL_MS = 30000;   // короткий TTL: открытая вкладка видит обновление
 function coreFeed(force){
   const fresh = window.__coreFeedAt && (Date.now() - window.__coreFeedAt) < CORE_FEED_TTL_MS;
@@ -1616,7 +1541,6 @@ async function main(){
   document.getElementById("dashSports").innerHTML = sportRows.join("");
   // Вкладка «Ставки» могла открыться раньше ленты — перерисовываем её сейчас.
   if (feed && window.__statsInit) loadLastBets();
-  loadV3();
   loadN2();
   initHistory();   // выбор дня и отчёт по датам живут на дашборде (CEO 18.08)
 }
@@ -2029,7 +1953,7 @@ async function initHistory(){
 
 // «Анализ ставок» (v63, CEO 20.08): тот же вид, что у V3, но данные ОСНОВНОЙ
 // стратегии за игровой день; вместо P&L — сумма поставленных денег.
-async function loadBetAnalysis(allBets){
+async function loadBetAnalysis(shownDay){
   // v71: те же четыре плитки блока v66 — заменён только источник данных.
   // Пропуски считаются по УНИКАЛЬНЫМ событиям текущего игрового дня из ленты
   // Core; старые таблицы здесь больше не участвуют.
@@ -2038,7 +1962,7 @@ async function loadBetAnalysis(allBets){
   try {
     const feed = window.__coreFeed;
     if (!feed) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; return; }
-    const day = feed.session || {}, fb = feed.bank || {};
+    const day = shownDay || feed.session || {}, fb = feed.bank || {};
     const rule = `${fb.stake_min_pct}–${fb.stake_max_pct}${t("ofBank")} · ` +
                  `${fb.max_daily_bets}/${t("v3Bets")} · ${fb.max_concurrent} ${t("inPlay")}`;
     box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("baTitle")}</div>
@@ -2068,11 +1992,13 @@ async function loadLastBets(){
     loadBetAnalysis(null);
     return;
   }
-  loadBetAnalysis(null);
-  const day = feed.session || {};
-  // v73: строго ТЕКУЩАЯ сессия по полю session_date из ленты. Догадок по
-  // commence/opened_ts больше нет — ночная ставка после полуночи UTC
-  // принадлежит своей сессии, а не следующей.
+  // v76: вкладка показывает ТЕКУЩИЙ игровой день, а если в нём ставок ещё
+  // нет — последний день, где они были. Пустой экран в день без ставок
+  // выглядел как «истории нет вовсе». Дата дня видна в самом блоке.
+  const today = feed.session || {};
+  const day = Number(today.bets || 0) > 0 ? today
+      : ((feed.history || []).find(h => Number(h.bets || 0) > 0) || today);
+  loadBetAnalysis(day);
   const last = ((day.bets_list) || (feed.bets || [])
       .filter(b => b.session_date === day.date))
     .map(feedBetToRow)
