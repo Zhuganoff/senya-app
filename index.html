@@ -951,7 +951,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v77";
+const BUILD = "v78";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1349,6 +1349,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // loadLastBets() сам ждёт общую ленту. Флаг лишь помечает, что вкладку уже
   // рисовали, чтобы main() обновил её сразу после прихода данных.
   window.__statsInit = true; try { loadLastBets(); } catch(e) {}
+  try { startStatsAutoRefresh(); } catch(e) {}
   document.querySelectorAll("#themeSel button").forEach(b =>
     b.addEventListener("click", () => applyTheme(b.dataset.t)));
   document.querySelectorAll("#palSel button").forEach(b =>
@@ -1652,6 +1653,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
       // Флаг больше НЕ блокирует перерисовку: он лишь помечает, что вкладку
       // уже открывали (чтобы main() знал, что её нужно обновить после ленты).
       window.__statsInit = true; loadLastBets();
+      try { startStatsAutoRefresh(); } catch(e) {}
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
     if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
@@ -1980,33 +1982,70 @@ async function loadBetAnalysis(shownDay){
         <div class="v3metric"><b>${v3Num(day.matches)}</b><span>${t("v3Decisions")}</span></div>
         <div class="v3metric"><b>${v3Num(day.bets)}</b><span>${t("v3Bets")}</span></div>
         <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
-        <div class="v3metric"><b>$${v3Num(day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
+        <div class="v3metric"><b>$${v3Num(day.staked_usd != null ? day.staked_usd : day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
       </div>`;
   } catch(e) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
 
+// Онлайн-обновление вкладки «Ставки» (дефект 25.08: таймера не было вовсе —
+// открытая вкладка не перечитывала ленту никогда, и «Анализ ставок» замирал
+// на том, что было при открытии). Перерисовываем ТОЛЬКО когда вкладка
+// действительно видна: фоновая вкладка и свёрнутое приложение сети не тратят.
+// Разметка не меняется: обновляются те же элементы теми же функциями.
+const STATS_REFRESH_MS = 60000;
+function statsTabVisible(){
+  const pane = document.getElementById("pane-stats");
+  return !!pane && pane.style.display !== "none"
+      && document.visibilityState !== "hidden";
+}
+function startStatsAutoRefresh(){
+  if (window.__statsTimer) return;
+  window.__statsTimer = setInterval(() => {
+    // Флаг здесь — условие ТАЙМЕРА, а не гейт входа во вкладку: вход
+    // флагом не блокируется (контракт ленты это отдельно сторожит).
+    if (!statsTabVisible() || window.__statsInit !== true) return;
+    try { loadLastBets(true); } catch(e) {}
+  }, STATS_REFRESH_MS);
+  // возврат к приложению — сразу свежие цифры, не дожидаясь тика таймера
+  document.addEventListener("visibilitychange", () => {
+    if (statsTabVisible() && window.__statsInit) {
+      try { loadLastBets(true); } catch(e) {}
+    }
+  });
+}
+
 // последние ставки по ВСЕМ видам спорта (раньше здесь был только бейсбол)
-async function loadLastBets(){
+async function loadLastBets(quiet){
   // v71: список ставок берётся из ЕДИНОГО ассета core_feed. Разметка строки
   // (betRow) и контейнер #bets не менялись — заменён только источник.
   const box = document.getElementById("bets");
   // Пока лента едет — честное «Загрузка…», а не «ставок нет».
-  box.innerHTML = `<div class="loading">${t("loading")}</div>`;
+  // При фоновом обновлении (quiet) уже нарисованное не гасим: иначе открытая
+  // вкладка мигала бы «Загрузка…» каждую минуту.
+  if (!quiet) box.innerHTML = `<div class="loading">${t("loading")}</div>`;
   let feed = null;
   try {
     feed = await coreFeed(true);   // вход во вкладку всегда перечитывает ленту
   } catch (e) {
+    if (quiet) return;             // фоновая попытка не портит показанное
     box.innerHTML = `<div class="loading">${t("coreUnavailable")}: ${v3Esc(String(e && e.message || e))}</div>`;
     loadBetAnalysis(null);
     return;
   }
-  // v76: вкладка показывает ТЕКУЩИЙ игровой день, а если в нём ставок ещё
-  // нет — последний день, где они были. Пустой экран в день без ставок
+  // v76: СПИСОК ставок показывает текущий игровой день, а если в нём ставок
+  // ещё нет — последний день, где они были. Пустой экран в день без ставок
   // выглядел как «истории нет вовсе». Дата дня видна в самом блоке.
   const today = feed.session || {};
   const day = Number(today.bets || 0) > 0 ? today
       : ((feed.history || []).find(h => Number(h.bets || 0) > 0) || today);
-  loadBetAnalysis(day);
+  // Дефект 25.08: «Анализ ставок» получал ТОТ ЖЕ день, что и список, поэтому
+  // в день без ставок он замирал на вчерашней дате — владелец видел
+  // «2026-08-24 · 15 матчей · 5 ставок · 10 пропущено · $152.98», хотя шло
+  // уже 25.08. Блок анализа — про ТЕКУЩИЙ игровой день по границе проекта
+  // (session_day, 06:00 UTC): он обязан обнулиться в новый день и наполняться
+  // онлайн по мере волн. Список ставок сохраняет своё поведение, и обе даты
+  // подписаны, так что расхождение видно, а не скрыто.
+  loadBetAnalysis(today);
   const last = ((day.bets_list) || (feed.bets || [])
       .filter(b => b.session_date === day.date))
     .map(feedBetToRow)
