@@ -729,8 +729,6 @@ body.splash-on{overflow:hidden}
 
   <div id="pane-dash" class="pane-glass pane-dash" style="display:none">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-  <div class="section" data-i18n="n2Section">Стратегия New_02</div>
-  <div id="n2Panel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
   <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secDayBets">Ставки за день</div>
@@ -951,7 +949,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v78";
+const BUILD = "v79";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1011,14 +1009,6 @@ const T = {
          "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
          "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
-  n2Section: ["Стратегия New_02", "Strategy New_02", "New_02 策略"],
-  n2Note: ["рыночный сигнал + согласие AI-дебатов · виртуально, $0",
-           "market signal + AI-debate agreement · virtual, $0",
-           "市场信号 + AI 辩论一致 · 虚拟，$0"],
-  n2Empty: ["Сегодня ставок нет — сигнал рынка и дебаты пока не совпали.",
-            "No bets today — market signal and debates have not agreed yet.",
-            "今日暂无投注——市场信号与辩论尚未一致。"],
-  n2Bank: ["банк", "bank", "资金"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
   v3Virtual: ["Виртуально, реальные деньги: $0", "Virtual, real money: $0", "模拟运行，真实资金：$0"],
@@ -1430,34 +1420,6 @@ function v3Esc(v){
 function v3Num(v, d=0){
   const n = Number(v); return Number.isFinite(n) ? n.toFixed(d) : "—";
 }
-async function loadN2(){
-  const box = document.getElementById("n2Panel");
-  if(!box) return;
-  try{
-    const rows = await q("/app_assets?select=content,updated_at&name=eq.new_strategies_feed&limit=1");
-    if(!rows.length) throw new Error("empty");
-    const feed = typeof rows[0].content === "string" ? JSON.parse(rows[0].content) : rows[0].content;
-    // та же жёсткая защита, что у V3: только бумажный контур
-    if(!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_money_usd) !== 0){
-      box.innerHTML = `<div class="v3empty neg">${t("v3Unsafe")}</div>`;
-      return;
-    }
-    const s = feed.new02 || {};
-    const bets = s.bets || [];
-    const ico = sp => sp === "mlb" ? "⚾" : "🎾";
-    const rIco = r => r === 1 ? "✅" : r === 0 ? "❌" : r === -1 ? "↩️" : "⏳";
-    const list = bets.map(b => `<div class="v3row">
-      <div>${rIco(b.result)}</div><div class="m"><div class="match">${ico(b.sport)} ${v3Esc(b.selection)} @${v3Num(b.odds,3)}</div>
-      <div class="meta">EV ${v3Num(b.ep = b.ev_pct,1)}%${b.debate_p != null ? ` · дебаты p=${v3Num(b.debate_p,2)}` : ""}</div></div>
-      <div class="edge ${b.result === 1 ? "pos" : b.result === 0 ? "neg" : ""}">${b.result === 1 ? "+$" + v3Num(b.stake*(b.odds-1),2) : b.result === 0 ? "−$" + v3Num(b.stake,2) : "⏳"}</div></div>`).join("");
-    const banks = [s.bank_mlb != null ? `⚾ $${v3Num(s.bank_mlb,2)}` : "",
-                   s.bank_tennis != null ? `🎾 $${v3Num(s.bank_tennis,2)}` : ""].filter(Boolean).join(" · ");
-    box.innerHTML = `<div class="v3sub">${t("n2Note")}</div>
-      ${list || `<div class="v3empty">${t("n2Empty")}</div>`}
-      ${banks ? `<div class="v3sub" style="margin-top:8px">${t("n2Bank")}: ${banks} (старт $300)</div>` : ""}`;
-  }catch(e){ box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
-}
-
 const CORE_FEED_TTL_MS = 30000;   // короткий TTL: открытая вкладка видит обновление
 function coreFeed(force){
   const fresh = window.__coreFeedAt && (Date.now() - window.__coreFeedAt) < CORE_FEED_TTL_MS;
@@ -1511,9 +1473,13 @@ async function main(){
   const bankNow = Number(fb.current || 0), bankStart = Number(fb.start || 0);
   const pnlAll = bankStart ? (bankNow / bankStart - 1) : 0;
   const pA = pnlAll * 100;
-  const p24 = bankStart ? 100 * Number(day.pnl_usd || 0) / bankStart : 0;
+  // «Прибыль за сутки» — последний ЗАКРЫТЫЙ игровой день с рассчитанными
+  // ставками (lead last_closed), а не текущий, где до вечера всегда $0.00.
+  // Разметка карточки та же — заменён только источник числа и даты.
+  const closed = (feed && feed.last_closed) || day;
+  const p24 = bankStart ? 100 * Number(closed.pnl_usd || 0) / bankStart : 0;
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
-  const lastDay = day.date || "";
+  const lastDay = closed.date || "";
   const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
   const sportRows = Object.keys(bySport).map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
@@ -1539,11 +1505,10 @@ async function main(){
       <div class="d ${cls(pA)}">${t("ofBankShort")}${money()}${roiS}</div></div>
     <div class="card" style="grid-column:1/-1"><div class="k">${t("profit24")}</div>
       <div class="v ${cls(p24)}">${pct(p24)}</div>
-      <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")} = ${usd(day.pnl_usd)}</div></div>`;
+      <div class="d ${cls(p24)}">${lastDay || ""} · ${t("ofBankShort")} = ${usd(closed.pnl_usd)}</div></div>`;
   document.getElementById("dashSports").innerHTML = sportRows.join("");
   // Вкладка «Ставки» могла открыться раньше ленты — перерисовываем её сейчас.
   if (feed && window.__statsInit) loadLastBets();
-  loadN2();
   initHistory();   // выбор дня и отчёт по датам живут на дашборде (CEO 18.08)
 }
 
@@ -1973,13 +1938,19 @@ async function loadBetAnalysis(shownDay){
     const feed = window.__coreFeed;
     if (!feed) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; return; }
     const day = shownDay || feed.session || {}, fb = feed.bank || {};
+    // Дневного лимита числа ставок больше нет (владелец 25.08): при
+    // max_daily_bets = null показываем фактический счётчик дня, а не «null».
+    // Вёрстка та же — меняется только содержимое строки.
+    const daily = fb.max_daily_bets != null
+      ? `${fb.max_daily_bets}/${t("v3Bets")}`
+      : `${v3Num(day.bets)} ${t("v3Bets")}`;
     const rule = `${fb.stake_min_pct}–${fb.stake_max_pct}${t("ofBank")} · ` +
-                 `${fb.max_daily_bets}/${t("v3Bets")} · ${fb.max_concurrent} ${t("inPlay")}`;
+                 `${daily} · ${fb.max_concurrent} ${t("inPlay")}`;
     box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("baTitle")}</div>
       <div class="v3sub">${v3Esc(day.date || "")} · ${v3Esc(rule)}</div></div>
       <span class="v3paper">${t("v3Paper")}</span></div>
       <div class="v3metrics">
-        <div class="v3metric"><b>${v3Num(day.matches)}</b><span>${t("v3Decisions")}</span></div>
+        <div class="v3metric"><b>${v3Num(Number(day.matches || 0) > 0 ? day.matches : ((day.scheduled || {}).total || 0))}</b><span>${t("v3Decisions")}</span></div>
         <div class="v3metric"><b>${v3Num(day.bets)}</b><span>${t("v3Bets")}</span></div>
         <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
         <div class="v3metric"><b>$${v3Num(day.staked_usd != null ? day.staked_usd : day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
