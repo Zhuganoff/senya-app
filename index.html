@@ -949,7 +949,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v80";
+const BUILD = "v81";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1958,7 +1958,12 @@ async function loadBetAnalysis(shownDay){
       <div class="v3sub">${v3Esc(day.date || "")} · ${v3Esc(rule)}</div></div>
       <span class="v3paper">${t("v3Paper")}</span></div>
       <div class="v3metrics">
-        <div class="v3metric"><b>${v3Num(Number(day.matches || 0) > 0 ? day.matches : ((day.scheduled || {}).total || 0))}</b><span>${t("v3Decisions")}</span></div>
+        <div class="v3metric"><b>${(() => {
+          // «оценено из расписанных» (владелец 29.08): до первой волны 0 из 20,
+          // по ходу дня 5 из 20, к концу дня 20 из 20 — цифры не «пропадают»
+          const done = Number(day.matches || 0), plan = Number((day.scheduled || {}).total || 0);
+          return plan > done ? `${v3Num(done)}/${v3Num(plan)}` : v3Num(done);
+        })()}</b><span>${t("v3Decisions")}</span></div>
         <div class="v3metric"><b>${v3Num(day.bets)}</b><span>${t("v3Bets")}</span></div>
         <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
         <div class="v3metric"><b>$${v3Num(day.staked_usd != null ? day.staked_usd : day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
