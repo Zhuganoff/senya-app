@@ -949,7 +949,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v79";
+const BUILD = "v80";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1530,10 +1530,18 @@ async function initSched(){
   const box = document.getElementById("schedList");
   try {
     // Только ПРЕДСТОЯЩИЕ матчи (CEO 19.08) и только ТЕКУЩИЙ игровой день
-    // (CEO 20.08): окно 20 часов вперёд — ночная часть слейта видна,
-    // завтрашний вечер (например, футбол пятницы) появится в свой день.
+    // (CEO 20.08). Дефект 29.08: окно «20 часов вперёд» в полночь по Омску
+    // (18:00 UTC) дотягивалось до 14:00 UTC следующего дня и затаскивало
+    // дневной футбол субботы в пятничный список. Граница игрового дня —
+    // 06:00 UTC (session_day, та же, что у ленты): ночной MLB до неё виден,
+    // завтрашний день появится в свой день.
     const since = new Date().toISOString();
-    const until = new Date(Date.now() + 20*3600*1000).toISOString();
+    const until = (() => {
+      const d = new Date(); d.setUTCMinutes(0, 0, 0);
+      if (d.getUTCHours() >= 6) d.setUTCDate(d.getUTCDate() + 1);
+      d.setUTCHours(6);
+      return d.toISOString();
+    })();
     __schedRows = await q(`/senya_schedule?select=*&commence=gte.${since}&commence=lte.${until}&order=commence.asc`);
   } catch(e) { __schedRows = []; }
   // счёт сыгранных: даты матчей ± сутки (день MLB — ET, теннис — UTC)
