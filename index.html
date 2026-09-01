@@ -949,7 +949,9 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v82";
+const BUILD = "v83";
+// дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
+const BUILD_DATE = "01.09.2026";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1230,6 +1232,13 @@ if (LANG !== "ru") document.querySelectorAll("[data-i18n]").forEach(el => {
   const k = el.dataset.i18n;
   if (T[k]) el.innerHTML = T[k][LIDX[LANG]] ?? T[k][0];
 });
+// Подвал: «сборка v66 · 20.08.2026» — текст эталона; фактическую версию
+// подставляем из BUILD, чтобы подвал не отставал от сборки никогда
+// (владелец 01.09: с v67 по v82 его не бампал ни один деплой).
+(() => {
+  const f = document.getElementById("foot");
+  if (f) f.innerHTML = f.innerHTML.replace("v66 · 20.08.2026", `${BUILD} · ${BUILD_DATE}`);
+})();
 
 // WebView Telegram держит страницу в кеше и не спрашивает сервер. Спрашиваем сами:
 // version.json тянется с меткой времени (в fetch query работает), и если на сервере
