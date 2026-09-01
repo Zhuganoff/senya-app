@@ -949,7 +949,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v83";
+const BUILD = "v84";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "01.09.2026";
 
@@ -1904,7 +1904,7 @@ async function loadDay(d){
       <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}${pnlS}</div>
       <div class="daysum">
         <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b>${sumS}</span>
-        <span>${rows.length} ${plBets(rows.length)} · <b>${w}W-${dec.length-w}L</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")} $${openUsd.toFixed(2)}`:""}</span>
+        <span>${rows.length} ${plBets(rows.length)} · <b class="${dec.length && w/dec.length>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${dec.length-w}L${dec.length?` · ${(100*w/dec.length).toFixed(0)}%`:""}</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")} $${openUsd.toFixed(2)}`:""}</span>
       </div>`;
     box.innerHTML = rows.map(betRow).join("");
   }catch(e){
@@ -2064,7 +2064,7 @@ async function loadLastBets(quiet){
     st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(day.date||"")}</span>
         <span class="daydow">${dowOf(day.date||"")} · ${last.length} ${plBets(last.length)}</span></div>
       <div class="v ${cls(pnl)}" style="margin-top:2px">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}${roi}</div>
-      <div class="daysum" style="margin-top:6px"><span>${w}W-${l}L</span>
+      <div class="daysum" style="margin-top:6px"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
         <span>${t("baStaked")}: $${turn.toFixed(2)}</span></div>`;
   }
   box.innerHTML = last.map(betRow).join("");
