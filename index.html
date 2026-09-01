@@ -949,7 +949,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v81";
+const BUILD = "v82";
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1668,10 +1668,14 @@ function betRow(r){
     ? ` · CLV ${r.clv_pct>=0?"+":""}${Number(r.clv_pct).toFixed(1)}%`
     : ((r.closing_ts && r.closing_odds && r.best_odds)
        ? ` · CLV ${(((r.best_odds/r.closing_odds)-1)*100>=0?"+":"")}${(((r.best_odds/r.closing_odds)-1)*100).toFixed(1)}%` : "");
-  // размер — в ПРОЦЕНТАХ банка (у каждого свой), плюс сумма под личный банк
+  // размер — в ПРОЦЕНТАХ банка и РЕАЛЬНАЯ сумма ставки Core (владелец 01.09:
+  // прежний пересчёт на личный кошелёк из профиля показывал «$15.00» при
+  // фактических $23.76 и вводил в заблуждение рядом с реальным P&L).
+  // Пересчёт на личный банк остаётся запасным для старых строк без суммы.
   const sh = share(r);
   const pctS = sh ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "";
-  const money = (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
+  const money = r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
+              : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
   const res = r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
             : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
