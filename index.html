@@ -963,9 +963,9 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v93";
+const BUILD = "v94";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "04.09.2026";
+const BUILD_DATE = "05.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1226,6 +1226,13 @@ const T = {
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
+  // подпись решателя в карточке ставки (CEO 05.09: «чтобы всё видеть»)
+  stratMlbGates: ["ворота MLB", "MLB gates", "MLB 闸门"],
+  stratTennisPin: ["Pinnacle-ключ", "Pinnacle key", "Pinnacle 键"],
+  stratTennisV2: ["калибровка V2", "calibrated V2", "校准 V2"],
+  stratSoccerV3: ["смесь V3", "blend V3", "混合 V3"],
+  stratSoccerV2: ["калибровка V2", "calibrated V2", "校准 V2"],
+  stratKhl: ["двойной ключ КХЛ", "KHL double key", "KHL 双键"],
   comingFrom: ["скоро · сезон с", "coming · season from", "即将 · 赛季自"],
   errWord: ["Ошибка", "Error", "错误"],
   // динамика: профиль и рефы
@@ -1504,9 +1511,10 @@ async function main(){
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
   const lastDay = closed.date || "";
   const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
-  // CEO 04.09: теннис копится виртуально — строка затемнена; данные и
-  // разметка те же, изменение только инлайн-прозрачностью и подписью.
-  const DIM_SPORTS = {tennis: t("dimVirtual")};
+  // CEO 04.09 (v86): теннис затемнялся «виртуально · копится»; CEO 05.09
+  // («снимай»): у тенниса снова боевой в PAPER решатель (двойной ключ
+  // Pinnacle/Poly) — затемнение снято, строка живёт от ленты как остальные.
+  const DIM_SPORTS = {};
   const sportRows = Object.keys(bySport).map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
@@ -1702,6 +1710,18 @@ function isStale(r){
 function oddsOf(r){ return r.best_odds ?? r.odds ?? null; }
 
 // ─────────── история по дням ───────────
+// Подпись решателя (CEO 05.09 «чтобы всё видеть»): open_decider уже лежит
+// в ленте у каждой ставки Core; здесь только текст в существующей строке.
+const STRAT_T = {
+  CORE_MLB_FROZEN_GATES: "stratMlbGates",
+  TENNIS_PIN_EDGE_PRIMARY_PAPER_V1: "stratTennisPin",
+  TENNIS_CALIBRATED_V2_PRIMARY_PAPER_EARLY: "stratTennisV2",
+  SOCCER_BLEND_V3_PRIMARY_PAPER_EARLY: "stratSoccerV3",
+  SOCCER_CALIBRATED_V2_PRIMARY_PAPER_EARLY: "stratSoccerV2",
+  CORE_KHL_PAPER_V1: "stratKhl"};
+function stratLabel(r){
+  const k = STRAT_T[r.decider]; return k ? ` · ${t(k)}` : "";
+}
 function betRow(r){
   const ico = resIco(r);
   const clv = r.clv_pct != null
@@ -1727,7 +1747,7 @@ function betRow(r){
   const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
-    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${r.pnl!=null?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
+    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${stratLabel(r)}${clv}${gameTime(r)}${r.pnl!=null?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
@@ -1888,7 +1908,8 @@ function feedBetToRow(b){
           stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
           match_date: b.session_date || String(b.commence || "").slice(0,10),
           ts: b.opened_ts, commence: b.commence,
-          closing_ts: null, closing_odds: null, clv_pct: b.clv_pct};
+          closing_ts: null, closing_odds: null, clv_pct: b.clv_pct,
+          decider: b.open_decider || null};
 }
 function feedSession(feed, d){
   if (!feed) return null;
