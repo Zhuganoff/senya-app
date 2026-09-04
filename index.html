@@ -951,7 +951,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v86";
+const BUILD = "v87";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "04.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1642,12 +1642,12 @@ function renderSched(){
       if (ms && ms.final_score) {
         return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}">
           <div class="res">✓</div>
-          <div class="m"><div class="match">${r.match || ""}</div>
+          <div class="m"><div class="match">${v3Esc(r.match || "")}</div>
           <div class="sel"><span class="gdt">${fmtGDate(r.commence)} · ${fmtTime(r.commence)}</span> · ${r.league||"—"} · ${t("msTap")}</div></div>
           <div class="odds"><div class="bscore" style="margin:0">${ms.final_score}</div></div></div>`;
       }
       return `<div class="bet"><div class="res">◷</div>
-        <div class="m"><div class="match">${r.match || ""}</div>
+        <div class="m"><div class="match">${v3Esc(r.match || "")}</div>
         <div class="sel"><span class="gdt">${fmtGDate(r.commence)} · ${fmtTime(r.commence)}</span> · ${r.league||"—"}</div></div>
         <div class="odds"><div>${oS}</div></div></div>`;
     }).join("");
@@ -1730,8 +1730,8 @@ function betRow(r){
   const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
   const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
-    <div class="m"><div class="match">${r._ico||""}${r.match||""}${scoreS}</div>
-    <div class="sel">${(r.selection||"").replace(/[\[\]]/g," ").trim()}${clv}${gameTime(r)}${r.pnl!=null?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
+    <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
+    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${r.pnl!=null?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
