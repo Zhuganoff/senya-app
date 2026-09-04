@@ -392,12 +392,12 @@ body.light .daycard::after{background:linear-gradient(115deg,transparent 30%,
 
 /* ── профиль ── */
 .me-card{display:flex;align-items:center;gap:var(--s3);background:var(--card);
-  border:1px solid var(--line);border-radius:var(--r-l);padding:var(--s4);box-shadow:var(--shadow)}
-.ava{width:52px;height:52px;flex:none;border-radius:16px;color:#04121a;
+  border:1px solid var(--line);border-radius:var(--r-l);padding:8px 12px;box-shadow:var(--shadow)}
+.ava{width:36px;height:36px;flex:none;border-radius:12px;color:#04121a;
   background:linear-gradient(140deg,var(--accent2),var(--accent));
-  display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:750}
+  display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:750}
 .me-info{min-width:0}
-.me-name{font-size:16.5px;font-weight:700;letter-spacing:-.02em}
+.me-name{font-size:14px;font-weight:700;letter-spacing:-.02em}
 .me-sub{font-size:12px;color:var(--mut);line-height:1.45;margin-top:2px}
 
 /* ── рефералы ── */
@@ -773,7 +773,6 @@ body.splash-on{overflow:hidden}
       </div>
     </div>
     <div id="exchBlock" style="display:none">
-    <div class="section" data-i18n="secWalletMain">Кошелёк и биржа</div>
     <div class="card">
       <div class="me-sub" id="tariffInfo" style="margin-bottom:8px"></div>
       <div class="k" data-i18n="exchTitle">Биржа кошелька</div>
@@ -793,12 +792,12 @@ body.splash-on{overflow:hidden}
         <input type="number" id="budget" class="binput" min="20" step="10" value="300">
         <button class="btn small" id="saveBudget" data-i18n="save">Сохранить</button>
       </div>
-      <div class="me-sub" id="budgetHint" data-i18n="walletNote">Один счёт на выбранной бирже — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.</div>
+      <div class="me-sub" id="budgetHint" data-i18n="walletNote">К боту подключается ОТДЕЛЬНЫЙ операционный кошелёк на Polymarket — ты заводишь его специально под ставки и кладёшь туда только игровой банк. Каждая ставка — 5–10% от суммы на этом кошельке: банк растёт — растёт и ставка. Основные средства бот не видит и тронуть не может, а вывести деньги можешь только ты. После подключения API-ключа сумма подтянется с кошелька автоматически.</div>
       <div class="quick" id="quickBudget">
         <button data-v="100">$100</button><button data-v="300">$300</button>
         <button data-v="500">$500</button><button data-v="1000">$1000</button>
       </div>
-      <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
+      <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся с тарифом Auto. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ и не сид-фразу.</div>
     </div>
 
     <div class="section" data-i18n="secGuide">Справка</div>
@@ -954,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v89";
+const BUILD = "v90";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "04.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1065,13 +1064,13 @@ const T = {
   secApi: ["Подключение API", "API connection", "API 连接"],
   secWalletMain: ["Общий кошелёк", "Main wallet", "总钱包"],
   walletSum: ["Сумма кошелька", "Wallet balance", "钱包金额"],
-  walletNote: ["Один счёт на Polymarket — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.",
-               "One Polymarket account — shared across the bot's bets (baseball + tennis). Each bet is sized at 5–10% of this amount. Once the API key is connected, the balance syncs from the exchange automatically.",
-               "Polymarket 上的一个账户——机器人所有投注（棒球+网球）共用。每注为该金额的 5–10%。接入 API 密钥后，余额将自动从交易所同步。"],
+  walletNote: ["К боту подключается ОТДЕЛЬНЫЙ операционный кошелёк на Polymarket — ты заводишь его специально под ставки и кладёшь туда только игровой банк. Каждая ставка — 5–10% от суммы на этом кошельке: банк растёт — растёт и ставка. Основные средства бот не видит и тронуть не может, а вывести деньги можешь только ты. После подключения API-ключа сумма подтянется с кошелька автоматически.",
+               "The bot connects to a SEPARATE operational Polymarket wallet — you create it just for betting and keep only your playing bankroll there. Each bet is 5–10% of this wallet's balance: as the bankroll grows, so does the bet. The bot never sees or touches your main funds, and only you can withdraw. Once the API key is connected, the balance syncs from the wallet automatically.",
+               "机器人连接的是一个专用的 Polymarket 操作钱包——你专门为投注创建它，只存放游戏资金。每笔投注为该钱包余额的 5–10%：资金增长，投注额也随之增长。机器人看不到也动不了你的主资金，只有你能提取。接入 API 密钥后，余额将自动从钱包同步。"],
   secSportsWr: ["Виды спорта", "Sports", "运动项目"],
-  apiNote: ["Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.",
-            "The key is stored on this device only and never sent anywhere. Auto-betting activates once the CLV metric is confirmed. ⚠️ Enter an API key only — NEVER your wallet's private key.",
-            "密钥仅保存在本设备上，绝不会被上传。CLV 指标确认后将开启自动投注。⚠️ 只填写 API 密钥——绝不要填写钱包私钥。"],
+  apiNote: ["Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся с тарифом Auto. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ и не сид-фразу.",
+            "The key is stored on this device only and is never sent anywhere. Auto-betting activates with the Auto plan. ⚠️ Enter the API key only — NEVER your private key or seed phrase.",
+            "密钥只保存在本设备，绝不会发送到任何地方。自动投注将随 Auto 套餐开启。⚠️ 只输入 API 密钥——绝不要输入私钥或助记词。"],
   apiSaved: ["✅ Ключ сохранён на этом устройстве", "✅ Key saved on this device", "✅ 密钥已保存在本设备"],
   themeTitle: ["Тема приложения", "App theme", "应用主题"],
   themeDark: ["🌙 Тёмная", "🌙 Dark", "🌙 深色"], themeLight: ["☀️ Светлая", "☀️ Light", "☀️ 浅色"], themeAuto: ["🔄 Как в Telegram", "🔄 Match Telegram", "🔄 跟随 Telegram"],
@@ -2329,7 +2328,7 @@ function win100Gate(closed, stored){
   // отметить как «показано», или null, если показывать нечего
   if (!closed || !closed.date) return null;
   const w = Number(closed.wins || 0), l = Number(closed.losses || 0);
-  if (w < 2 || l > 0) return null;                       // не «100%-день»
+  if (w < 1 || l > 0) return null;   // 100%-день от 1 ставки (CEO 05.09)
   if (Number(closed.settled || 0) !== w + l) return null; // VOID в дне — не 100%
   if (stored === closed.date) return null;               // этот день уже показан
   return closed.date;
