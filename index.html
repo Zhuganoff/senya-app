@@ -106,16 +106,18 @@ header{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s5)}
   0 0 18px -7px rgba(244,114,182,.68)}
 .logo::before{content:'';position:absolute;inset:-42%;z-index:0;
   background:conic-gradient(from 0deg,#38bdf8,#6366f1,#a78bfa,#f472b6,#fb923c,#34d399,#38bdf8);
-  animation:headerOrbSpin 10s linear infinite}
+  animation:headerOrbSpin 4s linear infinite}
 .logo::after{content:'';position:absolute;inset:3px;z-index:1;border-radius:50%;
-  background:radial-gradient(circle at 34% 27%,rgba(255,255,255,.16),transparent 30%),
-    radial-gradient(circle at 50% 60%,#171a2d 0%,#090b15 68%,#05060b 100%);
+  background:radial-gradient(circle at 34% 27%,rgba(255,255,255,.20),transparent 32%),
+    radial-gradient(circle at 50% 60%,rgba(15,18,38,.58) 0%,rgba(9,11,21,.46) 62%,rgba(5,6,11,.55) 100%);
   box-shadow:inset 0 0 13px rgba(99,102,241,.28)}
 .logo-ai{position:relative;z-index:2;color:#fff;font-size:15px;font-weight:850;
   letter-spacing:-.02em;text-shadow:0 0 8px rgba(255,255,255,.48)}
 @keyframes headerOrbSpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.logo::before{animation:none}}
-h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-items:center;gap:var(--s2)}
+h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-items:center;gap:var(--s2);
+  background:linear-gradient(90deg,#38bdf8,#a78bfa,#f472b6,#fb923c,#34d399,#38bdf8);
+  background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
 .sub{font-size:12.5px;color:var(--mut);margin-top:1px}
 .badge-live{font-size:9.5px;font-weight:700;letter-spacing:.09em;padding:2px 7px;
   border-radius:999px;background:var(--glow);color:var(--accent)}
@@ -949,9 +951,21 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v85";
+const BUILD = "v86";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "01.09.2026";
+const BUILD_DATE = "04.09.2026";
+// Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
+// статический CSS-каркас v66 не расширяется; reduced-motion уважается.
+(() => {
+  try {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const st = document.createElement("style");
+    st.textContent = "@keyframes aiShine{to{background-position:300% center}}";
+    document.head.appendChild(st);
+    const h = document.querySelector("header h1");
+    if (h) h.style.animation = "aiShine 6s linear infinite";
+  } catch (e) {}
+})();
 
 // ── язык интерфейса (CEO 11.08): ru / en / zh, словарь массивами [ru, en, zh].
 // Автоопределение при первом входе: language_code из Telegram — СНГ → ru,
@@ -1195,6 +1209,9 @@ const T = {
               "1️⃣ Pick an exchange above (SX.bet or Polymarket) and sign up on its website. Make sure it operates in your country and complete verification (KYC).<br><br>2️⃣ Fund the account with USDC stablecoin — that's your betting bankroll. Keep only what you're prepared to play with.<br><br>3️⃣ In the exchange account settings create an <b>API key</b> (on SX: Account → API).<br><br>4️⃣ Paste the key into the “API connection” field above and tap “Save” — it stays on this device only.<br><br>5️⃣ Done. Once auto-betting goes live (after the CLV metric is confirmed), the bot will bet through your account — the money always stays yours.<br><br>⚠️ Never share your wallet's private key or seed phrase: the bot doesn't need them — an API key is enough.",
               "1️⃣ 在上方选择交易所（SX.bet 或 Polymarket），到其官网注册。确认它在你所在国家可用，并完成身份验证（KYC）。<br><br>2️⃣ 用稳定币 USDC 入金——这是你的投注资金。只存放你准备用于投注的金额。<br><br>3️⃣ 在交易所账户设置中创建 <b>API 密钥</b>（SX：Account → API）。<br><br>4️⃣ 将密钥粘贴到上方“API 连接”栏并点“保存”——密钥只保存在本设备。<br><br>5️⃣ 完成。自动投注开启后（CLV 指标确认后），机器人将通过你的账户下注——钱始终归你所有。<br><br>⚠️ 切勿向任何人透露钱包私钥或助记词：机器人不需要它们——API 密钥足矣。"],
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
+  sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
+  dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
+  comingFrom: ["скоро · сезон с", "coming · season from", "即将 · 赛季自"],
   errWord: ["Ошибка", "Error", "错误"],
   // динамика: профиль и рефы
   openFromBot: ["Открой приложение кнопкой в боте @sportzhubot — тогда увидишь свой профиль и ссылку.",
@@ -1491,14 +1508,30 @@ async function main(){
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
   const lastDay = closed.date || "";
   const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
+  // CEO 04.09: теннис копится виртуально — строка затемнена; данные и
+  // разметка те же, изменение только инлайн-прозрачностью и подписью.
+  const DIM_SPORTS = {tennis: t("dimVirtual")};
   const sportRows = Object.keys(bySport).map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
-    return `<div class="sport"><div class="ico">${v3Esc(sp.emoji || "")}</div>
+    const dim = DIM_SPORTS[k];
+    return `<div class="sport"${dim ? ' style="opacity:.45"' : ""}><div class="ico">${v3Esc(sp.emoji || "")}</div>
       <div class="info"><div class="nm">${v3Esc(SPORT_T[k] || sp.title || k)}</div>
-      <div class="st">${w}W-${n-w}L · ${n} ${plBets(n)}</div>
+      <div class="st">${w}W-${n-w}L · ${n} ${plBets(n)}${dim ? " · " + dim : ""}</div>
       <div class="wr-bar" style="margin-top:6px"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div></div>
       <div class="bank"><div class="b ${wr>=50?"pos":"neg"}">${n?wr.toFixed(0)+"%":"—"}</div></div></div>`;
+  });
+  // CEO 04.09: будущие виды — затемнённые строки той же разметки с честной
+  // датой старта сезона; появятся данные в ленте — строки оживут сами.
+  [["khl", "🏒", t("sportKhl"), "05.09"],
+   ["nhl", "🏒", t("sportNhl"), "29.09"],
+   ["nba", "🏀", t("sportNba"), "20.10"]].forEach(([k, ico, nm, from]) => {
+    if (bySport[k]) return;            // вид уже в ленте — честная строка выше
+    sportRows.push(`<div class="sport" style="opacity:.45"><div class="ico">${ico}</div>
+      <div class="info"><div class="nm">${nm}</div>
+      <div class="st">${t("comingFrom")} ${from}</div>
+      <div class="wr-bar" style="margin-top:6px"><i style="width:0%"></i></div></div>
+      <div class="bank"><div class="b">—</div></div></div>`);
   });
   const usd = v => `${v>=0?"+":"−"}$${Math.abs(Number(v||0)).toFixed(2)}`;
   const money = () => ` = ${usd(z.pnl_usd)}`;
@@ -2061,7 +2094,8 @@ async function loadLastBets(quiet){
   if (st) {
     const w = last.filter(r => r.result === 1).length;
     const l = last.filter(r => r.result === 0).length;
-    const pnl = Number(day.pnl_usd || 0), turn = Number(day.turnover_usd || 0);
+    const pnl = Number(day.pnl_usd || 0),
+          turn = Number((day.staked_usd != null ? day.staked_usd : day.turnover_usd) || 0);
     const roi = day.roi_pct != null ? ` · ROI ${day.roi_pct>=0?"+":""}${Number(day.roi_pct).toFixed(2)}%` : "";
     st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(day.date||"")}</span>
         <span class="daydow">${dowOf(day.date||"")} · ${last.length} ${plBets(last.length)}</span></div>
