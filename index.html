@@ -171,6 +171,16 @@ body.light .pane-glass .wrcard,body.light .pane-glass .me-card,
 body.light .pane-glass .v3box,body.light .pane-glass #sports{
   border-color:color-mix(in srgb,var(--line-2) 78%,rgba(255,255,255,.7));
   box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.9)}
+.me-card.megabox{display:block;padding:12px 14px}
+.me-card.megabox .me-row{display:flex;align-items:center;gap:var(--s3)}
+.me-card.megabox::before{content:'';position:absolute;inset:0;z-index:5;pointer-events:none;
+  border-radius:var(--r-l);padding:1.5px;opacity:.75;
+  background:conic-gradient(from 120deg,var(--accent),#8b5cf6,#06b6d4,var(--accent2),var(--accent));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  animation:rimShift 5.5s linear infinite}
+@keyframes rimShift{to{filter:hue-rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.me-card.megabox::before{animation:none;opacity:.45}}
 .glass-sheen::after{content:'';position:absolute;inset:0;z-index:4;pointer-events:none;
   background:linear-gradient(112deg,transparent 31%,rgba(255,255,255,.13) 46%,
     rgba(255,255,255,.04) 55%,transparent 69%);
@@ -765,16 +775,16 @@ body.splash-on{overflow:hidden}
   </div>
 
   <div id="pane-me" class="pane-glass pane-me" style="display:none">
-    <div class="me-card glass-sheen">
-      <div class="ava" id="ava">?</div>
-      <div class="me-info">
-        <div class="me-name" id="meName">Гость</div>
-        <div class="me-sub" id="meSub">Открой приложение из бота</div>
+    <div class="me-card glass-sheen megabox">
+      <div class="me-row">
+        <div class="ava" id="ava">?</div>
+        <div class="me-info">
+          <div class="me-name" id="meName">Гость</div>
+          <div class="me-sub" id="meSub">Открой приложение из бота</div>
+        </div>
       </div>
-    </div>
-    <div id="exchBlock" style="display:none">
-    <div class="card">
-      <div class="me-sub" id="tariffInfo" style="margin-bottom:8px"></div>
+      <div id="exchInner" style="display:none">
+      <div class="me-sub" id="tariffInfo" style="margin:10px 0 8px"></div>
       <div class="k" data-i18n="exchTitle">Биржа кошелька</div>
       <div class="themes" id="exchSel">
         <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
@@ -798,8 +808,9 @@ body.splash-on{overflow:hidden}
         <button data-v="500">$500</button><button data-v="1000">$1000</button>
       </div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся с тарифом Auto. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ и не сид-фразу.</div>
-    </div>
-
+      </div><!-- /exchInner -->
+    </div><!-- /megabox -->
+    <div id="exchBlock" style="display:none">
     <div class="section" data-i18n="secGuide">Справка</div>
     <div class="card">
       <details>
@@ -953,7 +964,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v90";
+const BUILD = "v91";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "04.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -2106,6 +2117,7 @@ async function initMe(){
   const paid = !!(me && (me.is_paid || (me.paid_until && String(me.paid_until) >= today)));
   if(paid){
     document.getElementById("exchBlock").style.display = "";
+    document.getElementById("exchInner").style.display = "";
     const ti = document.getElementById("tariffInfo");
     // даты приходят как date или timestamptz — режем до YYYY-MM-DD
     const d10 = v => v ? String(v).slice(0,10) : "—";
