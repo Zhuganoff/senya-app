@@ -758,7 +758,6 @@ body.splash-on{overflow:hidden}
   <div id="pane-sched" class="pane-glass pane-sched" style="display:none">
     <div class="sched-hero glass-sheen">
       <div class="sh-t"><span class="sh-dot"></span><span data-i18n="schedHero">Сегодняшние игры в анализе</span></div>
-      <div class="sh-s" data-i18n="schedHeroSub">AI разбирает каждый матч перед стартом — ставка или обоснованный пропуск</div>
     </div>
     <div id="schedChips"></div>
     <div class="bets glass-sheen" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
@@ -964,7 +963,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v92";
+const BUILD = "v93";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "04.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1060,9 +1059,6 @@ const T = {
   navWallet: ["Кошелёк", "Wallet", "钱包"], navSched: ["Игры", "Games", "赛程"],
   schedHead: ["Расписание игр", "Game schedule", "比赛赛程"],
   schedHero: ["Сегодняшние игры в анализе", "Today's games under analysis", "今日赛事分析中"],
-  schedHeroSub: ["AI разбирает каждый матч перед стартом — ставка или обоснованный пропуск",
-    "AI reviews every match before the start — a bet or a reasoned skip",
-    "AI 在开赛前分析每场比赛——下注或有依据的跳过"],
   schedSub: ["время начала — как на устройстве · кф — живые, на победу первой / второй стороны строки",
              "start times follow your device · live odds for the first / second side of the row",
              "开始时间为你的时区（个人资料设置）· 实时赔率：行内第一方 / 第二方获胜"],
