@@ -963,7 +963,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v95";
+const BUILD = "v96";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "05.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1504,10 +1504,11 @@ async function main(){
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
   const lastDay = closed.date || "";
   const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
-  // CEO 04.09 (v86): теннис затемнялся «виртуально · копится»; CEO 05.09
-  // («снимай»): у тенниса снова боевой в PAPER решатель (двойной ключ
-  // Pinnacle/Poly) — затемнение снято, строка живёт от ленты как остальные.
-  const DIM_SPORTS = {};
+  // CEO 04.09: теннис копится виртуально — строка затемнена; данные и
+  // разметка те же, изменение только инлайн-прозрачностью и подписью.
+  // CEO 05.09: затемнение ОСТАЁТСЯ (v96 вернул после v94); строка живая —
+  // W/L/число ставок/процент берутся из by_sport.tennis ленты (кошелёк).
+  const DIM_SPORTS = {tennis: t("dimVirtual")};
   const sportRows = Object.keys(bySport).map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
