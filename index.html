@@ -751,7 +751,7 @@ body.splash-on{overflow:hidden}
     </div>
     <div id="schedChips"></div>
     <div class="bets glass-sheen" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-    <div class="proof" style="margin-top:12px" data-i18n="schedSub">время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки</div>
+    <div class="proof" style="margin-top:12px" data-i18n="schedSub">время начала — как на устройстве · кф — живые, на победу первой / второй стороны строки</div>
   </div><!-- /pane-sched -->
 
   <div id="pane-stats" class="pane-glass pane-stats">
@@ -777,10 +777,14 @@ body.splash-on{overflow:hidden}
       <div class="me-sub" id="tariffInfo" style="margin-bottom:8px"></div>
       <div class="k" data-i18n="exchTitle">Биржа кошелька</div>
       <div class="themes" id="exchSel">
-
-        <button data-e="sx"><img class="exch-ico" alt="" src="data:image/png;base64,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"> SX.bet</button>
         <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
       </div>
+      <div class="bankrow" style="margin-top:10px">
+        <input type="password" id="apiKeyInput" class="binput" style="min-width:0;font-size:13px"
+               placeholder="API key" autocomplete="off">
+        <button class="btn small" id="saveApiKey" aria-label="Сохранить ключ" style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg></button>
+      </div>
+      <div class="me-sub" id="apiState" style="margin-top:8px;font-weight:700"></div>
       <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть биржу</a>
       <div class="k" style="margin-top:14px" data-i18n="walletSum">Сумма кошелька</div>
       <div class="bankrow">
@@ -793,15 +797,6 @@ body.splash-on{overflow:hidden}
         <button data-v="100">$100</button><button data-v="300">$300</button>
         <button data-v="500">$500</button><button data-v="1000">$1000</button>
       </div>
-      <div class="me-sub" id="apiState" style="margin-top:10px;font-weight:700"></div>
-      <details class="apibox">
-        <summary class="k" style="cursor:pointer" data-i18n="apiTitle">API-ключ выбранной биржи</summary>
-        <div class="bankrow" style="margin-top:8px">
-          <input type="password" id="apiKeyInput" class="binput" style="min-width:0;font-size:13px"
-                 placeholder="API key" autocomplete="off">
-          <button class="btn small" id="saveApiKey" data-i18n="save">Сохранить</button>
-        </div>
-      </details>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.</div>
     </div>
 
@@ -810,10 +805,10 @@ body.splash-on{overflow:hidden}
       <details>
         <summary class="k" style="cursor:pointer" data-i18n="guideTitle">Как подключить биржу к боту</summary>
         <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">
-          1️⃣ Выбери биржу выше (SX.bet или Polymarket) и зарегистрируйся на её сайте. Убедись, что она работает в твоей стране, и пройди проверку (KYC).<br><br>
+          1️⃣ Зарегистрируйся на Polymarket (кнопка «Открыть биржу» выше). Убедись, что биржа работает в твоей стране, и пройди проверку (KYC).<br><br>
           2️⃣ Пополни счёт стейблкоином USDC — это твой ставочный банк. Держи на нём только сумму, которой готов играть.<br><br>
-          3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b> (на SX: Account → API).<br><br>
-          4️⃣ Вставь ключ в поле «Подключение API» выше и нажми «Сохранить» — он останется только на этом устройстве.<br><br>
+          3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b>.<br><br>
+          4️⃣ Вставь ключ в поле под названием биржи и нажми дискету — приложение сразу проверит подключение; ключ останется только на этом устройстве.<br><br>
           5️⃣ Готово. Когда автоставки включатся (после подтверждения CLV-метрики), бот начнёт ставить через твой счёт — деньги всегда остаются у тебя.<br><br>
           ⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.</div>
       </details>
@@ -822,13 +817,23 @@ body.splash-on{overflow:hidden}
     <div class="section" data-i18n="secSub">Подписка</div>
     <div class="card">
       <div class="k" data-i18n="subTitle">AI Sports Pro <span class="tag">β</span></div>
-      <div class="cur" style="font-size:30px;margin:4px 0 2px">$29<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
+      <div class="cur" style="font-size:30px;margin:4px 0 2px">$49<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
       <div class="me-sub" data-i18n="subList" style="margin:6px 0 10px">
-        • Ставки MLB, тенниса и футбола в реальном времени<br>
-        • Размер каждой ставки под твой банк<br>
-        • Открытая статистика, CLV и реферальная программа 20% + 5%</div>
+        • Полный доступ: все ставки, статистика, CLV в реальном времени<br>
+        • Отдельный бот-уведомитель присылает каждую ставку: на что и по какому кф<br>
+        • Ставишь сам на своей бирже · рефералка 20% + 5%</div>
       <button class="btn" id="subBtn" data-i18n="subBtn">Узнать о запуске</button>
       <div class="me-sub" id="subHint" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
+    </div>
+    <div class="card" style="margin-top:10px">
+      <div class="k" data-i18n="subTitle2">AI Sports Auto <span class="tag">β</span></div>
+      <div class="cur" style="font-size:30px;margin:4px 0 2px">$499<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
+      <div class="me-sub" data-i18n="subList2" style="margin:6px 0 10px">
+        • Всё из Pro<br>
+        • Полный автомат: приложение само ставит через твой счёт Polymarket (API-ключ)<br>
+        • Деньги всегда на твоём счету — вывести их бот не может</div>
+      <button class="btn" id="subBtn2" data-i18n="subBtn">Узнать о запуске</button>
+      <div class="me-sub" id="subHint2" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
     </div>
 
     <!-- v31 (CEO 17.08): бывшая вкладка «Кошелёк» живёт здесь и видна ТОЛЬКО
@@ -858,9 +863,6 @@ body.splash-on{overflow:hidden}
         <button data-p="ice"     data-name="Лёд"     style="--sw:linear-gradient(135deg,#06b6d4,#38bdf8)"></button>
       </div>
       <div class="me-sub" style="margin-top:4px" data-i18n="palNote">Зелёный «выигрыш» и красный «проигрыш» не меняются ни при какой палитре — иначе результат ставки станет нечитаемым.</div>
-      <div class="k" style="margin-top:16px" data-i18n="tzTitle">Часовой пояс</div>
-      <select id="tzSel" class="binput" style="width:100%;margin-top:6px"></select>
-      <div class="me-sub" style="margin-top:4px" data-i18n="tzNote">Время ставок показывается в этом поясе. «Авто» — как на устройстве.</div>
     </div>
 
   </div><!-- /pane-me -->
@@ -951,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v87";
+const BUILD = "v88";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "04.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1050,8 +1052,8 @@ const T = {
   schedHeroSub: ["AI разбирает каждый матч перед стартом — ставка или обоснованный пропуск",
     "AI reviews every match before the start — a bet or a reasoned skip",
     "AI 在开赛前分析每场比赛——下注或有依据的跳过"],
-  schedSub: ["время начала — в твоём часовом поясе (настройки профиля) · кф — живые, на победу первой / второй стороны строки",
-             "start times in your timezone (profile settings) · live odds for the first / second side of the row",
+  schedSub: ["время начала — как на устройстве · кф — живые, на победу первой / второй стороны строки",
+             "start times follow your device · live odds for the first / second side of the row",
              "开始时间为你的时区（个人资料设置）· 实时赔率：行内第一方 / 第二方获胜"],
   schedEmpty: ["Игр нет — либо расписание дня ещё собирается", "No games — or today's schedule is still being built", "暂无比赛——或今日赛程仍在生成中"],
   schedMorning: ["Утро", "Morning", "早晨"],
@@ -1062,11 +1064,10 @@ const T = {
   secApi: ["Подключение API", "API connection", "API 连接"],
   secWalletMain: ["Общий кошелёк", "Main wallet", "总钱包"],
   walletSum: ["Сумма кошелька", "Wallet balance", "钱包金额"],
-  walletNote: ["Один счёт на выбранной бирже — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.",
-               "One account on your chosen exchange — shared across the bot's bets (baseball + tennis). Each bet is sized at 5–10% of this amount. Once the API key is connected, the balance syncs from the exchange automatically.",
-               "所选交易所上的一个账户——机器人所有投注（棒球+网球）共用。每注为该金额的 5–10%。接入 API 密钥后，余额将自动从交易所同步。"],
+  walletNote: ["Один счёт на Polymarket — общий для ставок бота (бейсбол + теннис). Размер каждой ставки — 5–10% от этой суммы. После подключения API-ключа сумма подтянется со счёта биржи автоматически.",
+               "One Polymarket account — shared across the bot's bets (baseball + tennis). Each bet is sized at 5–10% of this amount. Once the API key is connected, the balance syncs from the exchange automatically.",
+               "Polymarket 上的一个账户——机器人所有投注（棒球+网球）共用。每注为该金额的 5–10%。接入 API 密钥后，余额将自动从交易所同步。"],
   secSportsWr: ["Виды спорта", "Sports", "运动项目"],
-  apiTitle: ["API-ключ выбранной биржи", "API key for the selected exchange", "所选交易所的 API 密钥"],
   apiNote: ["Ключ хранится только на этом устройстве и никуда не отправляется. Автоставки включатся после подтверждения CLV-метрики. ⚠️ Вводи только API-ключ — НИКОГДА не приватный ключ кошелька.",
             "The key is stored on this device only and never sent anywhere. Auto-betting activates once the CLV metric is confirmed. ⚠️ Enter an API key only — NEVER your wallet's private key.",
             "密钥仅保存在本设备上，绝不会被上传。CLV 指标确认后将开启自动投注。⚠️ 只填写 API 密钥——绝不要填写钱包私钥。"],
@@ -1083,7 +1084,15 @@ const T = {
   bankHint: ["Бот считает размер каждой ставки как процент от ЭТОЙ суммы — 5–10% на ставку. Деньги остаются у тебя: бот показывает ставку, ты подтверждаешь.",
              "The bot sizes every bet as a percentage of THIS amount — 5–10% per bet. Your money stays with you: the bot shows the bet, you confirm it.",
              "机器人按此金额的百分比确定每注大小——每注 5–10%。钱始终在你手里：机器人给出投注，由你确认。"],
-  exchTitle: ["Через какую биржу ставить", "Which exchange to bet through", "选择下注交易所"],
+  apiConnected: ["Биржа Polymarket подключена", "Polymarket exchange connected", "Polymarket 交易所已连接"],
+  apiTesting: ["Проверяем подключение к бирже…", "Testing the exchange connection…", "正在测试交易所连接……"],
+  apiFailNet: ["Биржа не ответила — проверь интернет и нажми дискету ещё раз. Ключ сохранён.",
+               "The exchange didn't respond — check your connection and tap the disk again. The key is saved.",
+               "交易所未响应——请检查网络后再按一次保存。密钥已保存。"],
+  apiFailFormat: ["Ключ слишком короткий — проверь, что скопировал его целиком.",
+                  "The key looks too short — make sure you copied it in full.",
+                  "密钥太短——请确认已完整复制。"],
+  exchTitle: ["Биржа", "Exchange", "交易所"],
   exchNote: ["Автоставки через выбранную биржу появятся после подтверждения CLV-метрики. Выбор уже сохраняется в профиле и будет использован при подключении кошелька.",
              "Auto-betting through your chosen exchange arrives once the CLV metric is confirmed. The choice is saved to your profile now and will be used when wallets connect.",
              "CLV 指标确认后即可通过所选交易所自动投注。选择已保存到个人资料，接入钱包时生效。"],
@@ -1184,13 +1193,17 @@ const T = {
   wSoccer: ["топ-лиги Европы", "top European leagues", "欧洲顶级联赛"], wSxBase: ["биржа · базовая", "exchange · base", "交易所 · 基础"],
   wSxQ: ["биржа · фильтр качества", "exchange · quality filter", "交易所 · 质量筛选"], wSxM: ["биржа · зеркало", "exchange · mirror", "交易所 · 镜像"],
   wPoly: ["острый рынок", "sharp market", "尖锐市场"],
-  // подписка (цена $29 утверждена CEO 11.08) и справка по бирже
+  // подписка: два тарифа $49 Pro / $499 Auto (CEO 04.09) и справка по бирже
   secSub: ["Подписка", "Subscription", "订阅"],
   subTitle: ["AI Sports Pro <span class=\"tag\">β</span>", "AI Sports Pro <span class=\"tag\">β</span>", "AI Sports Pro <span class=\"tag\">β</span>"],
   subPerMon: ["/мес", "/mo", "／月"],
-  subList: ["• Ставки MLB, тенниса и футбола в реальном времени<br>• Размер каждой ставки под твой банк<br>• Открытая статистика, CLV и реферальная программа 20% + 5%",
-            "• Live MLB, tennis and soccer bets<br>• Every bet sized to your bankroll<br>• Open stats, CLV and a 20% + 5% referral program",
-            "• 实时 MLB、网球与足球投注<br>• 每笔投注按你的资金规模计算<br>• 公开统计、CLV 与 20% + 5% 推荐计划"],
+  subList: ["• Полный доступ: все ставки, статистика, CLV в реальном времени<br>• Отдельный бот-уведомитель присылает каждую ставку: на что и по какому кф<br>• Ставишь сам на своей бирже · рефералка 20% + 5%",
+            "• Full access: every bet, stats and CLV in real time<br>• A separate notifier bot messages you each bet: the pick and the odds<br>• You place bets yourself on your exchange · 20% + 5% referrals",
+            "• 完整访问：所有投注、统计与 CLV 实时可见<br>• 独立通知机器人推送每笔投注：投什么、什么赔率<br>• 你在自己的交易所自行下注 · 20% + 5% 推荐计划"],
+  subTitle2: ["AI Sports Auto <span class=\"tag\">β</span>", "AI Sports Auto <span class=\"tag\">β</span>", "AI Sports Auto <span class=\"tag\">β</span>"],
+  subList2: ["• Всё из Pro<br>• Полный автомат: приложение само ставит через твой счёт Polymarket (API-ключ)<br>• Деньги всегда на твоём счету — вывести их бот не может",
+             "• Everything in Pro<br>• Fully automatic: the app places bets through your Polymarket account (API key)<br>• Funds always stay in your account — the bot cannot withdraw",
+             "• 包含 Pro 全部内容<br>• 全自动：应用通过你的 Polymarket 账户（API 密钥）自动下注<br>• 资金始终在你的账户——机器人无法提取"],
   subBtn: ["Узнать о запуске", "Launch updates", "获取上线通知"],
   subSoon: ["Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.",
             "Payments aren't live yet — the bot will message you first when they are. Everything is free to watch for now.",
@@ -1198,16 +1211,11 @@ const T = {
   subSoonClick: ["Готово — бот сообщит, когда подписка запустится.",
                  "Done — the bot will message you when subscriptions launch.",
                  "完成——订阅上线时机器人会通知你。"],
-  tzTitle: ["Часовой пояс", "Time zone", "时区"],
-  tzAuto: ["Авто (как на устройстве)", "Auto (device)", "自动（跟随设备）"],
-  tzNote: ["Время ставок показывается в этом поясе. «Авто» — как на устройстве.",
-           "Bet times are shown in this zone. “Auto” follows your device.",
-           "投注时间按此时区显示。“自动”即跟随设备。"],
   secGuide: ["Справка", "Help", "帮助"],
   guideTitle: ["Как подключить биржу к боту", "How to connect an exchange to the bot", "如何将交易所接入机器人"],
-  guideBody: ["1️⃣ Выбери биржу выше (SX.bet или Polymarket) и зарегистрируйся на её сайте. Убедись, что она работает в твоей стране, и пройди проверку (KYC).<br><br>2️⃣ Пополни счёт стейблкоином USDC — это твой ставочный банк. Держи на нём только сумму, которой готов играть.<br><br>3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b> (на SX: Account → API).<br><br>4️⃣ Вставь ключ в поле «Подключение API» выше и нажми «Сохранить» — он останется только на этом устройстве.<br><br>5️⃣ Готово. Когда автоставки включатся (после подтверждения CLV-метрики), бот начнёт ставить через твой счёт — деньги всегда остаются у тебя.<br><br>⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.",
-              "1️⃣ Pick an exchange above (SX.bet or Polymarket) and sign up on its website. Make sure it operates in your country and complete verification (KYC).<br><br>2️⃣ Fund the account with USDC stablecoin — that's your betting bankroll. Keep only what you're prepared to play with.<br><br>3️⃣ In the exchange account settings create an <b>API key</b> (on SX: Account → API).<br><br>4️⃣ Paste the key into the “API connection” field above and tap “Save” — it stays on this device only.<br><br>5️⃣ Done. Once auto-betting goes live (after the CLV metric is confirmed), the bot will bet through your account — the money always stays yours.<br><br>⚠️ Never share your wallet's private key or seed phrase: the bot doesn't need them — an API key is enough.",
-              "1️⃣ 在上方选择交易所（SX.bet 或 Polymarket），到其官网注册。确认它在你所在国家可用，并完成身份验证（KYC）。<br><br>2️⃣ 用稳定币 USDC 入金——这是你的投注资金。只存放你准备用于投注的金额。<br><br>3️⃣ 在交易所账户设置中创建 <b>API 密钥</b>（SX：Account → API）。<br><br>4️⃣ 将密钥粘贴到上方“API 连接”栏并点“保存”——密钥只保存在本设备。<br><br>5️⃣ 完成。自动投注开启后（CLV 指标确认后），机器人将通过你的账户下注——钱始终归你所有。<br><br>⚠️ 切勿向任何人透露钱包私钥或助记词：机器人不需要它们——API 密钥足矣。"],
+  guideBody: ["1️⃣ Зарегистрируйся на Polymarket (кнопка «Открыть биржу» выше). Убедись, что биржа работает в твоей стране, и пройди проверку (KYC).<br><br>2️⃣ Пополни счёт стейблкоином USDC — это твой ставочный банк. Держи на нём только сумму, которой готов играть.<br><br>3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b>.<br><br>4️⃣ Вставь ключ в поле под названием биржи и нажми дискету — приложение сразу проверит подключение; ключ останется только на этом устройстве.<br><br>5️⃣ Готово. Когда автоставки включатся (после подтверждения CLV-метрики), бот начнёт ставить через твой счёт — деньги всегда остаются у тебя.<br><br>⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.",
+              "1️⃣ Sign up on Polymarket (the “Open exchange” button above). Make sure it operates in your country and complete verification (KYC).<br><br>2️⃣ Fund the account with USDC stablecoin — that's your betting bankroll. Keep only what you're prepared to play with.<br><br>3️⃣ In the exchange account settings create an <b>API key</b>.<br><br>4️⃣ Paste the key into the field under the exchange name and tap the disk — the app tests the connection right away; the key stays on this device only.<br><br>5️⃣ Done. Once auto-betting goes live (after the CLV metric is confirmed), the bot will bet through your account — the money always stays yours.<br><br>⚠️ Never share your wallet's private key or seed phrase: the bot doesn't need them — an API key is enough.",
+              "1️⃣ 注册 Polymarket（点上方“打开交易所”）。确认它在你所在国家可用，并完成身份验证（KYC）。<br><br>2️⃣ 用稳定币 USDC 入金——这是你的投注资金。只存放你准备用于投注的金额。<br><br>3️⃣ 在交易所账户设置中创建 <b>API 密钥</b>。<br><br>4️⃣ 将密钥粘贴到交易所名称下方的输入框并点保存——应用会立即测试连接；密钥只保存在本设备。<br><br>5️⃣ 完成。自动投注开启后（CLV 指标确认后），机器人将通过你的账户下注——钱始终归你所有。<br><br>⚠️ 切勿向任何人透露钱包私钥或助记词：机器人不需要它们——API 密钥足矣。"],
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
@@ -1298,7 +1306,7 @@ const REF_L1 = 0.20;
 const REF_L2 = 0.05;
 const BOT_BANK = 300;   // общий банк ботов (bank_shared): ориентир для сумм в $,
                         // когда у пользователя не задан свой кошелёк (CEO 18.08)
-const SUB_PRICE = 29;   // $/мес — утверждено CEO 11.08; счётчик начислений считает от неё
+const SUB_PRICE = 49;   // $/мес, тариф Pro — CEO 04.09 (было $29 c 11.08); база начислений рефералки
 
 // реф-захват: t.me/бот?startapp=ref_XXXX → сохраняем для регистрации
 const refMatch = ((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "").match(/^ref_(\w+)/);
@@ -1348,12 +1356,13 @@ applyPal(localStorage.getItem("senya_pal") || "ice");
 
 // биржа исполнения: пока предпочтение в localStorage (senya_exch), по умолчанию SX —
 // привязка кошелька и автоставки подключаются после подтверждения CLV (n>=30)
-function applyExch(name){
-  localStorage.setItem("senya_exch", name);
+function applyExch(){
+  // v88 (CEO 04.09): биржа ОДНА — Polymarket; старое «sx» мигрирует само
+  localStorage.setItem("senya_exch", "poly");
   document.querySelectorAll("#exchSel button").forEach(b =>
-    b.classList.toggle("on", b.dataset.e === name));
+    b.classList.toggle("on", b.dataset.e === "poly"));
 }
-applyExch(localStorage.getItem("senya_exch") || "sx");
+applyExch();
 
 // подсветка выбранного языка; смена — сохранить и перезагрузить без заставки
 document.querySelectorAll("#langSel button").forEach(b =>
@@ -1374,14 +1383,6 @@ document.addEventListener("DOMContentLoaded", () => {
       applyPal(b.dataset.p);
       if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     }));
-  document.querySelectorAll("#exchSel button").forEach(b =>
-    b.addEventListener("click", () => {
-      applyExch(b.dataset.e);
-      // поле API-ключа показывает ключ ВЫБРАННОЙ биржи — перечитать при переключении
-      const apiInp = document.getElementById("apiKeyInput");
-      if (apiInp) apiInp.value = localStorage.getItem("senya_api_" + b.dataset.e) || "";
-      if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
-    }));
   document.querySelectorAll("#langSel button").forEach(b =>
     b.addEventListener("click", () => {
       if (b.dataset.l === LANG) return;
@@ -1389,32 +1390,20 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem("senya_lang_reload", "1");
       location.reload();
     }));
-  // часовой пояс: «Авто» + сдвиги UTC; смена перерисовывает страницу без заставки
-  const tzSel = document.getElementById("tzSel");
-  if (tzSel) {
-    const cur = localStorage.getItem("senya_tz") || "auto";
-    const opts = [["auto", t("tzAuto")]];
-    for (let o = -11; o <= 14; o++) opts.push([String(o), "UTC" + (o >= 0 ? "+" : "") + o]);
-    tzSel.innerHTML = opts.map(([v, l]) => `<option value="${v}"${v === cur ? " selected" : ""}>${l}</option>`).join("");
-    tzSel.addEventListener("change", () => {
-      localStorage.setItem("senya_tz", tzSel.value);
-      // БЕЗ location.reload(): WebView Telegram на телефонах его молча глотает
-      // (пояс «не менялся», баг CEO 12.08) — просто перерисовываем списки ставок,
-      // fmtTime читает выбранный пояс при каждой отрисовке
-      try { loadLastBets(); } catch(e) {}
-      try { if (window.__statsInit) loadDay(document.getElementById("dpick").value); } catch(e) {}
-      if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
-    });
-  }
   // подписка: оплаты ещё нет — кнопка честно говорит «скоро»
   const subBtn = document.getElementById("subBtn");
   if (subBtn) subBtn.addEventListener("click", () => {
     document.getElementById("subHint").textContent = t("subSoonClick");
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
   });
+  const subBtn2 = document.getElementById("subBtn2");
+  if (subBtn2) subBtn2.addEventListener("click", () => {
+    document.getElementById("subHint2").textContent = t("subSoonClick");
+    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
+  });
   applyTheme(localStorage.getItem("senya_theme") || "auto");
   applyPal(localStorage.getItem("senya_pal") || "ice");
-  applyExch(localStorage.getItem("senya_exch") || "sx");
+  applyExch();
 });
 
 // ПРОФИЛЬ ТОЛЬКО ЧЕРЕЗ RPC (аудит 18.08): прямое чтение senya_users закрыто —
@@ -1831,7 +1820,7 @@ const DAY_SRC = [
   ["soccer_bet_log", "⚽ ", "match,match_date,selection,odds,result,stake,stake_pct,closing_odds,closing_ts,ts"],
 ];
 
-// время постановки ставки в поясе пользователя (senya_tz: "auto" или сдвиг UTC).
+// время постановки ставки — как на устройстве (настройка пояса убрана, CEO 04.09).
 // В базе хранится момент СТАВКИ (ts), не старт матча — показываем честно его.
 // время для строки ставки: старт ИГРЫ (commence / commence_ts), в поясе
 // пользователя; если вид спорта его ещё не пишет — время ставки с «≈»
@@ -1868,20 +1857,17 @@ function fmtTime(iso){
   if(!/Z$|[+-]\d\d:?\d\d$/.test(iso)) iso += "Z";
   const d = new Date(iso);
   if(isNaN(d)) return "";
-  const tz = localStorage.getItem("senya_tz") || "auto";
-  if(tz === "auto") return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
-  const t = new Date(d.getTime() + Number(tz)*3600*1000);
-  return String(t.getUTCHours()).padStart(2,"0") + ":" + String(t.getUTCMinutes()).padStart(2,"0");
+  // v88 (CEO 04.09): настройка пояса убрана — время всегда как на устройстве
+  return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 }
 function fmtGDate(iso){
   if(!iso) return "";
   if(!/Z$|[+-]\d\d:?\d\d$/.test(iso)) iso += "Z";
   const d = new Date(iso);
   if(isNaN(d)) return "";
-  const tz = localStorage.getItem("senya_tz") || "auto";
-  const x = tz === "auto" ? d : new Date(d.getTime() + Number(tz)*3600*1000);
-  const dd = tz === "auto" ? x.getDate() : x.getUTCDate();
-  const mm = (tz === "auto" ? x.getMonth() : x.getUTCMonth()) + 1;
+  const x = d;                       // v88: пояс всегда как на устройстве
+  const dd = x.getDate();
+  const mm = x.getMonth() + 1;
   return String(dd).padStart(2,"0") + "." + String(mm).padStart(2,"0");
 }
 // v73: строки дня берутся из ЕДИНОГО ассета core_feed (сессия + история),
@@ -2141,17 +2127,13 @@ async function initWallet(me){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
 
   // ссылка на биржу пользователя (CEO 17.08)
-  const EXCH_URL = {sx: "https://sx.bet", poly: "https://polymarket.com"};
+  const EXCH_URL = "https://polymarket.com";   // v88: биржа одна
   const linkEl = document.getElementById("exchLink");
-  const setExchLink = () => { linkEl.href = EXCH_URL[localStorage.getItem("senya_exch") || "sx"]; };
-  setExchLink();
+  linkEl.href = EXCH_URL;
   linkEl.addEventListener("click", e => {
     e.preventDefault();
-    const url = EXCH_URL[localStorage.getItem("senya_exch") || "sx"];
-    if (tg && tg.openLink) tg.openLink(url); else window.open(url, "_blank");
+    if (tg && tg.openLink) tg.openLink(EXCH_URL); else window.open(EXCH_URL, "_blank");
   });
-  document.querySelectorAll("#exchSel button").forEach(b =>
-    b.addEventListener("click", () => setTimeout(setExchLink, 50)));
 
   // личный банк: загрузка, быстрые кнопки, сохранение
   const bInput = document.getElementById("budget");
@@ -2174,31 +2156,57 @@ async function initWallet(me){
   });
 
   // API-ключ биржи: хранится ТОЛЬКО в localStorage устройства (некастодиальность),
-  // на сервер не уходит; ключ свой у каждой биржи (senya_api_sx / senya_api_poly)
+  // на сервер не уходит; биржа одна — Polymarket (senya_api_poly, CEO 04.09)
   const apiInp = document.getElementById("apiKeyInput");
   const apiState = document.getElementById("apiState");
-  const exchNow = () => localStorage.getItem("senya_exch") || "sx";
-  // v47 (CEO 18.08): ключ у КАЖДОЙ биржи свой. Есть сохранённый — поле
-  // заполнено и горит зелёная галочка; переключил биржу без ключа — поле
-  // пустое и просит ввести. Раньше состояние не показывалось вовсе.
+  // v88 (CEO 04.09): биржа одна — Polymarket. Ключ хранится ТОЛЬКО в
+  // localStorage устройства (некастодиальность), на сервер не уходит.
+  // Сохранение сразу гонит живой тест биржи; зелёный баннер — только после
+  // успеха. Криптоподпись ключа проверит бот при включении автоставок.
   const refreshApi = () => {
-    const k = localStorage.getItem("senya_api_" + exchNow()) || "";
+    const k = localStorage.getItem("senya_api_poly") || "";
     apiInp.value = k;
-    const name = exchNow() === "sx" ? "SX.bet" : "Polymarket";
     apiState.innerHTML = k
-      ? `<span class="pos">✅ ${t("apiSavedFor")} ${name}</span>`
-      : `<span style="color:var(--mut)">${t("apiNeedFor")} ${name}</span>`;
+      ? `<span class="pos">✅ ${t("apiSavedFor")} Polymarket</span>`
+      : `<span style="color:var(--mut)">${t("apiNeedFor")} Polymarket</span>`;
   };
   refreshApi();
-  document.querySelectorAll("#exchSel button").forEach(b =>
-    b.addEventListener("click", () => setTimeout(refreshApi, 60)));
-  document.getElementById("saveApiKey").addEventListener("click", () => {
+  const aliveCheck = async url => {
+    const r = await Promise.race([
+      fetch(url, {cache: "no-store"}),
+      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))]);
+    if (!r.ok) throw new Error("http " + r.status);
+    return true;
+  };
+  const testPolymarket = async key => {
+    if (!key || key.length < 8) return {ok: false, why: "format"};
+    try { await aliveCheck("https://clob.polymarket.com/time"); return {ok: true}; }
+    catch (e) {
+      try { await aliveCheck("https://gamma-api.polymarket.com/markets?limit=1"); return {ok: true}; }
+      catch (e2) { return {ok: false, why: "network"}; }
+    }
+  };
+  const connectedBanner = () => {
+    apiState.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(20,184,166,.10));border:1px solid rgba(16,185,129,.45)"><span style="display:inline-flex;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#10b981,#14b8a6);align-items:center;justify-content:center;flex:0 0 26px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg></span><b style="color:#10b981">${t("apiConnected")}</b></div>`;
+  };
+  document.getElementById("saveApiKey").addEventListener("click", async () => {
     const v = apiInp.value.trim();
-    if (v) localStorage.setItem("senya_api_" + exchNow(), v);
-    else localStorage.removeItem("senya_api_" + exchNow());
-    refreshApi();
-    if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
-    if (v) showSavedOk();      // объёмная галочка-подтверждение (CEO 18.08)
+    if (!v) {
+      localStorage.removeItem("senya_api_poly");
+      refreshApi();
+      return;
+    }
+    localStorage.setItem("senya_api_poly", v);
+    apiState.innerHTML = `<span style="color:var(--mut)">⏳ ${t("apiTesting")}</span>`;
+    const r = await testPolymarket(v);
+    if (r.ok) {
+      connectedBanner();
+      if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
+      showSavedOk();      // объёмная галочка-подтверждение (CEO 18.08)
+    } else {
+      apiState.innerHTML = `<span class="neg">${t(r.why === "format" ? "apiFailFormat" : "apiFailNet")}</span>`;
+      if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("error"); }catch(e){} }
+    }
   });
 
   // «Виды спорта» из кошелька УДАЛЕНЫ (CEO 17.08 v31): винрейты уже на дашборде
