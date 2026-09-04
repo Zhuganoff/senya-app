@@ -481,7 +481,8 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 .v3notice{margin-top:10px;padding-top:9px;border-top:1px solid var(--line);
   color:var(--mut);font-size:10.5px;line-height:1.45}
 @media(max-width:330px){.v3metrics{grid-template-columns:repeat(2,1fr)}}
-.foot{text-align:center;color:var(--mut);font-size:11.5px;margin-top:var(--s5);line-height:1.7}
+.foot{text-align:center;color:var(--mut);font-size:13px;line-height:1.85;margin-top:var(--s5);padding:16px 18px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-l)}
+.foot b.brandline{display:block;color:var(--txt);font-size:14px;margin-bottom:4px}
 
 /* ── нижнее меню ─────────────────────────────────────────────────────────────
    Отступ снизу берём из переменных Telegram (официальный гайд по Mini Apps),
@@ -924,7 +925,7 @@ body.splash-on{overflow:hidden}
     исправления сохраняются с причиной, временем и исходным значением.
   </div>
 
-  <div class="foot" id="foot" data-i18n="foot">Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot"><b class="brandline">Автономный AI-аналитик · рынок и код решают по исполнимому edge</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -953,7 +954,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v88";
+const BUILD = "v89";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "04.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1023,9 +1024,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["Автономный AI-аналитик · рынок и код решают по исполнимому edge<br>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
-         "Autonomous AI analyst · market and code decide by executable edge<br>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
-         "自主 AI 分析师 · 市场与代码按可执行优势决策<br>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
+  foot: ["<b class=\"brandline\">Автономный AI-аналитик · рынок и код решают по исполнимому edge</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
+         "<b class=\"brandline\">Autonomous AI analyst · market and code decide by executable edge</b>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
+         "<b class=\"brandline\">自主 AI 分析师 · 市场与代码按可执行优势决策</b>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
@@ -1911,21 +1912,14 @@ async function loadDay(d){
     // только в ДОЛЯХ БАНКА: у каждого контура был свой банк, поэтому суммы в
     // долларах здесь были бы выдумкой. Их результат уже внутри стартового
     // баланса единого кошелька — второй раз он никуда не прибавляется.
-    const start = Number((feed.bank || {}).start || 0);
-    const openUsd = Number(sess.open_exposure_usd || 0);
-    const pnlPct = sess.legacy ? Number(sess.pnl_pct || 0)
-                 : (start ? 100*Number(sess.pnl_usd || 0)/start : 0);
-    const sumPct = sess.legacy ? Number(sess.turnover_pct || 0)
-                 : (start ? 100*Number(sess.turnover_usd || 0)/start : 0);
-    const pnlS = sess.legacy ? ""
-               : ` · ${Number(sess.pnl_usd||0)>=0?"+":"−"}$${Math.abs(Number(sess.pnl_usd||0)).toFixed(2)}`;
-    const sumS = sess.legacy ? "" : ` <b>= $${Number(sess.turnover_usd||0).toFixed(2)}</b>`;
+    // v89 (CEO 04.09): дневной блок — только статистика ставок (сколько
+    // ставок, W-L, винрейт); проценты и суммы банка убраны — это про
+    // кошелёк, а не про день
     stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
         <span class="daydow">${dowOf(d)}${sess.legacy?` · ${t("archiveDay")}`:""}</span></div>
-      <div class="v ${cls(pnlPct)}" style="margin-top:2px">${pnlPct>=0?"+":""}${pnlPct.toFixed(2)}${t("ofBank")}${pnlS}</div>
-      <div class="daysum">
-        <span>${t("dayTurnover")}: <b>${sumPct.toFixed(1)}%</b>${sumS}</span>
-        <span>${rows.length} ${plBets(rows.length)} · <b class="${dec.length && w/dec.length>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${dec.length-w}L${dec.length?` · ${(100*w/dec.length).toFixed(0)}%`:""}</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")} $${openUsd.toFixed(2)}`:""}</span>
+      <div class="daysum" style="margin-top:8px;align-items:center">
+        <span style="font-size:15px">${rows.length} ${plBets(rows.length)}</span>
+        <span><b class="${dec.length && w/dec.length>=0.5?"pos":"neg"}" style="font-size:17px">${w}W-${dec.length-w}L${dec.length?` · ${(100*w/dec.length).toFixed(0)}%`:""}</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}</span>
       </div>`;
     box.innerHTML = rows.map(betRow).join("");
   }catch(e){
@@ -2086,8 +2080,8 @@ async function loadLastBets(quiet){
     st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(day.date||"")}</span>
         <span class="daydow">${dowOf(day.date||"")} · ${last.length} ${plBets(last.length)}</span></div>
       <div class="v ${cls(pnl)}" style="margin-top:2px">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}${roi}</div>
-      <div class="daysum" style="margin-top:6px"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
-        <span>${t("baStaked")}: $${turn.toFixed(2)}</span></div>`;
+      <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
+        <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${t("baStaked")}: $${turn.toFixed(2)}</span></div>`;
   }
   box.innerHTML = last.map(betRow).join("");
 }
