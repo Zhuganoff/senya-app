@@ -963,7 +963,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v96";
+const BUILD = "v97";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "05.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -2144,6 +2144,21 @@ async function initWallet(me){
     if(me.daily_budget){ bInput.value = me.daily_budget; window.__myBank = Number(me.daily_budget); }
     if(me.tracking_since) window.__trackSince = String(me.tracking_since).slice(0,10);
   }
+  // v97 (владелец 07.09): «сумма кошелька» — ЖИВОЙ баланс биржевого кошелька из
+  // ленты core_feed (exchange_wallet: USDC на Polygon + открытые позиции
+  // Polymarket, только чтение, без ключей). Обновляется с лентой: каждый тик
+  // и сразу после расчёта ставок. Нет данных — поле остаётся как было.
+  const liveWallet = async (force) => {
+    try {
+      const feed = await coreFeed(force);
+      const ew = feed && feed.exchange_wallet;
+      if (!ew || ew.total_usd == null) return;
+      bInput.value = Number(ew.total_usd).toFixed(2);
+      window.__myBank = Number(ew.total_usd);
+    } catch (e) {}
+  };
+  liveWallet(false);
+  if (!window.__walletTimer) window.__walletTimer = setInterval(() => liveWallet(true), 60000);
   document.querySelectorAll("#quickBudget button").forEach(b =>
     b.addEventListener("click", () => { bInput.value = b.dataset.v; }));
   document.getElementById("saveBudget").addEventListener("click", async () => {
