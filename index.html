@@ -953,7 +953,10 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v98";
+const BUILD = "v99";
+// профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
+// (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
+const APP_PROFILE = "main";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "07.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1502,7 +1505,9 @@ async function main(){
   // разметка те же, изменение только инлайн-прозрачностью и подписью.
   // CEO 05.09: затемнение ОСТАЁТСЯ (v96 вернул после v94); строка живая —
   // W/L/число ставок/процент берутся из by_sport.tennis ленты (кошелёк).
-  const DIM_SPORTS = {tennis: t("dimVirtual")};
+  const DIM_SPORTS = APP_PROFILE === "aisports"
+    ? {tennis: t("dimVirtual"), soccer: t("dimVirtual"), khl: t("dimVirtual")}
+    : {tennis: t("dimVirtual")};
   const sportRows = Object.keys(bySport).map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
