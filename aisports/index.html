@@ -953,10 +953,13 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v99";
+const BUILD = "v100";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
+// aisports (владелец 07.09): суммы ставок и выигрышей не показываются — только исход;
+// деньги на дашборде привязаны к кошельку Polymarket, не к чужим ставкам
+const HIDE_MONEY = APP_PROFILE === "aisports";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "07.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1722,8 +1725,9 @@ function betRow(r){
   // фактических $23.76 и вводил в заблуждение рядом с реальным P&L).
   // Пересчёт на личный банк остаётся запасным для старых строк без суммы.
   const sh = share(r);
-  const pctS = sh ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "";
-  const money = r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
+  const pctS = (!HIDE_MONEY && sh) ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "";
+  const money = HIDE_MONEY ? ""
+              : r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
   const res = r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
@@ -1736,7 +1740,7 @@ function betRow(r){
   const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
-    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${r.pnl!=null?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
+    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${(!HIDE_MONEY && r.pnl!=null)?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
@@ -2009,7 +2013,7 @@ async function loadBetAnalysis(shownDay){
         })()}</b><span>${t("v3Decisions")}</span></div>
         <div class="v3metric"><b>${v3Num(day.bets)}</b><span>${t("v3Bets")}</span></div>
         <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
-        <div class="v3metric"><b>$${v3Num(day.staked_usd != null ? day.staked_usd : day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
+        <div class="v3metric"><b>${HIDE_MONEY ? "—" : "$" + v3Num(day.staked_usd != null ? day.staked_usd : day.turnover_usd, 2)}</b><span>${t("baStaked")}</span></div>
       </div>`;
   } catch(e) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
@@ -2094,9 +2098,9 @@ async function loadLastBets(quiet){
     const roi = day.roi_pct != null ? ` · ROI ${day.roi_pct>=0?"+":""}${Number(day.roi_pct).toFixed(2)}%` : "";
     st.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(day.date||"")}</span>
         <span class="daydow">${dowOf(day.date||"")} · ${last.length} ${plBets(last.length)}</span></div>
-      <div class="v ${cls(pnl)}" style="margin-top:2px">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}${roi}</div>
+      <div class="v ${cls(pnl)}" style="margin-top:2px">${HIDE_MONEY ? (roi ? roi.replace(/^ · /, "") : `${w}W-${l}L`) : `${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}${roi}`}</div>
       <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
-        <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${t("baStaked")}: $${turn.toFixed(2)}</span></div>`;
+        <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${HIDE_MONEY ? "" : `${t("baStaked")}: $${turn.toFixed(2)}`}</span></div>`;
   }
   box.innerHTML = last.map(betRow).join("");
 }
