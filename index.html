@@ -953,13 +953,17 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v100";
+const BUILD = "v101";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
 // aisports (владелец 07.09): суммы ставок и выигрышей не показываются — только исход;
 // деньги на дашборде привязаны к кошельку Polymarket, не к чужим ставкам
 const HIDE_MONEY = APP_PROFILE === "aisports";
+// привязка дашборда к кошельку владельца — только в сборке aisports (это его
+// прототип); основное приложение многопользовательское: у каждого свой кошелёк,
+// на дашборде — виртуальный банк контура (владелец 07.09)
+const WALLET_BOUND = APP_PROFILE === "aisports";
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
 const BUILD_DATE = "07.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
@@ -1536,7 +1540,7 @@ async function main(){
   const usd = v => `${v>=0?"+":"−"}$${Math.abs(Number(v||0)).toFixed(2)}`;
   // v98 (владелец 07.09): привязанный кошелёк Polymarket — сумма на дашборде,
   // общая прибыль и прибыль за сутки пересчитаны на ЕГО сумму (процент того же).
-  const ew = (feed && feed.exchange_wallet && feed.exchange_wallet.total_usd != null)
+  const ew = (WALLET_BOUND && feed && feed.exchange_wallet && feed.exchange_wallet.total_usd != null)
     ? feed.exchange_wallet : null;
   const wal = ew ? Number(ew.total_usd) : null;
   if (wal != null) window.__myBank = wal;
@@ -1574,7 +1578,7 @@ async function main(){
 const SCHED_SPORTS = [
   ["mlb",        "⚾", "MLB"],
   ["soccer",     "⚽", "SOC"],
-  ["hockey",     "🏒", "NHL"],
+  ["khl",        "🏒", "KHL"],
   ["basketball", "🏀", "NBA"],
 ];
 let __schedRows = [], __schedSport = "";
@@ -2124,16 +2128,18 @@ async function initMe(){
   }catch(e){}
   const today = new Date().toISOString().slice(0,10);
   const paid = !!(me && (me.is_paid || (me.paid_until && String(me.paid_until) >= today)));
+  // v101 (владелец 07.09): блок биржи/кошелька виден КАЖДОМУ пользователю —
+  // подключить свой кошелёк может любой; строка тарифа — только оплатившим
+  document.getElementById("exchBlock").style.display = "";
+  document.getElementById("exchInner").style.display = "";
   if(paid){
-    document.getElementById("exchBlock").style.display = "";
-    document.getElementById("exchInner").style.display = "";
     const ti = document.getElementById("tariffInfo");
     // даты приходят как date или timestamptz — режем до YYYY-MM-DD
     const d10 = v => v ? String(v).slice(0,10) : "—";
     if(me.paid_from || me.paid_until)
       ti.textContent = `${t("tariffActive")}: ${d10(me.paid_from)} → ${d10(me.paid_until)}`;
-    initWallet(me);
   }
+  initWallet(me);
 }
 
 // кошелёк/биржа (v31 — живёт в Профиле, показывается после оплаты тарифа)
@@ -2154,6 +2160,7 @@ async function initWallet(me){
   // нет — сумма кошелька живёт на дашборде из ленты core_feed (exchange_wallet).
   // В профиле — только статус «кошелёк подключен» с балансом.
   const liveWallet = async (force) => {
+    if (!WALLET_BOUND) return;              // основное приложение: кошелёк у каждого свой
     try {
       const feed = await coreFeed(force);
       const ew = feed && feed.exchange_wallet;
