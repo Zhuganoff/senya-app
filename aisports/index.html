@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v103";
+const BUILD = "v104";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1427,21 +1427,31 @@ document.addEventListener("DOMContentLoaded", () => {
 // v103 (аудит 08.09, P1): личность — ТОЛЬКО подписанный Telegram initData, проверяемый
 // на сервере (rpc/get_profile_v2, ops/secure_profile.sql); ID с клиента не принимается.
 // Кэш — по пользователю: ответ для A не попадает к B. Старый get_profile не вызывается.
+// v104 (Астра 08.09 §4): единый контекст сессии = пользователь + текущий initData.
+// Смена пользователя/потеря авторизации меняет ключ: кэш другой сессии не отдаётся,
+// поздний ответ прежней сессии не кэшируется и не отрисовывается.
+function sessionKey(){
+  const w = window.Telegram && window.Telegram.WebApp;
+  const uid = (w && w.initDataUnsafe && w.initDataUnsafe.user && w.initDataUnsafe.user.id) || "anon";
+  const initData = (w && w.initData) || "";
+  return String(uid) + ":" + initData.length + ":" + initData.slice(-24);
+}
 async function profile(tgId){
-  const cache = window.__profileCache || (window.__profileCache = {});
-  const key = String(tgId || "anon");
-  if (cache[key] !== undefined) return cache[key];
   const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || "";
-  if (!initData) { cache[key] = null; return null; }
+  if (!initData) return null;                      // без авторизации кэш не используется
+  const key = sessionKey();
+  const cache = window.__profileCache || (window.__profileCache = {});
+  if (cache[key] !== undefined) return cache[key];
+  let data = null;
   try{
     const r = await fetch(SB + "/rpc/get_profile_v2", {method:"POST",
       headers: Object.assign({"Content-Type":"application/json"}, H),
       body: JSON.stringify({p_init_data: initData})});
-    const data = r.ok ? (await r.json()) : null;
-    // поздний ответ после смены пользователя не должен попасть в чужой интерфейс
-    cache[key] = data;
-  }catch(e){ cache[key] = null; }
-  return cache[key];
+    data = r.ok ? (await r.json()) : null;
+  }catch(e){ data = null; }
+  if (sessionKey() !== key) return null;           // сессия сменилась во время запроса: ответ отброшен
+  cache[key] = data;
+  return data;
 }
 
 async function q(path) {
@@ -1698,8 +1708,9 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
       try { startStatsAutoRefresh(); } catch(e) {}
     }
     if (t === "sched" && !window.__schedInit) { window.__schedInit = true; initSched(); }
-    if (t === "earn" && !window.__earnInit) { window.__earnInit = true; initEarn(); }
-    if (t === "me"   && !window.__meInit)   { window.__meInit   = true; initMe(); }
+    // v104: инициализация привязана к сессии — смена пользователя/авторизации перерисовывает заново
+    if (t === "earn" && window.__earnInit !== sessionKey()) { window.__earnInit = sessionKey(); initEarn(); }
+    if (t === "me"   && window.__meInit   !== sessionKey()) { window.__meInit   = sessionKey(); initMe(); }
   });
 });
 
@@ -2136,9 +2147,11 @@ async function initMe(){
   // блок биржи виден ТОЛЬКО оплатившим (CEO 17.08): paid_until >= сегодня или is_paid.
   // paid_from/paid_until — новые колонки (SQL у CEO); до них — фолбэк-select.
   let me = null;
+  const sk = sessionKey();
   try{
     me = await profile(u.id);
   }catch(e){}
+  if (sessionKey() !== sk) return;                 // v104: пользователь сменился — не рисуем чужое
   const today = new Date().toISOString().slice(0,10);
   const paid = !!(me && (me.is_paid || (me.paid_until && String(me.paid_until) >= today)));
   // v101 (владелец 07.09): блок биржи/кошелька виден КАЖДОМУ пользователю —
@@ -2260,7 +2273,9 @@ async function initEarn(){
     return;
   }
   try{
+    const sk = sessionKey();
     const me = await profile(u.id);
+    if (sessionKey() !== sk) return;              // v104: поздний ответ прежней сессии не рисуем
     const rows = me ? [me] : [];
     if(!rows.length){
       document.getElementById("refLink").textContent = t("startBot");
