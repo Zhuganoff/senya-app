@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v102";
+const BUILD = "v103";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -963,9 +963,12 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // привязка дашборда к кошельку владельца — только в сборке aisports (это его
 // прототип); основное приложение многопользовательское: у каждого свой кошелёк,
 // на дашборде — виртуальный банк контура (владелец 07.09)
-const WALLET_BOUND = APP_PROFILE === "aisports";
+// v103 (аудит безопасности 08.09, P1): общий биржевой кошелёк из публичной ленты
+// НИКОМУ не показывается — привязка «пользователь → его кошелёк» будет отдельным
+// этапом с доказательством владения. До него состояние честное: «не подключён».
+const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "07.09.2026";
+const BUILD_DATE = "08.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1124,11 +1127,11 @@ const T = {
   sinceFwd: ["банка с начала форварда", "of bankroll since forward start", "资金自前测开始的变化"],
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
-  myWallet: ["💰 Мой кошелёк", "💰 My wallet", "💰 我的钱包"],
+  myWallet: ["💰 Виртуальный банк", "💰 Virtual bank", "💰 虚拟资金"],
   dayTurnover: ["Оборот", "Turnover", "投注额"],
   walletStart: ["старт", "start", "起始"],
   saveViaBot: ["Сумма сохраняется командой боту:", "Save the amount via the bot command:", "通过机器人命令保存金额："],
-  apiSavedFor: ["ключ сохранён —", "key saved —", "密钥已保存 —"],
+  apiSavedFor: ["ключ сохранён на этом устройстве, владение кошельком не подтверждено —", "key saved on this device, wallet ownership not verified —", "密钥已保存在此设备上，钱包所有权未验证 —"],
   apiNeedFor: ["ключ не задан — введи ключ для", "no key yet — enter the key for", "尚未设置密钥——请输入"],
   exchOpen: ["↗️ Открыть биржу", "↗️ Open exchange", "↗️ 打开交易所"],
   tariffActive: ["Тариф активен", "Plan active", "套餐生效"],
@@ -1421,15 +1424,24 @@ document.addEventListener("DOMContentLoaded", () => {
 // ПРОФИЛЬ ТОЛЬКО ЧЕРЕЗ RPC (аудит 18.08): прямое чтение senya_users закрыто —
 // публичным ключом выгружался весь список (tg_id, username, реф-коды, суммы).
 // get_profile отдаёт свои данные, а линии — обезличенно (имя маской).
+// v103 (аудит 08.09, P1): личность — ТОЛЬКО подписанный Telegram initData, проверяемый
+// на сервере (rpc/get_profile_v2, ops/secure_profile.sql); ID с клиента не принимается.
+// Кэш — по пользователю: ответ для A не попадает к B. Старый get_profile не вызывается.
 async function profile(tgId){
-  if (window.__profile !== undefined) return window.__profile;
+  const cache = window.__profileCache || (window.__profileCache = {});
+  const key = String(tgId || "anon");
+  if (cache[key] !== undefined) return cache[key];
+  const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || "";
+  if (!initData) { cache[key] = null; return null; }
   try{
-    const r = await fetch(SB + "/rpc/get_profile", {method:"POST",
+    const r = await fetch(SB + "/rpc/get_profile_v2", {method:"POST",
       headers: Object.assign({"Content-Type":"application/json"}, H),
-      body: JSON.stringify({p_tg_id: tgId})});
-    window.__profile = r.ok ? (await r.json()) : null;
-  }catch(e){ window.__profile = null; }
-  return window.__profile;
+      body: JSON.stringify({p_init_data: initData})});
+    const data = r.ok ? (await r.json()) : null;
+    // поздний ответ после смены пользователя не должен попасть в чужой интерфейс
+    cache[key] = data;
+  }catch(e){ cache[key] = null; }
+  return cache[key];
 }
 
 async function q(path) {
@@ -2160,17 +2172,7 @@ async function initWallet(me){
   // v98 (владелец 07.09): поля суммы, кнопки «Сохранить» и быстрых сумм больше
   // нет — сумма кошелька живёт на дашборде из ленты core_feed (exchange_wallet).
   // В профиле — только статус «кошелёк подключен» с балансом.
-  const liveWallet = async (force) => {
-    if (!WALLET_BOUND) return;              // основное приложение: кошелёк у каждого свой
-    try {
-      const feed = await coreFeed(force);
-      const ew = feed && feed.exchange_wallet;
-      if (!ew || ew.total_usd == null) return;
-      window.__myBank = Number(ew.total_usd);
-      window.__walletLinked = true;
-      connectedBanner(Number(ew.total_usd));
-    } catch (e) {}
-  };
+  // v103: liveWallet удалён — общий кошелёк из публичной ленты не показывается (аудит 08.09)
 
   // API-ключ биржи: хранится ТОЛЬКО в localStorage устройства (некастодиальность),
   // на сервер не уходит; биржа одна — Polymarket (senya_api_poly, CEO 04.09)
@@ -2185,47 +2187,32 @@ async function initWallet(me){
   const keyBtn = document.getElementById("saveApiKey");
   const ICON_SAVE = keyBtn.innerHTML;
   const ICON_TRASH = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
+  // v103: ключ хранится ПО ПОЛЬЗОВАТЕЛЮ и окружению (общий origin GitHub Pages),
+  // старая общая запись senya_api_poly не читается и никому не присваивается
+  const KEY_STORE = "senya_api_poly:" + APP_PROFILE + ":" + String((u && u.id) || "anon");
+  const getKey = () => { try { return localStorage.getItem(KEY_STORE) || ""; } catch(e){ return ""; } };
   const syncKeyButton = () => {
-    const linked = !!localStorage.getItem("senya_api_poly");
+    const linked = !!getKey();
     keyBtn.innerHTML = linked ? ICON_TRASH : ICON_SAVE;
     keyBtn.style.color = linked ? "#ef4444" : "";
     keyBtn.setAttribute("aria-label", linked ? t("walletUnlink") : t("save"));
     apiInp.readOnly = linked;
   };
   const refreshApi = () => {
-    const k = localStorage.getItem("senya_api_poly") || "";
+    const k = getKey();
     apiInp.value = k;
     syncKeyButton();
-    if (window.__walletLinked) return;          // кошелёк подключен — баннер держится
     apiState.innerHTML = k
       ? `<span class="pos">✅ ${t("apiSavedFor")} Polymarket</span>`
       : `<span style="color:var(--mut)">${t("apiNeedFor")} Polymarket</span>`;
   };
   refreshApi();
-  const aliveCheck = async url => {
-    const r = await Promise.race([
-      fetch(url, {cache: "no-store"}),
-      new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))]);
-    if (!r.ok) throw new Error("http " + r.status);
-    return true;
-  };
-  const testPolymarket = async key => {
-    if (!key || key.length < 8) return {ok: false, why: "format"};
-    try { await aliveCheck("https://clob.polymarket.com/time"); return {ok: true}; }
-    catch (e) {
-      try { await aliveCheck("https://gamma-api.polymarket.com/markets?limit=1"); return {ok: true}; }
-      catch (e2) { return {ok: false, why: "network"}; }
-    }
-  };
-  const connectedBanner = (balance) => {
-    const label = balance != null ? `${t("walletOk")} · $${balance.toFixed(2)}` : t("apiConnected");
-    apiState.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(20,184,166,.10));border:1px solid rgba(16,185,129,.45)"><span style="display:inline-flex;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#10b981,#14b8a6);align-items:center;justify-content:center;flex:0 0 26px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-11"/></svg></span><b style="color:#10b981">${label}</b></div>`;
-  };
-  liveWallet(false);
-  if (!window.__walletTimer) window.__walletTimer = setInterval(() => liveWallet(true), 60000);
+  // v103: aliveCheck/testPolymarket/connectedBanner удалены (аудит 08.09): публичный /time
+  // не подтверждает ключ и владение; общий кошелёк из ленты никому не показывается.
+  // v103: liveWallet не запускается — общего кошелька в ленте нет и быть не должно
   document.getElementById("saveApiKey").addEventListener("click", async () => {
-    if (localStorage.getItem("senya_api_poly")) {      // корзина: отвязать кошелёк
-      localStorage.removeItem("senya_api_poly");
+    if (getKey()) {                                   // корзина: отвязать кошелёк
+      try { localStorage.removeItem(KEY_STORE); } catch(e){}
       window.__walletLinked = false;
       apiInp.value = "";
       refreshApi();
@@ -2237,17 +2224,17 @@ async function initWallet(me){
       refreshApi();
       return;
     }
-    localStorage.setItem("senya_api_poly", v);
-    apiState.innerHTML = `<span style="color:var(--mut)">⏳ ${t("apiTesting")}</span>`;
-    const r = await testPolymarket(v);
-    if (r.ok) {
-      connectedBanner();
-      if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("success"); }catch(e){} }
-      showSavedOk();      // объёмная галочка-подтверждение (CEO 18.08)
-    } else {
-      apiState.innerHTML = `<span class="neg">${t(r.why === "format" ? "apiFailFormat" : "apiFailNet")}</span>`;
+    // v103: ключ только сохраняется на устройстве. Проверки «подключено» через
+    // публичный endpoint биржи больше нет: она не подтверждала ни ключ, ни владение
+    // кошельком. Честный статус — «сохранён, владение не подтверждено».
+    if (v.length < 8) {
+      apiState.innerHTML = `<span class="neg">${t("apiFailFormat")}</span>`;
       if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.notificationOccurred("error"); }catch(e){} }
+      return;
     }
+    try { localStorage.setItem(KEY_STORE, v); } catch(e){}
+    refreshApi();
+    showSavedOk();      // объёмная галочка-подтверждение (CEO 18.08)
   });
 
   // «Виды спорта» из кошелька УДАЛЕНЫ (CEO 17.08 v31): винрейты уже на дашборде
