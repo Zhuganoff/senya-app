@@ -790,12 +790,12 @@ body.splash-on{overflow:hidden}
       </div>
       <div class="bankrow" style="margin-top:10px">
         <input type="password" id="apiKeyInput" class="binput" style="min-width:0;font-size:13px"
-               placeholder="API key" autocomplete="off">
+               placeholder="0x…" autocomplete="off">
         <button class="btn small" id="saveApiKey" aria-label="Сохранить ключ" style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg></button>
       </div>
       <div class="me-sub" id="apiState" style="margin-top:8px;font-weight:700"></div>
       <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть Polymarket</a>
-      <div class="me-sub" id="budgetHint" data-i18n="walletNote">Когда подключение появится, для просмотра понадобится только публичный адрес (MetaMask или аккаунта Polymarket). Подключение даёт только просмотр.</div>
+      <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Приватный ключ и сид-фраза не нужны. Автоторговля пока недоступна.</div>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
@@ -803,14 +803,8 @@ body.splash-on{overflow:hidden}
     <div class="section" data-i18n="secGuide">Справка</div>
     <div class="card">
       <details>
-        <summary class="k" style="cursor:pointer" data-i18n="guideTitle">Подключение кошелька — пока недоступно</summary>
-        <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">
-          1️⃣ Зарегистрируйся на Polymarket (кнопка «Открыть биржу» выше). Убедись, что биржа работает в твоей стране, и пройди проверку (KYC).<br><br>
-          2️⃣ Пополни счёт стейблкоином USDC — это твой ставочный банк. Держи на нём только сумму, которой готов играть.<br><br>
-          3️⃣ В настройках аккаунта биржи создай <b>API-ключ</b>.<br><br>
-          4️⃣ Вставь ключ в поле под названием биржи и нажми дискету — приложение сразу проверит подключение; ключ останется только на этом устройстве.<br><br>
-          5️⃣ Готово. Когда автоставки включатся (после подтверждения CLV-метрики), бот начнёт ставить через твой счёт — деньги всегда остаются у тебя.<br><br>
-          ⚠️ Никому не сообщай приватный ключ кошелька и seed-фразу: боту они не нужны — достаточно API-ключа.</div>
+        <summary class="k" style="cursor:pointer" data-i18n="guideTitle">Просмотр кошелька по публичному адресу</summary>
+        <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение адресом и не разрешает торговлю: автоматических ставок нет, исполнитель ордеров не реализован.</div>
       </details>
     </div>
     </div><!-- /exchBlock -->
@@ -828,10 +822,7 @@ body.splash-on{overflow:hidden}
     <div class="card" style="margin-top:10px">
       <div class="k" data-i18n="subTitle2">AI Sports Auto <span class="tag">β</span></div>
       <div class="cur" style="font-size:30px;margin:4px 0 2px">$499<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
-      <div class="me-sub" data-i18n="subList2" style="margin:6px 0 10px">
-        • Всё из Pro<br>
-        • Полный автомат: приложение само ставит через твой счёт Polymarket (API-ключ)<br>
-        • Деньги всегда на твоём счету — вывести их бот не может</div>
+      <div class="me-sub" data-i18n="subList2" style="margin:6px 0 10px">• Всё из Pro<br>• Автоматические ставки через твой счёт Polymarket — недоступны: исполнитель ордеров не реализован, дата не назначена; никакие ключи биржи не запрашиваются и подключение просмотра торговлю не включает<br>• Будущее торговое разрешение будет с лимитами и отзывом; безопасность денег не гарантируется абсолютно — риски описываются отдельно</div>
       <button class="btn" id="subBtn2" data-i18n="subBtn">Узнать о запуске</button>
       <div class="me-sub" id="subHint2" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
     </div>
@@ -953,7 +944,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v113";
+const BUILD = "v114";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -963,6 +954,10 @@ const APP_PROFILE = "aisports";
 // publisher) — витрина показывает только результаты стратегии (исход, кф, W/L, ROI %), без сумм
 // 09.09 (решение владельца): песочница СОХРАНЯЕТ виртуальные суммы; скрытие $ — только официальный профиль
 const HIDE_MONEY = APP_PROFILE === "aisports";
+// v114 (приёмка Астры R1): в official личные списки («Ставки», «Ставки за день», история) берутся ТОЛЬКО из
+// personal_real_bets (подтверждённые сделки аккаунта; исполнителя нет → пусто), а не из PAPER-сигналов стратегии
+const OFFICIAL_PERSONAL_LISTS = APP_PROFILE === "aisports";
+function personalBets(feed){ return (feed && Array.isArray(feed.personal_real_bets)) ? feed.personal_real_bets : []; }
 // v106 (блок C задания 09.09): новые финансовые секреты в localStorage не сохраняются — до защищённого хранения (P1).
 // Существующие записи не читаются в отчёт, не удаляются и не переносятся автоматически; отвязать может сам пользователь.
 const KEY_SAVE_ENABLED = false;
@@ -1030,7 +1025,9 @@ const T = {
   secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>", "今日投注 <span class=\"tag\" id=\"todayTag\">live</span>"],
   secDayBets: ["Ставки за день", "Bets by day", "按日查看投注"],
   secWr: ["Винрейт по видам спорта", "Win rate by sport", "各项目胜率"],
-  secLast: ["Последние ставки стратегии · симуляция", "Latest strategy bets · simulation", "策略最近投注 · 模拟"],
+  secLast: ["Личные сделки", "Personal trades", "个人交易"],
+  noPersonalBets: ["Подтверждённых личных сделок нет", "No confirmed personal trades", "暂无已确认的个人交易"],
+  noPersonalBetsHint: ["Реальный исполнитель ордеров не реализован — личная история появится только по подтверждённым сделкам твоего аккаунта. Сигналы стратегии (симуляция) в личный список не попадают.", "The real order executor is not implemented — personal history will appear only from confirmed trades of your account. Strategy signals (simulation) never enter the personal list.", "真实订单执行器尚未实现——个人历史仅来自你账户的已确认交易。策略信号（模拟）不会进入个人列表。"],
   secEarn: ["Рефералы", "Referrals", "推荐"],
   secPayouts: ["Выплаты за рефералов", "Referral payouts", "推荐返佣"],
   secLine1: ["Первая линия · 20%", "First line · 20%", "第一层 · 20%"],
@@ -1097,7 +1094,7 @@ const T = {
   secApi: ["Подключение API", "API connection", "API 连接"],
   secWalletMain: ["Общий кошелёк", "Main wallet", "总钱包"],
   walletSum: ["Сумма кошелька", "Wallet balance", "钱包金额"],
-  walletNote: ["Когда подключение появится, для просмотра понадобится только публичный адрес (MetaMask или аккаунта Polymarket). Подключение даёт только просмотр.", "When connection arrives, viewing will need only a public address (MetaMask or Polymarket account). Connection gives view-only access.", "连接功能上线后，查看只需公开地址（MetaMask 或 Polymarket 账户）。连接仅提供查看。"],
+  walletNote: ["Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.", "Only a public address (MetaMask or Polymarket account) is needed to view: pUSD balance and positions value from public data. View only — ownership is not verified, trading is not enabled.", "仅需公开地址（MetaMask 或 Polymarket 账户）即可查看：按公开数据显示 pUSD 余额和持仓价值。仅查看——不验证所有权，不启用交易。"],
   walletOk: ["Кошелёк Polymarket подключен", "Polymarket wallet connected", "Polymarket 钱包已连接"],
   walletUnlink: ["Отвязать кошелёк", "Unlink wallet", "解除钱包绑定"],
   secSportsWr: ["Результаты стратегии по видам · симуляция", "Strategy results by sport · simulation", "策略分项结果 · 模拟"],
@@ -1115,7 +1112,7 @@ const T = {
   bankHint: ["Сумма — только ориентир для будущих личных ставок. Сейчас ставки тестовые (симуляция) по правилу стратегии с дашборда; деньги остаются у тебя.", "This amount is only a reference for future personal bets. Bets are currently test-only (simulation) under the strategy rule on the dashboard; your money stays with you.", "该金额仅作为未来个人投注的参考。当前投注为模拟测试，按仪表盘上的策略规则进行；资金仍在你手中。"],
   apiConnected: ["Биржа Polymarket подключена", "Polymarket exchange connected", "Polymarket 交易所已连接"],
   apiTesting: ["Проверяем подключение к бирже…", "Testing the exchange connection…", "正在测试交易所连接……"],
-  apiFailNet: ["Биржа не ответила — проверь интернет и нажми дискету ещё раз. Ключ сохранён.",
+  apiFailNet: ["Источник не ответил — проверь интернет и нажми «Подключить» ещё раз.",
                "The exchange didn't respond — check your connection and tap the disk again. The key is saved.",
                "交易所未响应——请检查网络后再按一次保存。密钥已保存。"],
   apiFailFormat: ["Ключ слишком короткий — проверь, что скопировал его целиком.",
@@ -1281,7 +1278,7 @@ const T = {
             "• Full access: every bet, stats and CLV in real time<br>• A separate notifier bot messages you each bet: the pick and the odds<br>• You place bets yourself on your exchange · 20% + 5% referrals",
             "• 完整访问：所有投注、统计与 CLV 实时可见<br>• 独立通知机器人推送每笔投注：投什么、什么赔率<br>• 你在自己的交易所自行下注 · 20% + 5% 推荐计划"],
   subTitle2: ["AI Sports Auto <span class=\"tag\">β</span>", "AI Sports Auto <span class=\"tag\">β</span>", "AI Sports Auto <span class=\"tag\">β</span>"],
-  subList2: ["• Всё из Pro<br>• Автоматические ставки через твой счёт Polymarket — в разработке, дата не назначена<br>• Деньги на твоём счету — вывести их бот не может", "• Everything in Pro<br>• Automatic bets through your Polymarket account — in development, no date set<br>• Money stays in your account — the bot cannot withdraw it", "• 包含 Pro 全部内容<br>• 通过你 Polymarket 账户的自动投注——开发中，未定日期<br>• 资金留在你的账户——机器人无法提现"],
+  subList2: ["• Всё из Pro<br>• Автоматические ставки через твой счёт Polymarket — недоступны: исполнитель ордеров не реализован, дата не назначена; никакие ключи биржи не запрашиваются и подключение просмотра торговлю не включает<br>• Будущее торговое разрешение будет с лимитами и отзывом; безопасность денег не гарантируется абсолютно — риски описываются отдельно", "• Everything in Pro<br>• Automatic bets via your Polymarket account — not available: the order executor is not implemented, no date set; no exchange keys are requested and the view connection does not enable trading<br>• A future trading permission will come with limits and revocation; money safety is not absolutely guaranteed — risks are described separately", "• Pro 的全部内容<br>• 通过你的 Polymarket 账户自动投注——暂不可用：订单执行器尚未实现，无日期；不索取任何交易所密钥，查看连接也不会启用交易<br>• 未来的交易授权将带有限额和撤销；资金安全无法绝对保证——风险另行说明"],
   subBtn: ["Узнать о запуске", "Launch updates", "获取上线通知"],
   subSoon: ["Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.",
             "Payments aren't live yet — the bot will message you first when they are. Everything is free to watch for now.",
@@ -1290,8 +1287,8 @@ const T = {
                  "Done — the bot will message you when subscriptions launch.",
                  "完成——订阅上线时机器人会通知你。"],
   secGuide: ["Справка", "Help", "帮助"],
-  guideTitle: ["Подключение кошелька — пока недоступно", "Wallet connection — not available yet", "钱包连接——暂不可用"],
-  guideBody: ["Подключение кошелька к приложению пока недоступно.<br><br>Когда оно появится: в «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение покажет найденный аккаунт и его публичные данные. Это только просмотр: владение адресом не проверяется, торговля выключена.<br><br>Автоторговля включается отдельно — после вашего разрешения в кошельке; сейчас она недоступна.<br><br>⚠️ Приватный ключ и сид-фраза не нужны никогда.", "Connecting a wallet to the app is not available yet.<br><br>When it arrives: in “Profile”, paste a public address (MetaMask or Polymarket account) and tap “Connect” — the app shows the found account and its public data. This is view-only: address ownership is not verified, trading is off.<br><br>Auto-trading is enabled separately — after your permission in the wallet; it is not available now.<br><br>⚠️ A private key and seed phrase are never needed.", "钱包与应用的连接功能暂不可用。<br><br>上线后：在「个人」中粘贴公开地址（MetaMask 或 Polymarket 账户）并点击「连接」——应用会显示找到的账户及其公开数据。仅供查看：不验证地址所有权，交易关闭。<br><br>自动交易需单独开启——在钱包中授权后；目前不可用。<br><br>⚠️ 永远不需要私钥和助记词。"],
+  guideTitle: ["Просмотр кошелька по публичному адресу", "Wallet view by public address", "按公开地址查看钱包"],
+  guideBody: ["1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение адресом и не разрешает торговлю: автоматических ставок нет, исполнитель ордеров не реализован.", "1️⃣ In Profile, paste a public address (MetaMask or Polymarket account) and tap Connect — the app finds the account and shows the pUSD balance and positions value from public data.<br><br>2️⃣ No secrets: private key, seed phrase and exchange keys are not needed and not accepted.<br><br>3️⃣ If the settings server is unavailable, the address works on this device only and is not saved to the profile — the status says so.<br><br>4️⃣ Viewing does not prove ownership and does not enable trading: there are no automatic bets, the order executor is not implemented.", "1️⃣ 在「个人资料」中粘贴公开地址（MetaMask 或 Polymarket 账户）并点击「连接」——应用会找到账户并按公开数据显示 pUSD 余额和持仓价值。<br><br>2️⃣ 无需任何秘密：不需要也不接受私钥、助记词和交易所密钥。<br><br>3️⃣ 若设置服务器不可用，地址仅在本设备生效且未保存到个人资料——状态会如实显示。<br><br>4️⃣ 查看不证明地址所有权，也不启用交易：没有自动投注，订单执行器尚未实现。"],
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
@@ -1330,7 +1327,8 @@ const T = {
 };
 function t(k){ const v = T[k]; return v ? (v[LIDX[LANG]] ?? v[0]) : k; }
 // статичная разметка переводится один раз при загрузке (скрипт стоит в конце body)
-if (LANG !== "ru") document.querySelectorAll("[data-i18n]").forEach(el => {
+// v114 (приёмка Астры R2): словарь применяется и к русскому — статическая разметка не может разойтись с текстами
+document.querySelectorAll("[data-i18n]").forEach(el => {
   const k = el.dataset.i18n;
   if (T[k]) el.innerHTML = T[k][LIDX[LANG]] ?? T[k][0];
 });
@@ -1595,7 +1593,7 @@ async function main(){
   const DIM_SPORTS = APP_PROFILE === "aisports"
     ? {tennis: t("dimVirtual"), soccer: t("dimVirtual"), khl: t("dimVirtual")}
     : {tennis: t("dimVirtual")};
-  const sportRows = Object.keys(bySport).map(k => {
+  const sportRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb").map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
     const dim = DIM_SPORTS[k];
@@ -1607,9 +1605,9 @@ async function main(){
   });
   // CEO 04.09: будущие виды — затемнённые строки той же разметки с честной
   // датой старта сезона; появятся данные в ленте — строки оживут сами.
-  [["khl", "🏒", t("sportKhl"), "05.09"],
+  (OFFICIAL_PERSONAL_LISTS ? [] : [["khl", "🏒", t("sportKhl"), "05.09"],
    ["nhl", "🏒", t("sportNhl"), "29.09"],
-   ["nba", "🏀", t("sportNba"), "20.10"]].forEach(([k, ico, nm, from]) => {
+   ["nba", "🏀", t("sportNba"), "20.10"]]).forEach(([k, ico, nm, from]) => {
     if (bySport[k]) return;            // вид уже в ленте — честная строка выше
     sportRows.push(`<div class="sport" style="opacity:.45"><div class="ico">${ico}</div>
       <div class="info"><div class="nm">${nm}</div>
@@ -1654,7 +1652,7 @@ async function main(){
       <div class="d" style="color:var(--mut)">${W}W · ${N-W}L · ${N} ${t("betsN")}</div></div>
     <div class="card"><div class="k">${t("profitAll")}</div>
       <div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("noPersonalData")}${roiS ? " · " + roiS : ""}</div></div>
+      <div class="d" style="color:var(--mut)">${t("noPersonalData")}</div></div>
     <div class="card" style="grid-column:1/-1"><div class="k">${t("profit24")}</div>
       <div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("walletNotLinkedHint")}</div></div>`;
@@ -2039,8 +2037,18 @@ async function loadDay(d){
   box.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try{
     const feed = await coreFeed();
+    if (OFFICIAL_PERSONAL_LISTS) {
+      const mine = personalBets(feed).filter(b => b.session_date === d);
+      if (!mine.length) {
+        stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
+          <span class="daydow">${dowOf(d)}</span></div>
+        <div class="d" style="color:var(--mut);margin-top:4px">${t("noPersonalBets")}</div>`;
+        box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>`;
+        return;
+      }
+    }
     const sess = feedSession(feed, d);
-    const rows = ((sess && sess.bets_list) || []).map(feedBetToRow);
+    const rows = (OFFICIAL_PERSONAL_LISTS ? personalBets(feed).filter(b => b.session_date === d) : ((sess && sess.bets_list) || [])).map(feedBetToRow);
     await loadMatchStats(rows.map(r => r.match_date).concat(d));
     if(!rows.length){
       stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
@@ -2204,8 +2212,15 @@ async function loadLastBets(quiet){
   // онлайн по мере волн. Список ставок сохраняет своё поведение, и обе даты
   // подписаны, так что расхождение видно, а не скрыто.
   loadBetAnalysis(today);
-  const last = ((day.bets_list) || (feed.bets || [])
-      .filter(b => b.session_date === day.date))
+  if (OFFICIAL_PERSONAL_LISTS && !personalBets(feed).length) {
+    const st0 = document.getElementById("lastStat");
+    if (st0) st0.innerHTML = `<div class="dayhead"><span class="daydate">${t("secLast")}</span><span class="daydow">0 ${plBets(0)}</span></div>
+      <div class="daysum" style="margin-top:6px"><span>${t("noPersonalBets")}</span></div>`;
+    box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>`;
+    return;
+  }
+  const last = (OFFICIAL_PERSONAL_LISTS ? personalBets(feed) : ((day.bets_list) || (feed.bets || [])
+      .filter(b => b.session_date === day.date)))
     .map(feedBetToRow)
     .sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || "")));
   const st = document.getElementById("lastStat");
