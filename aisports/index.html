@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v111";
+const BUILD = "v112";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -977,7 +977,10 @@ const DATA_API = "https://data-api.polymarket.com";
 // только чтение, без ключей). Стоимость позиций (data-api /value) и доступные средства — раздельные показатели;
 // ошибка/недоступность источника показывается как «данные недоступны», а не как ноль.
 const POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com";
-const USDC_TOKENS = {usdc_e: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174", usdc: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359"};
+// v112 (приёмка Астры 09.09 §2): торговый остаток Polymarket — pUSD (docs.polymarket.com/trading/bridge/deposit,
+// resources/contracts); USDC/USDC.e — ДРУГИЕ активы Polygon, отдельно и без суммирования с pUSD.
+const POLYGON_CHAIN_ID = "0x89";
+const WV_TOKENS = {pusd: "0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb", usdc_e: "0x2791bca1f2de4661ed88a30c99a7a9449aa84174", usdc: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359"};
 // имя бота — из профиля сборки, не зашито в тексты (aisports обслуживает @aisports0bot)
 const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot";
 // привязка дашборда к кошельку владельца — только в сборке aisports (это его
@@ -1167,6 +1170,9 @@ const T = {
   wvBalance: ["остаток по публичным данным", "balance per public data", "公开数据余额"],
   wvUpdated: ["обновлено", "updated", "更新于"],
   wvAvailable: ["Доступно", "Available", "可用"],
+  wvPusdLabel: ["Остаток pUSD по публичным данным", "pUSD balance per public data", "公开数据 pUSD 余额"],
+  wvOtherAssets: ["другие активы Polygon", "other Polygon assets", "其他 Polygon 资产"],
+  wvBlock: ["блок", "block", "区块"],
   wvUnavailable: ["данные недоступны", "data unavailable", "数据不可用"],
   wvSourceRpc: ["USDC · Polygon", "USDC · Polygon", "USDC · Polygon"],
   wvNoServer: ["серверное сохранение недоступно (безопасный профиль не установлен) — подключение действует до закрытия приложения",
@@ -1614,21 +1620,27 @@ async function main(){
   // Разметка карточек та же (дизайн заморожен, MINI_APP §0): изменились текст и данные.
   const roiS = z.roi_pct != null ? `${t("strategyRoi")} ${z.roi_pct>=0?"+":""}${Number(z.roi_pct).toFixed(2)}%` : "";
   // v108 (W): статус просмотра выбранного аккаунта на карточке — без сумм; сессия сверяется после ожидания
-  let wvStatus = t("walletNotConnected"), wvView = null;
+  let wvView = null;
+  const skW = sessionKey();
+  const loadGen = wvStateFor(skW).gen;                       // загрузка не откатывает более новое действие той же сессии
   if (WALLET_VIEW_ENABLED && u) {
-    const skW = sessionKey();
     try {
       const r = await wvRpc("get_wallet_view", {p_init_data: wvInit()});
       if (sessionKey() !== skW) return;
-      if (r.data && r.data.input_address) wvView = r.data;
-      if (r.data && r.data.input_address) wvStatus = `${t("wvConnected")} · ${v3Esc(r.data.profile_name || wvShortAddr(r.data.resolved_address || r.data.input_address))} · ${t("wvStatusLine")}`;
+      if (wvStateFor(skW).gen === loadGen) wvView = (r.data && r.data.input_address) ? r.data : null;
+      else wvView = wvStateFor(skW).view;                    // пользователь уже что-то сделал — верим состоянию, не старому ответу
+      wvStateAdopt(skW, wvView, loadGen);
     } catch(e) {}
   }
+  const wvStatusLine = () => {
+    const st = wvStateFor(skW);
+    return st.view ? `${t("wvConnected")} · ${v3Esc(st.view.profile_name || wvShortAddr(st.view.resolved_address || st.view.input_address))} · ${t("wvStatusLine")}` : t("walletNotConnected");
+  };
   // W1: карточки перерисовываются той же функцией, когда придут сумма/позиции выбранного адреса (сессия сверяется)
   const renderTop = (money) => {
     const wvName = money ? (money.view.profile_name ? v3Esc(money.view.profile_name) : v3Esc(wvShortAddr(money.view.resolved_address || money.view.input_address))) : "";
-    const wvLine = money ? `${t("wvConnected")} · ${wvName} · ${t("wvStatusLine")}<br>${wvMoneyLine(money.value, money.bal)}` : wvStatus;
-    const wvVal = money && money.bal && money.bal.ok ? `$${Number(money.bal.total).toFixed(2)}` : "—";
+    const wvLine = money ? `${t("wvConnected")} · ${wvName} · ${t("wvStatusLine")}<br>${wvMoneyLine(money.value, money.bal)}` : wvStatusLine();
+    const wvVal = money && money.bal && money.bal.ok ? `${Number(money.bal.pusd).toFixed(2)} pUSD` : "—";
     document.getElementById("topCards").innerHTML = `
     <div class="card glass-sheen"><div class="k">${t("myWallet")}</div>
       <div class="v">${wvVal}</div>
@@ -1646,11 +1658,10 @@ async function main(){
   window.__renderTop = {session: sessionKey(), fn: renderTop};
   renderTop(null);
   if (wvView) {
-    const skM = sessionKey();
-    const addr = wvView.resolved_address || wvView.input_address;
+    const st = wvStateFor(skW); const myGen = st.gen; const addr = st.addr;
     const [v, bal] = await Promise.all([wvValue(addr), wvBalance(addr)]);
-    if (sessionKey() !== skM) return;                       // поздний ответ прежней сессии не рисуется
-    wvRenderDashCard(wvView, v, bal, skM);
+    if (!wvAlive(skW, myGen, addr)) return;                 // поздний ответ: другая сессия, отключение или другой адрес — не рисуем
+    wvRenderDashCard(wvView, v, bal, skW, myGen, addr);
   }
   document.getElementById("dashSports").innerHTML = sportRows.join("");
   // Вкладка «Ставки» могла открыться раньше ленты — перерисовываем её сейчас.
@@ -2432,29 +2443,62 @@ async function wvValue(proxy){
     return (row && String(row.user || proxy).toLowerCase() === proxy && isFinite(v)) ? v : null;
   } catch(e) { return null; }
 }
+// v112: ЕДИНОЕ состояние выбранного адреса для профиля и дашборда: сессия + поколение + адрес. Любое действие
+// пользователя (подключение, отключение, другой адрес) поднимает gen; каждый рендер после ожидания проверяет все три.
+window.__wvState = {session: null, gen: 0, addr: null, view: null};
+function wvStateFor(bound){
+  if (window.__wvState.session !== bound) window.__wvState = {session: bound, gen: 0, addr: null, view: null};
+  return window.__wvState;
+}
+function wvStateSet(bound, view){                       // новое действие: обесценивает все ожидания
+  const st = wvStateFor(bound); st.gen += 1; st.view = view || null;
+  st.addr = view ? String(view.resolved_address || view.input_address || "").toLowerCase() : null;
+  return st.gen;
+}
+function wvStateAdopt(bound, view, gen){                 // загрузка с сервера: применяется, только если пользователь ничего не делал с тех пор
+  const st = wvStateFor(bound);
+  if (st.gen !== gen) return false;
+  st.view = view || null; st.addr = view ? String(view.resolved_address || view.input_address || "").toLowerCase() : null;
+  return true;
+}
+function wvAlive(bound, gen, addr){
+  const st = window.__wvState;
+  return sessionKey() === bound && st.session === bound && st.gen === gen && (addr === undefined || st.addr === (addr == null ? null : String(addr).toLowerCase()));
+}
+async function wvRpcCall(method, params){
+  const r = await fetch(POLYGON_RPC, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({jsonrpc: "2.0", id: 1, method, params})});
+  if (!r.ok) throw new Error("http_" + r.status);
+  const j = await r.json();
+  if (!j || typeof j.result !== "string" || !/^0x[0-9a-fA-F]*$/.test(j.result)) throw new Error("rpc_" + ((j && j.error && j.error.code) || "shape"));
+  return j.result;
+}
 async function wvBalance(addr){
-  // balanceOf(address) по двум контрактам USDC (bridged USDC.e — залог Polymarket, и нативный USDC); 6 знаков
+  // v112: остаток pUSD (торговое обеспечение Polymarket) + USDC/USDC.e отдельно; сеть, контракт, decimals и форма
+  // ответа проверяются; все balanceOf читаются на ОДНОМ блоке; ошибка/неизвестный актив → не ноль, а «недоступно».
   const a = String(addr || "").toLowerCase();
   if (!/^0x[0-9a-f]{40}$/.test(a)) return {ok: false, error: "bad_address"};
-  const out = {ok: true, ts: new Date().toISOString().slice(11, 16)};
-  for (const [k, token] of Object.entries(USDC_TOKENS)) {
-    try {
-      const r = await fetch(POLYGON_RPC, {method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({jsonrpc: "2.0", id: 1, method: "eth_call", params: [{to: token, data: "0x70a08231" + a.slice(2).padStart(64, "0")}, "latest"]})});
-      if (!r.ok) return {ok: false, error: "http_" + r.status};
-      const j = await r.json();
-      if (!j || typeof j.result !== "string" || !/^0x[0-9a-fA-F]*$/.test(j.result)) return {ok: false, error: "rpc_" + ((j && j.error && j.error.code) || "shape")};
-      out[k] = Number(BigInt(j.result || "0x0")) / 1e6;
-    } catch(e) { return {ok: false, error: "network"}; }
-  }
-  out.total = Math.round(((out.usdc_e || 0) + (out.usdc || 0)) * 100) / 100;
-  return out;
+  try {
+    const chain = await wvRpcCall("eth_chainId", []);
+    if (BigInt(chain) !== BigInt(POLYGON_CHAIN_ID)) return {ok: false, error: "wrong_chain"};
+    const block = await wvRpcCall("eth_blockNumber", []);
+    const dec = await wvRpcCall("eth_call", [{to: WV_TOKENS.pusd, data: "0x313ce567"}, block]);
+    if (dec === "0x" || Number(BigInt(dec)) !== 6) return {ok: false, error: "decimals"};
+    const out = {ok: true, block: Number(BigInt(block)), ts: new Date().toISOString().slice(11, 16)};
+    for (const [k, token] of Object.entries(WV_TOKENS)) {
+      const res = await wvRpcCall("eth_call", [{to: token, data: "0x70a08231" + a.slice(2).padStart(64, "0")}, block]);
+      if (res === "0x") return {ok: false, error: "empty_" + k};
+      out[k] = Number(BigInt(res)) / 1e6;
+    }
+    return out;
+  } catch(e) { return {ok: false, error: String(e && e.message || "network").slice(0, 40)}; }
 }
 function wvMoneyLine(value, bal){
   const ts = (bal && bal.ts) || new Date().toISOString().slice(11, 16);
-  const avail = bal && bal.ok ? `${t("wvAvailable")} $${Number(bal.total).toFixed(2)} (${t("wvSourceRpc")})` : `${t("wvAvailable")}: ${t("wvUnavailable")}`;
+  const avail = bal && bal.ok ? `${t("wvPusdLabel")}: ${Number(bal.pusd).toFixed(2)} pUSD · ${t("wvOtherAssets")}: USDC ${Number(bal.usdc).toFixed(2)} · USDC.e ${Number(bal.usdc_e).toFixed(2)}` : `${t("wvPusdLabel")}: ${t("wvUnavailable")}`;
   const pos = value == null ? `${t("wvPositions")}: ${t("wvUnavailable")}` : `${t("wvPositions")} $${Number(value).toFixed(2)}`;
-  return `${avail} · ${pos} · ${t("wvUpdated")} ${ts} UTC`;
+  const blk = bal && bal.ok && bal.block ? ` · ${t("wvBlock")} ${bal.block}` : "";
+  return `${avail} · ${pos}${blk} · ${t("wvUpdated")} ${ts} UTC`;
 }
 function wvShortAddr(a){ return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
 function wvRenderConnected(view, value, serverSaved, bal){
@@ -2471,11 +2515,16 @@ function wvRenderConnected(view, value, serverSaved, bal){
   inp.value = view.input_address; inp.readOnly = true;
   btn.innerHTML = t("wvDisconnect"); btn.setAttribute("aria-label", t("wvDisconnect")); btn.style.color = "#ef4444";
 }
-function wvRenderDashCard(view, value, bal, bound){
-  // W1: карточка «Кошелёк Polymarket» на дашборде — доступные средства выбранного адреса (USDC · Polygon) и стоимость
-  // позиций раздельно; недоступность источника — «данные недоступны», не ноль; общий PAPER-банк сюда не подставляется
+function wvRenderDashCard(view, value, bal, bound, gen, addr){
+  // W1/v112: карточка «Кошелёк Polymarket» на дашборде — pUSD выбранного адреса и стоимость позиций раздельно;
+  // недоступность источника — «данные недоступны», не ноль; общий PAPER-банк сюда не подставляется;
+  // рисуется только если сессия, поколение и адрес всё ещё те же
+  if (!wvAlive(bound, gen, addr) || !window.__renderTop || window.__renderTop.session !== bound) return;
+  window.__renderTop.fn(view ? {view, value, bal} : null);
+}
+function wvClearDashCard(bound){
   if (sessionKey() !== bound || !window.__renderTop || window.__renderTop.session !== bound) return;
-  window.__renderTop.fn({view, value, bal});
+  window.__renderTop.fn(null);
 }
 function wvRenderEmpty(msg){
   const apiState = document.getElementById("apiState"), hint = document.getElementById("budgetHint"), apiHint = document.getElementById("apiHint");
@@ -2489,6 +2538,7 @@ function wvRenderEmpty(msg){
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");
   window.__wv = {session: bound, view: null, server: null, gen: 0};
+  wvStateFor(bound);
   wvRenderEmpty();
   inp.value = "";
   if (btn.__p0Handler) btn.removeEventListener("click", btn.__p0Handler);
@@ -2511,13 +2561,17 @@ async function initWalletView(bound){
       if (outcome === "error" || outcome === "unavailable") { apiState.innerHTML = `<span class="neg">${t("wvClearErr")}</span>`; return; }
       if (outcome === "rejected") { apiState.innerHTML = `<span class="neg">${t("wvClearRejected")}</span>`; return; }
       window.__wv.view = null; inp.value = "";
+      wvStateSet(bound, null);                                // обесценивает ожидающие ответы обеих поверхностей
       wvRenderEmpty(outcome === "local" ? t("wvClearedLocal") : null);
+      wvClearDashCard(bound);                                 // дашборд очищается немедленно
       return;
     }
     const addr = String(inp.value || "").trim().toLowerCase();
     if (!WV_ADDR_RE.test(addr)) { apiState.innerHTML = `<span class="neg">${t("wvBadAddr")}</span>`; return; }
     const myAddr = addr;
     const myGen = ++window.__wv.gen;                            // W-R4: новое действие обесценивает все предыдущие ожидания
+    const stGen = wvStateSet(bound, null);                      // новый выбор адреса: старые суммы на дашборде больше не действительны
+    wvClearDashCard(bound);
     window.__wv.pending = myAddr;
     apiState.innerHTML = `<span style="color:var(--mut)">${t("wvLoading")}</span>`;
     let res;
@@ -2542,9 +2596,10 @@ async function initWalletView(bound){
     }
     if (sessionKey() !== bound || !window.__wv || window.__wv.pending !== myAddr || window.__wv.gen !== myGen) return;
     window.__wv.view = view; window.__wv.server = server;
+    const stGen2 = wvStateSet(bound, view);
     wvRenderConnected(view, undefined, server, undefined);
     const [v, bal] = await Promise.all([wvValue(res.proxy), wvBalance(res.proxy)]);
-    if (sessionKey() === bound && window.__wv && window.__wv.view === view && window.__wv.gen === myGen) { wvRenderConnected(view, v, server, bal); wvRenderDashCard(view, v, bal, bound); }
+    if (sessionKey() === bound && window.__wv && window.__wv.view === view && window.__wv.gen === myGen && wvAlive(bound, stGen2, res.proxy)) { wvRenderConnected(view, v, server, bal); wvRenderDashCard(view, v, bal, bound, stGen2, res.proxy); }
   };
   btn.addEventListener("click", btn.__p0Handler);
 
@@ -2553,14 +2608,17 @@ async function initWalletView(bound){
   if (init) {
     try {
       const loadGen = window.__wv.gen;                           // W-R4: поздняя загрузка не перекрывает новое действие той же сессии
+      const stLoadGen = wvStateFor(bound).gen;
       const r = await wvRpc("get_wallet_view", {p_init_data: init});
-      if (sessionKey() !== bound || !window.__wv || window.__wv.gen !== loadGen) return;
+      if (sessionKey() !== bound || !window.__wv || window.__wv.gen !== loadGen || wvStateFor(bound).gen !== stLoadGen) return;
       window.__wv.server = r.server ? (r.data ? "saved" : null) : "unavailable";
       if (r.data && r.data.input_address) {
         window.__wv.view = r.data;
+        wvStateAdopt(bound, r.data, stLoadGen);
+        const a2 = String(r.data.resolved_address || r.data.input_address).toLowerCase();
         wvRenderConnected(r.data, undefined, "saved", undefined);
-        const [v, bal] = await Promise.all([wvValue(r.data.resolved_address || r.data.input_address), wvBalance(r.data.resolved_address || r.data.input_address)]);
-        if (sessionKey() === bound && window.__wv && window.__wv.view === r.data && window.__wv.gen === loadGen) { wvRenderConnected(r.data, v, "saved", bal); wvRenderDashCard(r.data, v, bal, bound); }
+        const [v, bal] = await Promise.all([wvValue(a2), wvBalance(a2)]);
+        if (sessionKey() === bound && window.__wv && window.__wv.view === r.data && window.__wv.gen === loadGen && wvAlive(bound, stLoadGen, a2)) { wvRenderConnected(r.data, v, "saved", bal); wvRenderDashCard(r.data, v, bal, bound, stLoadGen, a2); }
       }
     } catch(e) { if (sessionKey() === bound) wvRenderEmpty(t("wvSourceErr")); }
   }
