@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v104";
+const BUILD = "v107";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -968,7 +968,7 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "08.09.2026";
+const BUILD_DATE = "09.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -2527,5 +2527,6 @@ main().catch(e => {
      <div class="d" style="color:var(--mut)">${t("dbDown")}: ${e.message}. ${t("tryLater")}</div></div>`;
 });
 </script>
+<script src="khl-r2-view.js?v=v107"></script>
 </body>
 </html>
