@@ -35,6 +35,16 @@
     period:['период','period','节'],
     updated:['Обновлено','Updated','更新于'],
     off:['Стратегия приостановлена','Strategy paused','策略已暂停'],
+    paperMode:['Бумажный режим: R2 открывает виртуальные позиции в общем кошельке песочницы. Это не реальные деньги.','Paper mode: R2 opens virtual positions in the shared sandbox wallet. Not real money.','模拟模式：R2 在沙盒共享钱包中开立虚拟仓位。非真实资金。'],
+    budgetPaused:['Дебаты приостановлены: лимит расходов','Debates paused: spending limit reached','辩论已暂停：达到支出上限'],
+    providerPaused:['Дебаты приостановлены: провайдер отклонил запрос','Debates paused: provider rejected the request','辩论已暂停：服务商拒绝了请求'],
+    llmOn:['Живые дебаты включены','Live debates enabled','实时辩论已启用'],
+    paperOpened:['Бумажная позиция открыта','Paper position opened','已开立模拟仓位'],
+    paperExisting:['Бумажная позиция уже была открыта','Paper position already open','模拟仓位已存在'],
+    paperRefused:['Ставка не открыта','No bet opened','未开立投注'],
+    paperNotAttempted:['Ставка не рассматривалась','Bet not considered','未考虑投注'],
+    stake:['стейк','stake','注额'],
+    budget:['Бюджет дебатов','Debate budget','辩论预算'],
     invalid:['Настройки стратегии не подтверждены','Strategy configuration unconfirmed','策略配置未确认']
   };
   const tr=(key,lang)=>words[key]?.[lang==='en'?1:lang==='zh'?2:0] || key;
@@ -42,8 +52,9 @@
   const when=(value,lang)=>new Date(value).toLocaleTimeString(lang==='en'?'en-GB':lang==='zh'?'zh-CN':'ru-RU',{hour:'2-digit',minute:'2-digit'});
   const safeTime=v=>typeof v==='string' && /(?:Z|[+-]\d\d:\d\d)$/.test(v) && Number.isFinite(Date.parse(v));
   function valid(feed){
-    return !!feed && feed.schema_version===1 && feed.sport==='khl' && feed.mode==='RESEARCH_ONLY'
-      && feed.open_allowed===false && safeTime(feed.generated_at) && Array.isArray(feed.games) && feed.games.length<=80
+    const modeOk = (feed && feed.schema_version===1 && feed.mode==='RESEARCH_ONLY' && feed.open_allowed===false)
+      || (feed && feed.schema_version===2 && ((feed.mode==='RESEARCH_ONLY' && feed.open_allowed===false) || (feed.mode==='PAPER_PRIMARY' && feed.open_allowed===true && feed.real_stake===0)));
+    return !!feed && modeOk && feed.sport==='khl' && safeTime(feed.generated_at) && Array.isArray(feed.games) && feed.games.length<=80
       && feed.games.every(g=>Number.isSafeInteger(g.game_id) && g.game_id>0 && typeof g.home==='string' && g.home.length<=90
         && typeof g.away==='string' && g.away.length<=90 && safeTime(g.commence) && Array.isArray(g.waves) && g.waves.length<=2
         && g.waves.every(w=>w && typeof w==='object' && ['T60','T30'].includes(w.stage) && typeof w.status==='string'));
@@ -76,6 +87,16 @@
       const result=w.result?.[branch];
       if(['CORRECT','INCORRECT'].includes(result)) html+=`<div class="sel ${result==='CORRECT'?'pos':'neg'}">${esc(tr(result==='CORRECT'?'correct':'incorrect',lang))}</div>`;
     }
+    const po=w.paper_open;
+    if(po && typeof po==='object' && ['OPENED','EXISTING','REFUSED','NOT_ATTEMPTED'].includes(po.status) && po.real_stake!==undefined ? po.real_stake===0 : true){
+      if(po.status==='OPENED'||po.status==='EXISTING'){
+        const team=po.side==='home'?g.home:po.side==='away'?g.away:'';
+        const num=v=>typeof v==='number'&&Number.isFinite(v)?v:null;
+        html+=`<div class="sel pos">${esc(tr(po.status==='OPENED'?'paperOpened':'paperExisting',lang))}: ${esc(team)}${num(po.odds_net)!==null?' · '+num(po.odds_net).toFixed(2):''}${num(po.stake_usd_paper)!==null?' · '+esc(tr('stake',lang))+' $'+num(po.stake_usd_paper).toFixed(2):''} · PAPER</div>`;
+      } else {
+        html+=`<div class="sel">${esc(tr(po.status==='REFUSED'?'paperRefused':'paperNotAttempted',lang))}${po.reason?': '+esc(String(po.reason).slice(0,60)):''}</div>`;
+      }
+    }
     if(Array.isArray(w.score)&&w.score.length===2&&w.score.every(n=>Number.isSafeInteger(n)&&n>=0&&n<=50)) html+=`<div class="sel">${esc(tr('outcome',lang))}: ${w.score.join(':')}</div>`;
     return html;
   }
@@ -85,8 +106,10 @@
   }
   function render(feed,{lang='ru',now=Date.now(),error=false}={}){
     if(!valid(feed)) return `<div class="loading">${esc(tr(error?'error':'loading',lang))}</div>`;
-    let html=`<div class="section">${esc(tr('title',lang))}</div><div class="sel">${esc(tr('note',lang))}</div>`;
-    html+=`<div class="sel">${esc(tr(feed.activation==='OFF'?'off':feed.activation==='INVALID'?'invalid':feed.llm_status==='ENABLED_RESEARCH'?'enabled':'disabled',lang))}</div>`;
+    let html=`<div class="section">${esc(tr('title',lang))}</div><div class="sel">${esc(tr(feed.mode==='PAPER_PRIMARY'?'paperMode':'note',lang))}</div>`;
+    const llm=feed.llm_status;
+    html+=`<div class="sel">${esc(tr(feed.activation==='OFF'?'off':feed.activation==='INVALID'?'invalid':llm==='BUDGET_PAUSED'?'budgetPaused':llm==='PROVIDER_PAUSED'?'providerPaused':(llm==='ENABLED'||llm==='ENABLED_RESEARCH')?(feed.mode==='PAPER_PRIMARY'?'llmOn':'enabled'):'disabled',lang))}</div>`;
+    if(feed.budget && typeof feed.budget==='object' && Number.isFinite(feed.budget.cap_usd) && Number.isFinite(feed.budget.reserved_usd)) html+=`<div class="sel">${esc(tr('budget',lang))}: $${feed.budget.reserved_usd.toFixed(2)} / $${feed.budget.cap_usd.toFixed(2)}</div>`;
     if(error) html+=`<div class="loading">${esc(tr('error',lang))}</div>`;
     if(now-Date.parse(feed.generated_at)>900000 || Date.parse(feed.generated_at)>now+30000) html+=`<div class="loading">${esc(tr('stale',lang))}</div>`;
     html+=`<div class="sel">${esc(tr('updated',lang))}: ${esc(when(feed.generated_at,lang))}</div>`;
