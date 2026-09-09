@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v112";
+const BUILD = "v113";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1170,6 +1170,9 @@ const T = {
   wvBalance: ["остаток по публичным данным", "balance per public data", "公开数据余额"],
   wvUpdated: ["обновлено", "updated", "更新于"],
   wvAvailable: ["Доступно", "Available", "可用"],
+  profileUnavailable: ["Профиль недоступен", "Profile unavailable", "个人资料不可用"],
+  retry: ["Повторить", "Retry", "重试"],
+  wvLocalOnly: ["сохранение в профиле недоступно — просмотр только на этом устройстве, в профиле не сохранён", "profile save unavailable — view on this device only, not saved to profile", "无法保存到个人资料——仅在此设备上查看，未保存"],
   wvPusdLabel: ["Остаток pUSD по публичным данным", "pUSD balance per public data", "公开数据 pUSD 余额"],
   wvOtherAssets: ["другие активы Polygon", "other Polygon assets", "其他 Polygon 资产"],
   wvBlock: ["блок", "block", "区块"],
@@ -1509,9 +1512,10 @@ async function profile(tgId){
       headers: Object.assign({"Content-Type":"application/json"}, H),
       body: JSON.stringify({p_init_data: initData})});
     data = r.ok ? (await r.json()) : null;
-  }catch(e){ data = null; }
+    if (!r.ok) window.__profileErr = r.status;       // v113: код ошибки — для понятного сообщения и «Повторить»
+  }catch(e){ data = null; window.__profileErr = "network"; }
   if (sessionKey() !== key) return null;           // сессия сменилась во время запроса: ответ отброшен
-  cache[key] = data;
+  if (data !== null) { cache[key] = data; window.__profileErr = null; }   // v113: сбой не кэшируется — повтор запросит заново
   return data;
 }
 
@@ -2260,6 +2264,7 @@ async function initMe(){
   ensurePrivateSession();                              // v105: до сети, при смене сессии/гостя
   if(!u){
     document.getElementById("meSub").textContent = t("openFromBot");
+    wvShowBlock();                                     // v113: форма адреса видна и гостю (просмотр без сохранения)
     initWallet(null);                                  // кнопка ключа для гостя — без хранилища чужих ключей
     return;
   }
@@ -2275,13 +2280,24 @@ async function initMe(){
     me = await profile(u.id);
   }catch(e){}
   if (sessionKey() !== sk) return;                 // v104: пользователь сменился — не рисуем чужое
-  if (!me) { initWallet(null, sk); return; }       // v105: нет профиля (404/ошибка) — ничего личного, кроме своего ключа
+  if (!me) {
+    // v113 (приёмка Астры §1): профиль недоступен (404 — миграция не установлена, или сеть) — форма адреса всё равно
+    // видна; понятная ошибка и «Повторить»; сохранение на сервере при этом недоступно, а не «сохранено»
+    wvShowBlock();
+    const ti = document.getElementById("tariffInfo");
+    const code = window.__profileErr === "network" ? "network" : ("HTTP " + (window.__profileErr || "?"));
+    ti.innerHTML = `<span class="neg">${t("profileUnavailable")} (${v3Esc(String(code))})</span> · <a href="#" id="meRetry" role="button" style="text-decoration:underline">${t("retry")}</a>`;
+    const a = document.getElementById("meRetry");
+    if (a) a.addEventListener("click", e => { e.preventDefault(); window.__meInit = null; initMe(); });
+    initWallet(null, sk);
+    return;
+  }
+  document.getElementById("tariffInfo").textContent = "";
   const today = new Date().toISOString().slice(0,10);
   const paid = !!(me && (me.is_paid || (me.paid_until && String(me.paid_until) >= today)));
   // v101 (владелец 07.09): блок биржи/кошелька виден КАЖДОМУ пользователю —
   // подключить свой кошелёк может любой; строка тарифа — только оплатившим
-  document.getElementById("exchBlock").style.display = "";
-  document.getElementById("exchInner").style.display = "";
+  wvShowBlock();
   if(paid){
     const ti = document.getElementById("tariffInfo");
     // даты приходят как date или timestamptz — режем до YYYY-MM-DD
@@ -2292,6 +2308,15 @@ async function initMe(){
   initWallet(me, sk);
 }
 
+function wvShowBlock(){
+  // v113: контейнеры формы адреса показываются явно и помечаются атрибутом (проверяемо вместе с родителем)
+  for (const id of ["exchBlock", "exchInner"]) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.style.display = "";
+    el.setAttribute("data-shown", "1");
+  }
+}
 // кошелёк/биржа (v31 — живёт в Профиле, показывается после оплаты тарифа)
 async function initWallet(me, boundSession){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
@@ -2508,7 +2533,7 @@ function wvRenderConnected(view, value, serverSaved, bal){
   apiState.innerHTML = `<span class="pos">${t("wvConnected")}</span> · ${name ? name + " · " : ""}${v3Esc(wvShortAddr(view.resolved_address || view.input_address))}` +
     `<br><span style="color:var(--mut);font-weight:400">${t("wvStatusLine")}${view.input_address !== view.resolved_address && view.resolved_address ? " · " + t("wvResolvedAs") + " " + v3Esc(wvShortAddr(view.resolved_address)) : ""}` +
     `${view.link === "owner" ? " · " + t("wvLinkOwner") : ""}` +
-    `${serverSaved === "unavailable" || serverSaved === false ? " · " + t("wvNoServer") : serverSaved === "rejected" ? " · " + t("wvNotSaved") : serverSaved === "mismatch" ? " · " + t("wvSaveMismatch") : ""}</span>`;
+    `${serverSaved === "unavailable" || serverSaved === false ? " · " + t("wvNoServer") + " · " + t("wvLocalOnly") : serverSaved === "rejected" ? " · " + t("wvNotSaved") : serverSaved === "mismatch" ? " · " + t("wvSaveMismatch") : ""}</span>`;
   const ts = new Date().toISOString().slice(11, 16);
   hint.innerHTML = `${t("wvDataLabel")}: ${value === undefined && bal === undefined ? "…" : wvMoneyLine(value, bal)}`;
   apiHint.innerHTML = `${t("wvNoKeys")} ${t("wvTradingOff")}`;
