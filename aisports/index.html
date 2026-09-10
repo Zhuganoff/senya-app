@@ -975,7 +975,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v118";
+const BUILD = "v119";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1459,18 +1459,18 @@ if (refMatch) localStorage.setItem("senya_ref", refMatch[1]);
     const lerp = (u, v, k) => u + (v - u) * k;
     const specAt = (ang) => { const q = ((ang / (Math.PI * 2)) % 1 + 1) % 1 * 6, i = Math.floor(q), f = q - i, c0 = SPEC[i], c1 = SPEC[i + 1];
       return [lerp(c0[0], c1[0], f), lerp(c0[1], c1[1], f), lerp(c0[2], c1[2], f)]; };
-    const N = 1600, P = [];                                                             // v118: пикселей в 3 раза больше, мельче
+    const N = 2800, P = [];                                                             // v119: очень много, мелкие как пиксели экрана
+    const STAR = [[255,255,255],[255,255,255],[255,224,102],[255,204,77],[125,211,252],[56,189,248],[186,230,253]]; // белые, солнечно-жёлтые, голубые как сверхновая
     for (let i = 0; i < N; i++) {
       const ang = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random());           // равномерно по диску
       const ring = rr > 0.8;                                                             // спектральное кольцо шара
-      const c = ring ? specAt(ang) : (Math.random() < 0.07 ? [255, 255, 255] : [lerp(20, 34, rr), lerp(24, 40, rr), lerp(42, 66, rr)]);
-      const side = Math.random() < 0.5 ? -1 : 1;
-      P.push({ang, rr, c, sz: ring ? 2.1 : 1.8,
+      const c = ring ? specAt(ang) : (Math.random() < 0.55 ? STAR[(Math.random() * STAR.length) | 0] : [lerp(30, 48, rr), lerp(36, 58, rr), lerp(70, 110, rr)]);
+      P.push({ang, rr, c, sz: 1 + Math.random() * 0.8,                                  // 1–1.8px — как пиксели экрана
               x0: sx + Math.cos(ang) * rr * sr, y0: sy + Math.sin(ang) * rr * sr,
               x1: tx + Math.cos(ang) * rr * tr, y1: ty + Math.sin(ang) * rr * tr,
-              bend: side * (18 + Math.random() * 70),                                   // дуга полёта (в стороны), уже — поток
-              d: Math.pow(Math.random(), 2.4) * 0.95,                                    // v118: сначала кучей, потом всё реже (степенное распределение)
-              alpha: ring ? 1 : 0.85});
+              bend: (Math.random() - 0.5) * 34,                                          // v119: почти прямо вниз, лёгкое дрожание, и через центр тоже
+              d: Math.pow(Math.random(), 2.4) * 0.95,                                    // сначала кучей, потом всё реже
+              alpha: ring ? 1 : 0.7 + Math.random() * 0.3});
     }
     const T_FLY = 0.95, T_HOLD = 0.12; const start = performance.now();
     const ease = (k) => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
