@@ -647,8 +647,13 @@ body.splash-on{overflow:hidden}
 @keyframes spTaurTwinkle{from{opacity:.45}to{opacity:.95}}
 @media (max-width:380px){.sp-taurus{width:44vw;top:4.5%}}
 .sp-lock{position:relative;width:100%;text-align:center;transform:translateY(-8px)}
-.sp-logo{position:relative;width:min(100vw,420px);height:106px;margin:0 auto;
-  animation:spLaunch .42s cubic-bezier(.55,0,.8,.35) 1.96s forwards}
+.sp-logo{position:relative;width:min(100vw,420px);height:106px;margin:0 auto}
+/* v117 (владелец 11.09): шар не улетает целиком — он рассыпается на пиксели (холст .sp-pix поверх заставки),
+   пиксели слетаются вниз и складываются в центральную кнопку меню; сам шар гаснет в момент рассыпания */
+.sp-pix{position:absolute;inset:0;z-index:6;pointer-events:none}
+#splash.sp-dissolve .sp-orb{animation:spOrbGone .18s ease forwards}
+#splash.sp-dissolve .sp-word,#splash.sp-dissolve .sp-word::after{opacity:0}
+@keyframes spOrbGone{to{opacity:0;transform:scale(.92)}}
 .sp-orb-wrap{position:absolute;left:calc(50% - 72px);top:50%;width:96px;height:96px;
   transform:translate(-50%,-50%);animation:spOrbCenter .3s cubic-bezier(.2,.8,.2,1) 1.7s forwards}
 .sp-orb{position:relative;width:100%;height:100%;border-radius:50%;opacity:0;
@@ -708,7 +713,7 @@ body.splash-on{overflow:hidden}
 @keyframes spOrbCenter{to{left:50%}}
 @keyframes spLaunch{0%{transform:translateY(0) scale(1);opacity:1}
   62%{transform:translateY(calc(50vh - 13px)) scale(.24);opacity:.9}
-  100%{transform:translateY(calc(50vh - 13px)) scale(.1);opacity:0}}
+  100%{transform:translateY(calc(50vh - 13px)) scale(.1);opacity:0}}   /* фолбэк без canvas (см. JS) */
 @media (max-width:380px){.sp-orb-wrap{left:calc(50% - 62px)}.sp-word{left:calc(50% - 5px);font-size:23px}}
 @media (prefers-reduced-motion:reduce){
   #splash::before,#splash::after,.sp-logo,.sp-orb-wrap,.sp-orb,.sp-orb::before,
@@ -967,7 +972,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v116";
+const BUILD = "v117";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1430,9 +1435,80 @@ if (refMatch) localStorage.setItem("senya_ref", refMatch[1]);
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.impactOccurred("medium"); }catch(e){} }
   };
   sp.addEventListener("click", close);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // v117: рассыпание шара в пиксели → полёт вниз → сборка в центральную кнопку меню (владелец 11.09). Только canvas 2D,
+  // без медиа; при отсутствии canvas/кнопки — прежний «улёт» логотипа (spLaunch) и прежний тайминг.
+  const canPix = !reduced && typeof HTMLCanvasElement !== "undefined" && document.querySelector(".bnav-center .cbtn");
+  let raf = 0;
+  const pixels = () => {
+    const orb = sp.querySelector(".sp-orb"), target = document.querySelector(".bnav-center .cbtn");
+    if (!orb || !target || done) return false;
+    let cv, ctx;
+    try { cv = document.createElement("canvas"); ctx = cv.getContext("2d"); } catch(e) { return false; }
+    if (!ctx) return false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), W = window.innerWidth, Hh = window.innerHeight;
+    cv.className = "sp-pix"; cv.width = Math.round(W * dpr); cv.height = Math.round(Hh * dpr); cv.style.width = W + "px"; cv.style.height = Hh + "px";
+    sp.appendChild(cv); ctx.scale(dpr, dpr);
+    const a = orb.getBoundingClientRect(), b = target.getBoundingClientRect();
+    const sx = a.left + a.width / 2, sy = a.top + a.height / 2, sr = a.width / 2;
+    const tx = b.left + b.width / 2, ty = b.top + b.height / 2, tr = b.width / 2;
+    const SPEC = [[56,189,248],[99,102,241],[167,139,250],[244,114,182],[251,146,60],[52,211,153],[56,189,248]];
+    const lerp = (u, v, k) => u + (v - u) * k;
+    const specAt = (ang) => { const q = ((ang / (Math.PI * 2)) % 1 + 1) % 1 * 6, i = Math.floor(q), f = q - i, c0 = SPEC[i], c1 = SPEC[i + 1];
+      return [lerp(c0[0], c1[0], f), lerp(c0[1], c1[1], f), lerp(c0[2], c1[2], f)]; };
+    const N = 520, P = [];
+    for (let i = 0; i < N; i++) {
+      const ang = Math.random() * Math.PI * 2, rr = Math.sqrt(Math.random());           // равномерно по диску
+      const ring = rr > 0.82;                                                            // спектральное кольцо шара
+      const c = ring ? specAt(ang) : (Math.random() < 0.08 ? [255, 255, 255] : [lerp(20, 34, rr), lerp(24, 40, rr), lerp(42, 66, rr)]);
+      const side = Math.random() < 0.5 ? -1 : 1;
+      P.push({ang, rr, c, sz: ring ? 2.6 : 2.2,
+              x0: sx + Math.cos(ang) * rr * sr, y0: sy + Math.sin(ang) * rr * sr,
+              x1: tx + Math.cos(ang) * rr * tr, y1: ty + Math.sin(ang) * rr * tr,
+              bend: side * (40 + Math.random() * 90),                                   // дуга полёта (в стороны)
+              d: 0.05 + rr * 0.22 + Math.random() * 0.14,                                // задержка старта: центр позже края
+              alpha: ring ? 1 : 0.85});
+    }
+    const T_FLY = 1.05, T_HOLD = 0.12; const start = performance.now();
+    const ease = (k) => k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    const frame = (now) => {
+      if (done) return;
+      const t = (now - start) / 1000; ctx.clearRect(0, 0, W, Hh);
+      let landed = 0;
+      for (const p of P) {
+        const k = Math.max(0, Math.min(1, (t - p.d) / T_FLY)), e = ease(k);
+        const mx = (p.x0 + p.x1) / 2 + p.bend, my = (p.y0 + p.y1) / 2;             // квадратичная кривая через боковую точку
+        const x = (1 - e) * (1 - e) * p.x0 + 2 * (1 - e) * e * mx + e * e * p.x1;
+        const y = (1 - e) * (1 - e) * p.y0 + 2 * (1 - e) * e * my + e * e * p.y1;
+        if (k >= 1) landed++;
+        const tw = 0.75 + 0.25 * Math.sin(now / 90 + p.ang * 7);                        // мерцание в полёте
+        ctx.globalAlpha = p.alpha * (k >= 1 ? 1 : tw);
+        ctx.fillStyle = `rgb(${p.c[0] | 0},${p.c[1] | 0},${p.c[2] | 0})`;
+        ctx.fillRect(x - p.sz / 2, y - p.sz / 2, p.sz, p.sz);
+      }
+      if (landed >= N) {                                                                // сложились: вспышка-кольцо на месте кнопки
+        ctx.globalAlpha = 0.55; const g = ctx.createRadialGradient(tx, ty, tr * 0.6, tx, ty, tr * 2.2);
+        g.addColorStop(0, "rgba(56,189,248,.55)"); g.addColorStop(1, "rgba(56,189,248,0)"); ctx.fillStyle = g;
+        ctx.fillRect(tx - tr * 2.5, ty - tr * 2.5, tr * 5, tr * 5);
+        if (t > 0.41 + T_FLY + T_HOLD) { close(); return; }
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    sp.classList.add("sp-dissolve");                                                    // шар гаснет, пиксели его «продолжают»
+    raf = requestAnimationFrame(frame);
+    return true;
+  };
   // после смены языка страница перезагружается — заставку не гоняем второй раз
   if (sessionStorage.getItem("senya_lang_reload")) { sessionStorage.removeItem("senya_lang_reload"); close(); }
-  else setTimeout(close, matchMedia("(prefers-reduced-motion: reduce)").matches ? 1700 : 2920);
+  else if (canPix) {
+    setTimeout(() => { if (!pixels()) { sp.querySelector(".sp-logo").style.animation = "spLaunch .42s cubic-bezier(.55,0,.8,.35) forwards"; setTimeout(close, 900); } }, 2050);
+    setTimeout(close, 4600);                                                            // страховка: заставка не висит
+  } else {
+    if (!reduced) { const lg = sp.querySelector(".sp-logo"); if (lg) lg.style.animation = "spLaunch .42s cubic-bezier(.55,0,.8,.35) 1.96s forwards"; }
+    setTimeout(close, reduced ? 1700 : 2920);
+  }
+  const closeRaf = close; // отмена кадров при закрытии по клику
+  sp.addEventListener("click", () => { if (raf) cancelAnimationFrame(raf); }, {once: true});
 })();
 
 // ─────────── тема: тёмная / светлая / как в Telegram ───────────
