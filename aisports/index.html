@@ -329,7 +329,9 @@ body.light .gdt{color:#1d4ed8}
 @keyframes okFade{from{opacity:0}to{opacity:1}}
 @keyframes okFadeOut{to{opacity:0}}
 @media (prefers-reduced-motion:reduce){
-  .okball,.okball::after,.okball path{animation-duration:.01s}}
+  .okball,.okball::after,.okball path{animation-duration:.01s}
+  .bottombar::after{animation:none;opacity:.5}
+  .wvToast{animation:wvToastIn .01s both,wvToastOut .01s 1.5s both}}
 .dayrow{display:flex;align-items:center;gap:6px;margin-bottom:10px}
 .dpick{flex:1;min-width:0;background:var(--card-2);border:1px solid var(--line);color:var(--txt);
   border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;text-align:center;
@@ -513,6 +515,27 @@ body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
 /* лёгкая тень под иконками: на светлом контенте они не теряются без панели */
 .bottombar svg{filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
 body.light .bottombar svg{filter:drop-shadow(0 1px 2px rgba(20,40,70,.20))}
+/* v116 (прямое распоряжение владельца 11.09): мягкое свечение снизу цветом выбранной темы — размытая полоса,
+   слегка заметная, «переливается» между accent и accent2 и чуть дышит; сверху растворяется в прозрачный */
+.bottombar::after{content:'';position:absolute;left:-8%;right:-8%;bottom:-14px;height:118%;z-index:-2;pointer-events:none;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 42%,transparent),color-mix(in srgb,var(--accent2) 30%,transparent),
+             color-mix(in srgb,var(--accent) 42%,transparent));background-size:220% 100%;
+  -webkit-mask-image:linear-gradient(to top,#000 0,#000 30%,transparent 84%);mask-image:linear-gradient(to top,#000 0,#000 30%,transparent 84%);
+  filter:blur(18px);opacity:.55;animation:bnavShimmer 7s linear infinite,bnavBreathe 4.6s ease-in-out infinite alternate}
+body.light .bottombar::after{opacity:.32}
+@keyframes bnavShimmer{from{background-position:0% 50%}to{background-position:220% 50%}}
+@keyframes bnavBreathe{from{opacity:.4;transform:translateY(3px)}to{opacity:.68;transform:translateY(-2px)}}
+/* v116: тост «Кошелёк отключён» — появляется, горит ~1.5 с цветом темы и исчезает */
+.wvToast{position:fixed;left:50%;bottom:calc(104px + var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));transform:translateX(-50%);
+  z-index:1200;padding:12px 20px;border-radius:14px;pointer-events:none;white-space:nowrap;
+  background:rgba(10,16,28,.78);color:#fff;font-weight:700;font-size:14px;letter-spacing:.01em;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);
+  animation:wvToastIn .32s cubic-bezier(.2,.9,.25,1) both,wvToastGlow 1.5s ease-in-out .15s both,wvToastOut .45s ease 1.6s both}
+body.light .wvToast{background:rgba(255,255,255,.88);color:#0f172a}
+@keyframes wvToastIn{from{opacity:0;transform:translate(-50%,10px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes wvToastGlow{0%,100%{box-shadow:0 10px 30px -12px var(--glow)}50%{box-shadow:0 0 34px 8px var(--glow),0 0 0 1px var(--accent)}}
+@keyframes wvToastOut{to{opacity:0;transform:translate(-50%,-8px) scale(.98)}}
 .bnav-item{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
   background:none;border:0;border-radius:var(--r-m);padding:7px 2px 6px;cursor:pointer;
   color:var(--mut);font-size:11.5px;font-weight:700;letter-spacing:.005em;font-family:inherit;
@@ -944,7 +967,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v114";
+const BUILD = "v116";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -986,7 +1009,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "09.09.2026";
+const BUILD_DATE = "11.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1168,6 +1191,7 @@ const T = {
   wvUpdated: ["обновлено", "updated", "更新于"],
   wvAvailable: ["Доступно", "Available", "可用"],
   profileUnavailable: ["Профиль недоступен", "Profile unavailable", "个人资料不可用"],
+  profileNotCreated: ["Профиль ещё не создан или сессия не принята. Нажмите /start в боте и откройте приложение снова", "Profile not created yet or the session was not accepted. Send /start to the bot and open the app again", "个人资料尚未创建或会话未被接受。请向机器人发送 /start 并重新打开应用"],
   retry: ["Повторить", "Retry", "重试"],
   wvLocalOnly: ["сохранение в профиле недоступно — просмотр только на этом устройстве, в профиле не сохранён", "profile save unavailable — view on this device only, not saved to profile", "无法保存到个人资料——仅在此设备上查看，未保存"],
   wvPusdLabel: ["Остаток pUSD по публичным данным", "pUSD balance per public data", "公开数据 pUSD 余额"],
@@ -1184,6 +1208,7 @@ const T = {
   wvSaveMismatch: ["серверное сохранение не подтверждено: ответ сервера не совпал с запросом", "server-side saving not confirmed: the server response did not match the request", "服务器端保存未确认：服务器响应与请求不匹配"],
   wvClearErr: ["Не удалось отключить просмотр на сервере — настройка осталась, нажми ещё раз", "Could not disconnect on the server — the setting remains, tap again", "无法在服务器上断开——设置仍保留，请再试一次"],
   wvClearRejected: ["Отключение не подтверждено сервером (подпись сессии не принята) — настройка осталась", "Disconnect not confirmed by the server (session signature rejected) — the setting remains", "服务器未确认断开（会话签名被拒绝）——设置仍保留"],
+  wvDisconnectedToast: ["Кошелёк отключён", "Wallet disconnected", "钱包已断开"],
   wvClearedLocal: ["Просмотр скрыт на этом устройстве; серверной настройки не было", "View hidden on this device; there was no server-side setting", "已在此设备上隐藏查看；服务器端无设置"],
   wvLinkOwner: ["связь владелец → аккаунт по публичному профилю Polymarket", "owner → account link per Polymarket public profile", "按 Polymarket 公开资料的 所有者 → 账户 关联"],
   keySaveDisabled: ["Сохранение новых ключей временно отключено до защищённого хранения (этап P1). Ключ на устройство не записан.",
@@ -1504,16 +1529,40 @@ async function profile(tgId){
   const key = sessionKey();
   const cache = window.__profileCache || (window.__profileCache = {});
   if (cache[key] !== undefined) return cache[key];
+  // v115: отрицательный результат (строки нет) помнится 15 с на ту же сессию — три блока страницы (карточки, тариф, рефералы)
+  // не гоняют цепочку повторов трижды; «Повторить» сбрасывает его явно (window.__profileNeg = null)
+  const neg = window.__profileNeg;
+  if (neg && neg.key === key && (Date.now() - neg.ts) < 15000) { window.__profileErr = "no_profile"; return null; }
+  // v115: один запрос «в полёте» на сессию — параллельные вызовы делят одну цепочку повторов
+  const pending = window.__profilePending || (window.__profilePending = {});
+  if (pending[key]) return pending[key];
+  pending[key] = profileFetch(initData, key, cache).finally(() => { delete pending[key]; });
+  return pending[key];
+}
+async function profileFetch(initData, key, cache){
   let data = null;
-  try{
-    const r = await fetch(SB + "/rpc/get_profile_v2", {method:"POST",
-      headers: Object.assign({"Content-Type":"application/json"}, H),
-      body: JSON.stringify({p_init_data: initData})});
-    data = r.ok ? (await r.json()) : null;
-    if (!r.ok) window.__profileErr = r.status;       // v113: код ошибки — для понятного сообщения и «Повторить»
-  }catch(e){ data = null; window.__profileErr = "network"; }
+  // v115 (дефект первого входа 10.09): HTTP 200 + null = подпись принята, но строки пользователя ещё нет (бот ещё не
+  // обработал /start) ИЛИ подпись не принята — сервер не различает. Ограниченное повторное чтение (по умолчанию 1.5 с и 3 с),
+  // затем понятный текст без «HTTP ?». Пользователь по ID с клиента НЕ создаётся: строку создаёт только бот.
+  const delays = Array.isArray(window.__profileRetryMs) ? window.__profileRetryMs : [1500, 3000];
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    if (attempt > 0) {
+      await new Promise(r => setTimeout(r, delays[attempt - 1]));
+      if (sessionKey() !== key) return null;         // сессия сменилась во время ожидания
+    }
+    try{
+      const r = await fetch(SB + "/rpc/get_profile_v2", {method:"POST",
+        headers: Object.assign({"Content-Type":"application/json"}, H),
+        body: JSON.stringify({p_init_data: initData})});
+      data = r.ok ? (await r.json()) : null;
+      if (!r.ok) { window.__profileErr = r.status; break; }   // v113: код ошибки — для понятного сообщения и «Повторить»; не повторяем
+      if (data !== null) break;
+      window.__profileErr = "no_profile";                     // 200 + null: строки нет (или подпись не принята) — повторим ограниченно
+    }catch(e){ data = null; window.__profileErr = "network"; break; }
+  }
   if (sessionKey() !== key) return null;           // сессия сменилась во время запроса: ответ отброшен
-  if (data !== null) { cache[key] = data; window.__profileErr = null; }   // v113: сбой не кэшируется — повтор запросит заново
+  if (data !== null) { cache[key] = data; window.__profileErr = null; window.__profileNeg = null; }   // v113: сбой не кэшируется — повтор запросит заново
+  else if (window.__profileErr === "no_profile") window.__profileNeg = {key, ts: Date.now()};       // v115: строки нет — короткая память
   return data;
 }
 
@@ -2300,10 +2349,15 @@ async function initMe(){
     // видна; понятная ошибка и «Повторить»; сохранение на сервере при этом недоступно, а не «сохранено»
     wvShowBlock();
     const ti = document.getElementById("tariffInfo");
-    const code = window.__profileErr === "network" ? "network" : ("HTTP " + (window.__profileErr || "?"));
-    ti.innerHTML = `<span class="neg">${t("profileUnavailable")} (${v3Esc(String(code))})</span> · <a href="#" id="meRetry" role="button" style="text-decoration:underline">${t("retry")}</a>`;
+    // v115: «no_profile» (200 + null после повторов) или отсутствие кода — не транспортная ошибка: строки пользователя нет
+    // (бот ещё не обработал /start) либо подпись не принята → понятный текст; «HTTP ?» больше не показывается
+    const err = window.__profileErr;
+    const label = err === "network" ? `${t("profileUnavailable")} (network)`
+                : (err && err !== "no_profile") ? `${t("profileUnavailable")} (HTTP ${v3Esc(String(err))})`
+                : t("profileNotCreated");
+    ti.innerHTML = `<span class="neg">${label}</span> · <a href="#" id="meRetry" role="button" style="text-decoration:underline">${t("retry")}</a>`;
     const a = document.getElementById("meRetry");
-    if (a) a.addEventListener("click", e => { e.preventDefault(); window.__meInit = null; initMe(); });
+    if (a) a.addEventListener("click", e => { e.preventDefault(); window.__meInit = null; window.__profileNeg = null; initMe(); });   // v115: «Повторить» сбрасывает короткую память
     initWallet(null, sk);
     return;
   }
@@ -2603,6 +2657,7 @@ async function initWalletView(bound){
       window.__wv.view = null; inp.value = "";
       wvStateSet(bound, null);                                // обесценивает ожидающие ответы обеих поверхностей
       wvRenderEmpty(outcome === "local" ? t("wvClearedLocal") : null);
+      showWvToast(t("wvDisconnectedToast"));                  // v116: короткий светящийся тост (владелец 11.09)
       wvClearDashCard(bound);                                 // дашборд очищается немедленно
       return;
     }
@@ -2662,6 +2717,16 @@ async function initWalletView(bound){
       }
     } catch(e) { if (sessionKey() === bound) wvRenderEmpty(t("wvSourceErr")); }
   }
+}
+
+// v116: тост «Кошелёк отключён» — появляется, ~1.5 с горит цветом темы, исчезает; удаляется из DOM после анимации
+function showWvToast(text){
+  try {
+    const d = document.createElement("div");
+    d.className = "wvToast"; d.setAttribute("role", "status"); d.textContent = text;
+    document.body.appendChild(d);
+    setTimeout(() => { try { d.remove(); } catch(e){} }, 2200);
+  } catch(e){}
 }
 
 // подтверждение сохранения ключа: объёмный зелёный шар с прочерченной галочкой
