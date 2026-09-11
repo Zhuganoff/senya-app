@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI Sports — тест подтверждения кошелька (WalletConnect)</title>
+<!-- Тестовая страница проекта OWNED §7 (NEXT_владение_кошельком_проект.md): проверка пути Telegram WebView → WalletConnect → MetaMask
+     Mobile → eth_signTypedData_v4 → возврат в Telegram на реальных iOS/Android. НЕ витрина (дизайн витрины не трогается), НЕ боевая кнопка.
+     Ничего не проверяет и не хранит: подпись только показывается (или, в режиме «сервер», уходит в wallet_link_submit, где её проверяет
+     worker на sport-kz). Approve/permit/транзакции не запрашиваются; методы сессии — только eth_signTypedData_v4, сеть — только eip155:137.
+     projectId WalletConnect (Reown Cloud) задаёт владелец: параметр ?pid=… либо константа PROJECT_ID ниже. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+ body{margin:0;background:#0b0f19;color:#e8ecf4;font:15px/1.4 -apple-system,system-ui,sans-serif;padding:16px}
+ h1{font-size:18px;margin:0 0 8px} .m{color:#9aa4b8;font-size:13px}
+ button{display:block;width:100%;padding:14px;margin:10px 0;border:0;border-radius:12px;background:#1d2a44;color:#fff;font-size:16px}
+ button:disabled{opacity:.45} button.p{background:#2f6df6}
+ pre{background:#0f1526;border:1px solid #23304d;border-radius:10px;padding:10px;font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:40vh;overflow:auto}
+ .st{padding:10px;border-radius:10px;background:#141c30;margin:8px 0}
+ label{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px}
+</style></head><body>
+<h1>Тест подтверждения кошелька</h1>
+<div class="m">Режим «устройство»: подпись только показывается, ничего никуда не отправляется. Режим «сервер»: challenge → подпись → submit → статус (нужна установленная серверная часть OWNED).</div>
+<div class="st" id="env">…</div>
+<label><input type="checkbox" id="srv"> режим «сервер» (wallet_link_challenge / submit / status)</label>
+<button class="p" id="b1">1. Подключить кошелёк (WalletConnect → MetaMask)</button>
+<button id="b2" disabled>2. Подписать подтверждение (eth_signTypedData_v4)</button>
+<button id="b3" disabled>3. Отключить сессию WalletConnect</button>
+<div class="st" id="acc">кошелёк не подключён</div>
+<pre id="log"></pre>
+<script type="module">
+const PROJECT_ID = "7a8db6320f67ab65e3f5cb00543ea2c4";   // Reown Dashboard, команда владельца, проект «AI Sports» (11.09.2026); публичный. Переопределяется ?pid=…
+const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";   // aisports (official); ключ anon — публичный, тот же, что в витрине
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M";
+const pid = new URLSearchParams(location.search).get("pid") || PROJECT_ID;
+const tg = window.Telegram && window.Telegram.WebApp; try { tg && tg.ready(); tg && tg.expand(); } catch (e) {}
+const $ = id => document.getElementById(id);
+const t0 = Date.now();
+function log(s) { $("log").textContent += `[+${((Date.now() - t0) / 1000).toFixed(1)}s] ${s}\n`; $("log").scrollTop = 1e9; }
+const ua = navigator.userAgent, plat = (tg && tg.platform) || "-";
+$("env").textContent = `Telegram: ${tg ? "да, platform=" + plat + ", версия " + tg.version : "нет (обычный браузер)"} · initData: ${tg && tg.initData ? "есть" : "нет"} · ${/iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : "desktop"} · projectId: ${pid ? "задан" : "НЕ ЗАДАН — укажите ?pid=…"}`;
+document.addEventListener("visibilitychange", () => log(`visibility: ${document.visibilityState}`));
+window.addEventListener("pageshow", e => log(`pageshow persisted=${e.persisted}`));
+window.addEventListener("error", e => log(`error: ${e.message}`));
+window.addEventListener("unhandledrejection", e => log(`rejection: ${(e.reason && e.reason.message) || e.reason}`));
+if (!pid) { $("b1").disabled = true; log("projectId не задан — WalletConnect не инициализирован"); }
+
+let AK, adapter, modal, signer = "";
+async function init() {
+  log("загрузка @reown/appkit-cdn 1.8.23 …");
+  AK = await import("https://cdn.jsdelivr.net/npm/@reown/appkit-cdn@1.8.23/dist/appkit.js");
+  const networks = [AK.networks.polygon];
+  adapter = new AK.WagmiAdapter({ projectId: pid, networks });
+  modal = AK.createAppKit({
+    adapters: [adapter], networks, projectId: pid,
+    metadata: { name: "AI Sports (official)", description: "Подтверждение контроля кошелька для просмотра", url: location.origin, icons: [location.origin + "/senya-app/aisports/logo.svg"] },
+    features: { email: false, socials: false, analytics: false, swaps: false, onramp: false, send: false, history: false },
+    enableWalletGuide: false, allWallets: "HIDE",
+    featuredWalletIds: ["c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96"],   // MetaMask
+  });
+  AK.WagmiCore.watchAccount(adapter.wagmiConfig, { onChange(a) {
+    signer = (a.address || "").toLowerCase();
+    $("acc").textContent = signer ? `подключён: ${signer} · chainId ${a.chainId} · ${a.connector ? a.connector.name : ""}` : "кошелёк не подключён";
+    $("b2").disabled = !signer; $("b3").disabled = !signer;
+    log(`account: status=${a.status} address=${signer ? signer.slice(0, 10) + "…" : "-"} chain=${a.chainId}`);
+  } });
+  log("AppKit готов");
+}
+init().catch(e => log("init failed: " + (e.message || e)));
+
+async function rpc(name, params) {
+  const r = await fetch(SB + "/rpc/" + name, { method: "POST", headers: { "Content-Type": "application/json", apikey: KEY, Authorization: "Bearer " + KEY }, body: JSON.stringify(params) });
+  const txt = await r.text(); log(`rpc ${name}: HTTP ${r.status} ${txt.slice(0, 200)}`);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return txt ? JSON.parse(txt) : null;
+}
+function localTypedData(s) {   // режим «устройство»: тот же формат, что private.wallet_link_typed_data; nonce нулевой, tradingAccount = signer
+  const now = Math.floor(Date.now() / 1000);
+  return { types: { WalletLink: [{ name: "purpose", type: "string" }, { name: "app", type: "string" }, { name: "network", type: "string" },
+                    { name: "tradingAccount", type: "address" }, { name: "signer", type: "address" }, { name: "telegramUserId", type: "uint256" },
+                    { name: "nonce", type: "bytes32" }, { name: "issuedAt", type: "uint256" }, { name: "expiresAt", type: "uint256" }] },
+    primaryType: "WalletLink", domain: { name: "AI Sports (official)", version: "1", chainId: 137 },
+    message: { purpose: "ТЕСТ УСТРОЙСТВА: подпись никуда не отправляется. Только подтверждение контроля кошелька и привязка для просмотра в AI Sports. Не даёт прав на сделки, переводы, approve или вывод средств.",
+               app: "AI Sports official — @aisports0bot", network: "Polygon (chainId 137)", tradingAccount: s, signer: s, telegramUserId: "0",
+               nonce: "0x" + "00".repeat(32), issuedAt: String(now), expiresAt: String(now + 300) } };
+}
+function toViem(td) {   // uint256 → BigInt, EIP712Domain из types убираем (viem строит домен сам)
+  const types = Object.assign({}, td.types); delete types.EIP712Domain;
+  const m = Object.assign({}, td.message);
+  for (const k of ["telegramUserId", "issuedAt", "expiresAt"]) m[k] = BigInt(m[k]);
+  return { types, primaryType: td.primaryType, domain: { name: td.domain.name, version: td.domain.version, chainId: Number(td.domain.chainId) }, message: m };
+}
+$("b1").onclick = async () => { log("open modal (connect)"); await modal.open({ view: "Connect" }); };
+$("b3").onclick = async () => { await AK.WagmiCore.disconnect(adapter.wagmiConfig); log("disconnect: сессия WalletConnect завершена"); };
+$("b2").onclick = async () => {
+  $("b2").disabled = true;
+  try {
+    const server = $("srv").checked;
+    let td, nonce = "";
+    if (server) {
+      if (!(tg && tg.initData)) throw new Error("нет initData — режим «сервер» только внутри Telegram");
+      const ch = await rpc("wallet_link_challenge", { p_init_data: tg.initData, p_signer: signer });
+      if (!ch || ch.status !== "CHALLENGE") throw new Error("challenge: " + JSON.stringify(ch));
+      td = ch.typed_data; nonce = ch.nonce;
+      if (td.message.signer !== signer) throw new Error("signer в typed_data ≠ подключённому");
+    } else td = localTypedData(signer);
+    const ts = Date.now(); log("sign: запрос eth_signTypedData_v4 → MetaMask (ждём возврата в Telegram)");
+    const sig = await AK.WagmiCore.signTypedData(adapter.wagmiConfig, toViem(td));
+    log(`sign OK за ${((Date.now() - ts) / 1000).toFixed(1)}s: длина ${sig.length} (${sig.length === 132 ? "65 байт, формат верный" : "НЕОЖИДАННАЯ длина"}), ${sig.slice(0, 12)}…${sig.slice(-6)}`);
+    if (server) {
+      const sub = await rpc("wallet_link_submit", { p_init_data: tg.initData, p_nonce: nonce, p_signature: sig });
+      log("submit → " + JSON.stringify(sub));
+      for (let i = 0; i < 36 && sub && sub.status === "PENDING"; i++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const st = await rpc("wallet_link_status", { p_init_data: tg.initData });
+        if (st && st.state !== "PENDING") { log("итог: " + JSON.stringify(st)); break; }
+      }
+    }
+  } catch (e) { log("sign failed: " + (e.shortMessage || e.message || e)); }
+  finally { $("b2").disabled = !signer; }
+};
+</script></body></html>
