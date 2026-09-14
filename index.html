@@ -219,6 +219,8 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bet .sel{font-size:11.5px;color:var(--mut);margin-top:3px;font-weight:600;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bet .sel .pick{font-weight:800;color:#3b82f6}   /* v110: на кого ставка (владелец 14.09) */
+.mstab tr.pos td,.mstab tr.pos th{color:var(--green)} .mstab tr.neg td,.mstab tr.neg th{color:var(--red)}
 .bet .odds{text-align:right;flex:none;font-variant-numeric:tabular-nums;
   display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 .bet .odds>div:first-child{font-size:15px;font-weight:800;letter-spacing:-.02em}
@@ -953,7 +955,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v109";
+const BUILD = "v110";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1141,6 +1143,9 @@ const T = {
   ofBankShort: ["от банка", "of bankroll", "占资金"],
   wrBySport: ["Винрейт по видам", "Win rate by sport", "分项胜率"],
   msInnings: ["Счёт по иннингам", "Line score by inning", "各局比分"],
+  msQuarters: ["Счёт по четвертям", "Score by quarter", "各节比分"],
+  msPeriods: ["Счёт по периодам", "Score by period", "各节比分"],
+  msEvents: ["Голы и очки: кто и когда", "Scoring: who and when", "得分：谁与何时"],
   msSets: ["Счёт по сетам", "Score by set", "各盘比分"],
   msHalves: ["Счёт по таймам", "Score by half", "半场比分"],
   msHt: ["1-й тайм", "1st half", "上半场"],
@@ -1769,10 +1774,10 @@ function betRow(r){
   // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно
   const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
   const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
-  const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}"` : "";
+  const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}" data-pick="${(r.selection||"").replace(/"/g,"&quot;")}" data-res="${r.result??""}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
-    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${(!HIDE_MONEY && r.pnl!=null)?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
+    <div class="sel"><span class="pick">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}</span>${clv}${gameTime(r)}${(!HIDE_MONEY && r.pnl!=null)?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
@@ -1805,20 +1810,32 @@ function msFor(sport, match, date){
 }
 const msAbbr = n => (n||"").trim().split(" ").pop();   // короткое имя для таблиц
 
-function msHtml(r){
+function msHtml(r, ctx){
+  ctx = ctx || {};
   const sep = r.sport === "mlb" ? " @ " : " vs ";
   const [n1, n2] = (r.match_name || "").split(sep).concat("");
   const p = r.periods || {}, s = r.stats || {};
-  let h = `<div class="k" style="padding-right:26px">${r.match_name||""}</div>
+  // v110 (владелец 14.09): победитель — зелёным; если ставка проиграла — команда ставки красным
+  const fs = String(r.final_score || "").match(/^(\d+)\s*-\s*(\d+)/);
+  const w = fs ? (Number(fs[1]) > Number(fs[2]) ? 1 : Number(fs[2]) > Number(fs[1]) ? 2 : 0) : 0;
+  const norm = x => String(x||"").toLowerCase().replace(/\s+/g," ").trim();
+  const pickIs = name => { const pk = norm(ctx.pick), nm = norm(name); return !!pk && !!nm && (pk === nm || pk.startsWith(nm) || nm.endsWith(pk)); };
+  const cls = (name, idx) => (w === idx ? "pos" : (String(ctx.res) === "0" && pickIs(name) ? "neg" : ""));
+  const c1 = cls(n1, 1), c2 = cls(n2, 2);
+  const nm = (name, c) => c ? `<span class="${c}">${name}</span>` : name;
+  const homeIdx = r.sport === "mlb" ? 2 : 1;                 // MLB «Away @ Home», остальные «Home vs Away»
+  const abbrSide = side => msAbbr(side === "home" ? (homeIdx === 1 ? n1 : n2) : (homeIdx === 1 ? n2 : n1));
+  let h = `<div class="k" style="padding-right:26px">${nm(n1, c1)}${sep}${nm(n2, c2)}</div>
     <div class="v" style="margin:2px 0 10px">${r.final_score||"—"}</div>`;
-  if(r.sport === "mlb" && (p.innings||[]).length){
-    const rhe = k => ((s.rhe||{})[k]||[]).map(x=>`<td><b>${x??"—"}</b></td>`).join("");
-    h += `<div class="k">${t("msInnings")}</div>
+  const rowsHA = (arr, key1, key2, title) => `<div class="k">${title}</div>
       <div style="overflow-x:auto;margin-top:6px"><table class="mstab">
-      <tr><th></th>${p.innings.map(i=>`<th>${i.n}</th>`).join("")}<th>R</th><th>H</th><th>E</th></tr>
-      <tr><td>${msAbbr(n1)}</td>${p.innings.map(i=>`<td>${i.a??"·"}</td>`).join("")}${rhe("a")}</tr>
-      <tr><td>${msAbbr(n2)}</td>${p.innings.map(i=>`<td>${i.h??"·"}</td>`).join("")}${rhe("h")}</tr>
+      <tr><th></th>${arr.map(i=>`<th>${i.n}</th>`).join("")}<th>Σ</th></tr>
+      <tr class="${c1}"><td>${msAbbr(n1)}</td>${arr.map(i=>`<td>${i[key1]??"·"}</td>`).join("")}<td><b>${arr.reduce((a,i)=>a+(Number(i[key1])||0),0)}</b></td></tr>
+      <tr class="${c2}"><td>${msAbbr(n2)}</td>${arr.map(i=>`<td>${i[key2]??"·"}</td>`).join("")}<td><b>${arr.reduce((a,i)=>a+(Number(i[key2])||0),0)}</b></td></tr>
       </table></div>`;
+  if(r.sport === "mlb" && (p.innings||[]).length){
+    // v110: только иннинги и R (H/E сняты владельцем 14.09)
+    h += rowsHA(p.innings, "a", "h", t("msInnings")).replace("<th>Σ</th>","<th>R</th>");
     const pit = s.pitchers || {};
     const pl = [["win","W"],["loss","L"],["save","SV"]].filter(x=>pit[x[0]])
       .map(x=>`${x[1]}: ${pit[x[0]]}`).join(" · ");
@@ -1831,6 +1848,8 @@ function msHtml(r){
       </table>`;
     if(s.retired) h += `<div class="me-sub" style="margin-top:8px">↩️ ${t("msRet")}</div>`;
   }
+  if(r.sport === "nfl" && (p.quarters||[]).length) h += rowsHA(p.quarters, "h", "a", t("msQuarters"));
+  if(r.sport === "khl" && (p.p||[]).length) h += rowsHA(p.p, "h", "a", t("msPeriods"));
   if(r.sport === "soccer"){
     const per = [["ht","msHt"],["ft","msFt"],["et","msEt"],["pen","msPen"]]
       .filter(x=>p[x[0]]).map(x=>`<tr><td>${t(x[1])}</td><td><b>${p[x[0]]}</b></td></tr>`).join("");
@@ -1846,12 +1865,22 @@ function msHtml(r){
     if(rows) h += `<div class="k" style="margin-top:10px">${msAbbr(n1)} · ${msAbbr(n2)}</div>
       <table class="mstab" style="margin-top:6px">${rows}</table>`;
   }
+  // v110: кто и когда забил / набрал очки — по всем видам (stats.events)
+  const evs = s.events || [];
+  if(evs.length){
+    h += `<div class="k" style="margin-top:10px">${t("msEvents")}</div>
+      <table class="mstab" style="margin-top:6px">${evs.map(e => `<tr>
+        <td style="color:var(--mut);white-space:nowrap">${e.p||""}${e.t?" "+e.t:""}</td>
+        <td style="white-space:nowrap"><b>${abbrSide(e.side)}</b></td>
+        <td style="text-align:left">${v3Esc(e.who || e.text || "")}${e.kind?`<span style="color:var(--mut)"> · ${v3Esc(e.kind)}</span>`:""}</td>
+        <td style="text-align:right"><b>${e.score||""}</b></td></tr>`).join("")}</table>`;
+  }
   return h;
 }
-function msShow(key){
+function msShow(key, pick, res){
   const r = window.__msCache[key];
   if(!r) return;
-  document.getElementById("msBody").innerHTML = msHtml(r);
+  document.getElementById("msBody").innerHTML = msHtml(r, {pick: pick || "", res: res});
   document.getElementById("msov").style.display = "flex";
   if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
 }
@@ -1860,7 +1889,7 @@ document.getElementById("msClose").addEventListener("click", msHide);
 document.getElementById("msov").addEventListener("click", e => { if(e.target.id === "msov") msHide(); });
 document.addEventListener("click", e => {
   const b = e.target.closest && e.target.closest("[data-ms]");
-  if(b) msShow(b.dataset.ms);
+  if(b) msShow(b.dataset.ms, b.dataset.pick, b.dataset.res);
 });
 
 // commence = время НАЧАЛА ИГРЫ (пока есть только у тенниса; для MLB/футбола
