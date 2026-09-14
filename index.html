@@ -955,7 +955,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v111";
+const BUILD = "v112";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1532,7 +1532,10 @@ async function main(){
   // ставками (lead last_closed), а не текущий, где до вечера всегда $0.00.
   // Разметка карточки та же — заменён только источник числа и даты.
   const closed = (feed && feed.last_closed) || day;
-  const p24 = bankStart ? 100 * Number(closed.pnl_usd || 0) / bankStart : 0;
+  // v112 (владелец 14.09): процент дня — от банка НА НАЧАЛО этого дня (bank_before_usd в ленте), не от стартового
+  const bankBefore = Number(closed.bank_before_usd || 0);
+  const p24 = bankBefore ? 100 * Number(closed.pnl_usd || 0) / bankBefore
+            : (bankStart ? 100 * Number(closed.pnl_usd || 0) / bankStart : 0);
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
   const lastDay = closed.date || "";
   const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
