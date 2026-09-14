@@ -955,7 +955,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v110";
+const BUILD = "v111";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1543,7 +1543,8 @@ async function main(){
   const DIM_SPORTS = APP_PROFILE === "aisports"
     ? {tennis: t("dimVirtual"), soccer: t("dimVirtual"), khl: t("dimVirtual")}
     : {tennis: t("dimVirtual")};
-  const sportRows = Object.keys(bySport).map(k => {
+  // v111 (владелец 14.09): теннис выключен — строки на дашборде нет (история ставок остаётся в ленте)
+  const sportRows = Object.keys(bySport).filter(k => k !== "tennis").map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
     const dim = DIM_SPORTS[k];
