@@ -953,7 +953,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v108";
+const BUILD = "v109";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1668,6 +1668,9 @@ function renderSched(){
     const mark = partOf(byPart[key][0].commence)[1];
     html += `<div class="section" style="margin-top:12px;font-size:13px">${mark} ${t(key)}</div>`;
     html += byPart[key].map(r => {
+      // v109: иконка вида спорта перед матчем (владелец 14.09) — в существующий .match, без новых элементов
+      const sIco = ((SCHED_SPORTS.find(([sp]) => sp === r.sport) || [])[1] || "");
+      const sIcoS = sIco ? sIco + " " : "";
       // порядок кф = порядок имён в строке: MLB «Away @ Home» → away/home, теннис «Home vs Away» → home/away
       const o = r.sport === "mlb" ? [r.odds_away, r.odds_home] : [r.odds_home, r.odds_away];
       const oS = (o[0] && o[1]) ? `${Number(o[0]).toFixed(2)} / ${Number(o[1]).toFixed(2)}` : "—";
@@ -1678,12 +1681,12 @@ function renderSched(){
       if (ms && ms.final_score) {
         return `<div class="bet" data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}">
           <div class="res">✓</div>
-          <div class="m"><div class="match">${v3Esc(r.match || "")}</div>
+          <div class="m"><div class="match">${sIcoS}${v3Esc(r.match || "")}</div>
           <div class="sel"><span class="gdt">${fmtGDate(r.commence)} · ${fmtTime(r.commence)}</span> · ${r.league||"—"} · ${t("msTap")}</div></div>
           <div class="odds"><div class="bscore" style="margin:0">${ms.final_score}</div></div></div>`;
       }
       return `<div class="bet"><div class="res">◷</div>
-        <div class="m"><div class="match">${v3Esc(r.match || "")}</div>
+        <div class="m"><div class="match">${sIcoS}${v3Esc(r.match || "")}</div>
         <div class="sel"><span class="gdt">${fmtGDate(r.commence)} · ${fmtTime(r.commence)}</span> · ${r.league||"—"}</div></div>
         <div class="odds"><div>${oS}</div></div></div>`;
     }).join("");
@@ -1778,7 +1781,7 @@ function betRow(r){
 // ─────────── счёт и статистика сыгранных матчей (v28, CEO 17.08) ───────────
 // Данные пишут грейдеры при сеттле (match_stats.py) в senya_match_stats;
 // витрина только читает. Маппинг к строкам ставок/расписания — sport + match.
-const ICO_SPORT = {"⚾ ": "mlb", "🎾 ": "tennis", "⚽ ": "soccer"};
+const ICO_SPORT = {"⚾ ": "mlb", "🎾 ": "tennis", "⚽ ": "soccer", "🏒 ": "khl", "🏈 ": "nfl"};
 window.__msCache = {}; window.__msDates = new Set();
 async function loadMatchStats(dates){
   const uniq = [...new Set(dates.filter(Boolean))].filter(d => !window.__msDates.has(d));
@@ -1922,7 +1925,7 @@ function fmtGDate(iso){
 // v73: строки дня берутся из ЕДИНОГО ассета core_feed (сессия + история),
 // а не из старых таблиц. Копирования и перезаписи истории нет: сессии уже
 // посчитаны в ленте по append-only журналу кошелька.
-const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ "};
+const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ ", khl: "🏒 ", nfl: "🏈 "};   // v109: иконки КХЛ/НФЛ в «Ставках» (владелец 14.09)
 function feedBetToRow(b){
   return {_ico: ICO_BY_SPORT[b.sport] || "", match: b.match,
           selection: b.selection || b.side, best_odds: b.odds,
