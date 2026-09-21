@@ -989,6 +989,10 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // personal_real_bets (подтверждённые сделки аккаунта; исполнителя нет → пусто), а не из PAPER-сигналов стратегии
 const OFFICIAL_PERSONAL_LISTS = APP_PROFILE === "aisports";
 function personalBets(feed){ return (feed && Array.isArray(feed.personal_real_bets)) ? feed.personal_real_bets : []; }
+// 21.09 (перенос футбола в official, владелец): общие PAPER-прогнозы стратегии по футболу (лента: paper_forecasts, origin=paper_signal) —
+// показываются в дневных списках с пометкой происхождения; в personal_real_bets НИКОГДА не попадают; денег в них нет (HIDE_MONEY)
+function paperForecasts(feed){ return (feed && Array.isArray(feed.paper_forecasts)) ? feed.paper_forecasts : []; }
+function forecastRow(b){ const r = feedBetToRow(b); r.selection = `${r.selection || ""} · ${t("originPaper")}`; r._forecast = true; return r; }
 // v106 (блок C задания 09.09): новые финансовые секреты в localStorage не сохраняются — до защищённого хранения (P1).
 // Существующие записи не читаются в отчёт, не удаляются и не переносятся автоматически; отвязать может сам пользователь.
 const KEY_SAVE_ENABLED = false;
@@ -1325,6 +1329,8 @@ const T = {
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
+  originPaper: ["прогноз стратегии · PAPER", "strategy forecast · PAPER", "策略预测 · PAPER"],
+  dimForecasts: ["прогнозы · PAPER", "forecasts · PAPER", "预测 · PAPER"],
   comingFrom: ["скоро · сезон с", "coming · season from", "即将 · 赛季自"],
   errWord: ["Ошибка", "Error", "错误"],
   // динамика: профиль и рефы
@@ -1719,9 +1725,10 @@ async function main(){
   // CEO 05.09: затемнение ОСТАЁТСЯ (v96 вернул после v94); строка живая —
   // W/L/число ставок/процент берутся из by_sport.tennis ленты (кошелёк).
   const DIM_SPORTS = APP_PROFILE === "aisports"
-    ? {tennis: t("dimVirtual"), soccer: t("dimVirtual"), khl: t("dimVirtual")}
+    ? {tennis: t("dimVirtual"), soccer: t("dimForecasts"), khl: t("dimVirtual")}
     : {tennis: t("dimVirtual")};
-  const sportRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb").map(k => {
+  // 21.09 (перенос футбола в official): футбол виден в статистике как прогнозы стратегии (PAPER) — строка затемнена с пометкой
+  const sportRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb" || k === "soccer").map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
     const dim = DIM_SPORTS[k];
@@ -2167,6 +2174,17 @@ async function loadDay(d){
     const feed = await coreFeed();
     if (OFFICIAL_PERSONAL_LISTS) {
       const mine = personalBets(feed).filter(b => b.session_date === d);
+      const fc = paperForecasts(feed).filter(b => b.session_date === d);
+      if (!mine.length && fc.length) {
+        // 21.09: личных сделок нет, но есть общие PAPER-прогнозы футбола — показываем их с пометкой происхождения (не «ставки» клиента)
+        const rows = fc.map(forecastRow);
+        await loadMatchStats(rows.map(r => r.match_date).concat(d));
+        stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
+          <span class="daydow">${dowOf(d)}</span></div>
+        <div class="d" style="color:var(--mut);margin-top:4px">${rows.length} ${plBets(rows.length)} · ${t("originPaper")}</div>`;
+        box.innerHTML = rows.map(betRow).join("");
+        return;
+      }
       if (!mine.length) {
         stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
           <span class="daydow">${dowOf(d)}</span></div>
@@ -2340,6 +2358,18 @@ async function loadLastBets(quiet){
   // онлайн по мере волн. Список ставок сохраняет своё поведение, и обе даты
   // подписаны, так что расхождение видно, а не скрыто.
   loadBetAnalysis(today);
+  if (OFFICIAL_PERSONAL_LISTS && !personalBets(feed).length && paperForecasts(feed).length) {
+    // 21.09: личных сделок нет — последний день общих PAPER-прогнозов футбола с пометкой происхождения
+    const fcAll = paperForecasts(feed).map(forecastRow).sort((x, y) => String(y.match_date || "").localeCompare(String(x.match_date || "")));
+    const fday = fcAll[0].match_date;
+    const fc = fcAll.filter(r => r.match_date === fday).sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || "")));
+    await loadMatchStats(fc.map(r => r.match_date));
+    const st0 = document.getElementById("lastStat");
+    if (st0) st0.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(fday)}</span><span class="daydow">${dowOf(fday)} · ${fc.length} ${plBets(fc.length)}</span></div>
+      <div class="daysum" style="margin-top:6px"><span>${t("originPaper")}</span></div>`;
+    box.innerHTML = fc.map(betRow).join("");
+    return;
+  }
   if (OFFICIAL_PERSONAL_LISTS && !personalBets(feed).length) {
     const st0 = document.getElementById("lastStat");
     if (st0) st0.innerHTML = `<div class="dayhead"><span class="daydate">${t("secLast")}</span><span class="daydow">0 ${plBets(0)}</span></div>
