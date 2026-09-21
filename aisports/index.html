@@ -989,10 +989,12 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // personal_real_bets (подтверждённые сделки аккаунта; исполнителя нет → пусто), а не из PAPER-сигналов стратегии
 const OFFICIAL_PERSONAL_LISTS = APP_PROFILE === "aisports";
 function personalBets(feed){ return (feed && Array.isArray(feed.personal_real_bets)) ? feed.personal_real_bets : []; }
-// 21.09 (перенос футбола в official, владелец): общие PAPER-прогнозы стратегии по футболу (лента: paper_forecasts, origin=paper_signal) —
-// показываются в дневных списках с пометкой происхождения; в personal_real_bets НИКОГДА не попадают; денег в них нет (HIDE_MONEY)
+// 21.09 (перенос футбола в official, владелец; приёмка Астры): общие PAPER-прогнозы стратегии по футболу (лента: paper_forecasts,
+// origin=paper_signal) показываются ОТДЕЛЬНЫМ блоком с собственной подписью НЕЗАВИСИМО от личного списка — записи не смешиваются;
+// в personal_real_bets никогда не попадают; денег в них нет (HIDE_MONEY)
 function paperForecasts(feed){ return (feed && Array.isArray(feed.paper_forecasts)) ? feed.paper_forecasts : []; }
 function forecastRow(b){ const r = feedBetToRow(b); r.selection = `${r.selection || ""} · ${t("originPaper")}`; r._forecast = true; return r; }
+function forecastsBlock(rows){ if (!rows.length) return ""; return `<div class="loading">${t("forecastsTitle")}</div>` + rows.map(betRow).join(""); }
 // v106 (блок C задания 09.09): новые финансовые секреты в localStorage не сохраняются — до защищённого хранения (P1).
 // Существующие записи не читаются в отчёт, не удаляются и не переносятся автоматически; отвязать может сам пользователь.
 const KEY_SAVE_ENABLED = false;
@@ -1331,6 +1333,7 @@ const T = {
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
   originPaper: ["прогноз стратегии · PAPER", "strategy forecast · PAPER", "策略预测 · PAPER"],
   dimForecasts: ["прогнозы · PAPER", "forecasts · PAPER", "预测 · PAPER"],
+  forecastsTitle: ["Прогнозы стратегии · футбол · PAPER (не ваши сделки)", "Strategy forecasts · soccer · PAPER (not your trades)", "策略预测 · 足球 · PAPER（非您的交易）"],
   comingFrom: ["скоро · сезон с", "coming · season from", "即将 · 赛季自"],
   errWord: ["Ошибка", "Error", "错误"],
   // динамика: профиль и рефы
@@ -1728,7 +1731,8 @@ async function main(){
     ? {tennis: t("dimVirtual"), soccer: t("dimForecasts"), khl: t("dimVirtual")}
     : {tennis: t("dimVirtual")};
   // 21.09 (перенос футбола в official): футбол виден в статистике как прогнозы стратегии (PAPER) — строка затемнена с пометкой
-  const sportRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb" || k === "soccer").map(k => {
+  const sortRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb" || k === "soccer");
+  const sportRows = sortRows.map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
     const dim = DIM_SPORTS[k];
@@ -2172,24 +2176,15 @@ async function loadDay(d){
   box.innerHTML = `<div class="loading">${t("loading")}</div>`;
   try{
     const feed = await coreFeed();
+    const fcDay = OFFICIAL_PERSONAL_LISTS ? paperForecasts(feed).filter(b => b.session_date === d).map(forecastRow) : [];
     if (OFFICIAL_PERSONAL_LISTS) {
       const mine = personalBets(feed).filter(b => b.session_date === d);
-      const fc = paperForecasts(feed).filter(b => b.session_date === d);
-      if (!mine.length && fc.length) {
-        // 21.09: личных сделок нет, но есть общие PAPER-прогнозы футбола — показываем их с пометкой происхождения (не «ставки» клиента)
-        const rows = fc.map(forecastRow);
-        await loadMatchStats(rows.map(r => r.match_date).concat(d));
-        stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
-          <span class="daydow">${dowOf(d)}</span></div>
-        <div class="d" style="color:var(--mut);margin-top:4px">${rows.length} ${plBets(rows.length)} · ${t("originPaper")}</div>`;
-        box.innerHTML = rows.map(betRow).join("");
-        return;
-      }
       if (!mine.length) {
+        if (fcDay.length) await loadMatchStats(fcDay.map(r => r.match_date).concat(d));
         stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
           <span class="daydow">${dowOf(d)}</span></div>
         <div class="d" style="color:var(--mut);margin-top:4px">${t("noPersonalBets")}</div>`;
-        box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>`;
+        box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>` + forecastsBlock(fcDay);
         return;
       }
     }
@@ -2218,7 +2213,7 @@ async function loadDay(d){
         <span style="font-size:15px">${rows.length} ${plBets(rows.length)}</span>
         <span><b class="${dec.length && w/dec.length>=0.5?"pos":"neg"}" style="font-size:17px">${w}W-${dec.length-w}L${dec.length?` · ${(100*w/dec.length).toFixed(0)}%`:""}</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}</span>
       </div>`;
-    box.innerHTML = rows.map(betRow).join("");
+    box.innerHTML = rows.map(betRow).join("") + forecastsBlock(fcDay);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
   }catch(e){
     box.innerHTML = `<div class="loading">${t("errWord")}: ${e.message}</div>`;
   }
@@ -2358,23 +2353,15 @@ async function loadLastBets(quiet){
   // онлайн по мере волн. Список ставок сохраняет своё поведение, и обе даты
   // подписаны, так что расхождение видно, а не скрыто.
   loadBetAnalysis(today);
-  if (OFFICIAL_PERSONAL_LISTS && !personalBets(feed).length && paperForecasts(feed).length) {
-    // 21.09: личных сделок нет — последний день общих PAPER-прогнозов футбола с пометкой происхождения
-    const fcAll = paperForecasts(feed).map(forecastRow).sort((x, y) => String(y.match_date || "").localeCompare(String(x.match_date || "")));
-    const fday = fcAll[0].match_date;
-    const fc = fcAll.filter(r => r.match_date === fday).sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || "")));
-    await loadMatchStats(fc.map(r => r.match_date));
-    const st0 = document.getElementById("lastStat");
-    if (st0) st0.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(fday)}</span><span class="daydow">${dowOf(fday)} · ${fc.length} ${plBets(fc.length)}</span></div>
-      <div class="daysum" style="margin-top:6px"><span>${t("originPaper")}</span></div>`;
-    box.innerHTML = fc.map(betRow).join("");
-    return;
-  }
+  // 21.09: последний день общих PAPER-прогнозов футбола — отдельный блок, независимо от личных сделок
+  const fcAll = OFFICIAL_PERSONAL_LISTS ? paperForecasts(feed).map(forecastRow).sort((x, y) => String(y.match_date || "").localeCompare(String(x.match_date || ""))) : [];
+  const fcLast = fcAll.length ? fcAll.filter(r => r.match_date === fcAll[0].match_date).sort((x, y) => String(y.ts || "").localeCompare(String(x.ts || ""))) : [];
   if (OFFICIAL_PERSONAL_LISTS && !personalBets(feed).length) {
+    if (fcLast.length) await loadMatchStats(fcLast.map(r => r.match_date));
     const st0 = document.getElementById("lastStat");
     if (st0) st0.innerHTML = `<div class="dayhead"><span class="daydate">${t("secLast")}</span><span class="daydow">0 ${plBets(0)}</span></div>
       <div class="daysum" style="margin-top:6px"><span>${t("noPersonalBets")}</span></div>`;
-    box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>`;
+    box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>` + forecastsBlock(fcLast);
     return;
   }
   const last = (OFFICIAL_PERSONAL_LISTS ? personalBets(feed) : ((day.bets_list) || (feed.bets || [])
@@ -2402,7 +2389,7 @@ async function loadLastBets(quiet){
       <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
         <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${HIDE_MONEY ? "" : `${t("baStaked")}: $${turn.toFixed(2)}`}</span></div>`;
   }
-  box.innerHTML = last.map(betRow).join("");
+  box.innerHTML = last.map(betRow).join("") + forecastsBlock(fcLast);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
 }
 
 // v105 (безопасность P0, 09.09): ОДНА процедура очистки всей приватной отрисовки и памяти —
