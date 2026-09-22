@@ -828,6 +828,7 @@ body.splash-on{overflow:hidden}
       <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть Polymarket</a>
       <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Приватный ключ и сид-фраза не нужны. Автоторговля пока недоступна.</div>
+      <button class="btn" id="verifyWalletOwner" style="display:none;margin-top:10px" data-i18n="wvVerifyOwner">Подтвердить владение</button>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
     <div id="exchBlock" style="display:none">
@@ -975,7 +976,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v119";
+const BUILD = "v120";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1023,7 +1024,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "11.09.2026";
+const BUILD_DATE = "22.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1199,6 +1200,7 @@ const T = {
   wvMismatch: ["Ответ источника не совпал с запросом — подключение не выполнено", "The source response did not match the request — not connected", "数据源响应与请求不匹配——未连接"],
   wvConnected: ["Подключён для просмотра", "Connected for viewing", "已连接（仅查看）"],
   wvStatusLine: ["Торговля выключена · владение адресом не проверено", "Trading is off · address ownership not verified", "交易关闭 · 地址所有权未验证"],
+  wvVerifyOwner: ["Подтвердить владение", "Verify ownership", "验证所有权"],
   wvDataLabel: ["Данные выбранного аккаунта", "Data of the selected account", "所选账户数据"],
   wvPositions: ["стоимость позиций", "positions value", "持仓价值"],
   wvBalance: ["остаток по публичным данным", "balance per public data", "公开数据余额"],
@@ -2694,6 +2696,7 @@ function wvShortAddr(a){ return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
 function wvRenderConnected(view, value, serverSaved, bal){
   const apiState = document.getElementById("apiState"), hint = document.getElementById("budgetHint"), apiHint = document.getElementById("apiHint");
   const btn = document.getElementById("saveApiKey"), inp = document.getElementById("apiKeyInput");
+  const verifyBtn = document.getElementById("verifyWalletOwner");
   const name = view.profile_name ? v3Esc(view.profile_name) : "";
   apiState.innerHTML = `<span class="pos">${t("wvConnected")}</span> · ${name ? name + " · " : ""}${v3Esc(wvShortAddr(view.resolved_address || view.input_address))}` +
     `<br><span style="color:var(--mut);font-weight:400">${t("wvStatusLine")}${view.input_address !== view.resolved_address && view.resolved_address ? " · " + t("wvResolvedAs") + " " + v3Esc(wvShortAddr(view.resolved_address)) : ""}` +
@@ -2704,6 +2707,7 @@ function wvRenderConnected(view, value, serverSaved, bal){
   apiHint.innerHTML = `${t("wvNoKeys")} ${t("wvTradingOff")}`;
   inp.value = view.input_address; inp.readOnly = true;
   btn.innerHTML = t("wvDisconnect"); btn.setAttribute("aria-label", t("wvDisconnect")); btn.style.color = "#ef4444";
+  if (verifyBtn) verifyBtn.style.display = "block";
 }
 function wvRenderDashCard(view, value, bal, bound, gen, addr){
   // W1/v112: карточка «Кошелёк Polymarket» на дашборде — pUSD выбранного адреса и стоимость позиций раздельно;
@@ -2719,12 +2723,23 @@ function wvClearDashCard(bound){
 function wvRenderEmpty(msg){
   const apiState = document.getElementById("apiState"), hint = document.getElementById("budgetHint"), apiHint = document.getElementById("apiHint");
   const btn = document.getElementById("saveApiKey"), inp = document.getElementById("apiKeyInput");
+  const verifyBtn = document.getElementById("verifyWalletOwner");
   apiState.innerHTML = `<span style="color:var(--mut)">${msg || t("wvEmpty")}</span>`;
   hint.innerHTML = t("wvHint");
   apiHint.innerHTML = `${t("wvNoKeys")} ${t("wvTradingOff")}`;
   inp.readOnly = false; inp.disabled = false; inp.type = "text"; inp.placeholder = t("wvPlaceholder"); inp.setAttribute("aria-label", t("wvFieldLabel"));
   btn.innerHTML = t("wvConnect"); btn.setAttribute("aria-label", t("wvConnect")); btn.style.color = "";
+  if (verifyBtn) verifyBtn.style.display = "none";
 }
+
+// v120: подтверждение владельца открывается из уже авторизованного Telegram Mini App.
+// Хэш Telegram переносится целиком, поэтому служебная страница получает тот же initData;
+// повторное добавление Deposit Wallet и его пополнение не требуются.
+document.getElementById("verifyWalletOwner").addEventListener("click", () => {
+  const target = new URL("../aisports-wallet-test/mm.html", location.href);
+  target.hash = location.hash;
+  location.href = target.href;
+});
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");
   window.__wv = {session: bound, view: null, server: null, gen: 0};

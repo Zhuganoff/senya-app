@@ -18,11 +18,11 @@
  .st{padding:10px;border-radius:10px;background:#141c30;margin:8px 0}
  label{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px}
 </style></head><body>
-<h1>Тест подтверждения кошелька</h1>
-<div class="m">Режим «устройство»: подпись только показывается, ничего никуда не отправляется. Режим «сервер»: challenge → подпись → submit → статус (нужна установленная серверная часть OWNED).</div>
+<h1>Подтверждение владения кошельком</h1>
+<div class="m">Кошелёк Polymarket уже подключён для просмотра. Здесь MetaMask только подтверждает владельца подписью сообщения: без перевода, approve и комиссии.</div>
 <div class="st" id="env">…</div>
-<label><input type="checkbox" id="srv"> режим «сервер» (wallet_link_challenge / submit / status)</label>
-<button class="p" id="b1">1. Подключить кошелёк (MetaMask SDK → MetaMask Mobile)</button>
+<label><input type="checkbox" id="srv"> сохранить подтверждение на сервере</label>
+<button class="p" id="b1">1. Открыть управляющий MetaMask</button>
 <button id="b2" disabled>2. Подписать подтверждение (eth_signTypedData_v4)</button>
 <button id="b3" disabled>3. Отключить сессию MetaMask SDK</button>
 <div class="st" id="acc">кошелёк не подключён</div>
@@ -38,6 +38,7 @@ const t0 = Date.now();
 function log(s) { $("log").textContent += `[+${((Date.now() - t0) / 1000).toFixed(1)}s] ${s}\n`; $("log").scrollTop = 1e9; }
 const ua = navigator.userAgent, plat = (tg && tg.platform) || "-";
 $("env").textContent = `Telegram: ${tg ? "да, platform=" + plat + ", версия " + tg.version : "нет (обычный браузер)"} · initData: ${tg && tg.initData ? "есть" : "нет"} · ${/iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : "desktop"} · MetaMask SDK ${window.MetaMaskSDK ? "загружен" : "НЕ загружен"}`;
+if (tg && tg.initData) { $("srv").checked = true; $("srv").disabled = true; }
 document.addEventListener("visibilitychange", () => log(`visibility: ${document.visibilityState}`));
 window.addEventListener("pageshow", e => log(`pageshow persisted=${e.persisted}`));
 window.addEventListener("error", e => log(`error: ${e.message}`));
