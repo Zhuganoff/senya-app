@@ -836,22 +836,35 @@ body.splash-on{overflow:hidden}
       <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Приватный ключ и сид-фраза не нужны. Автоторговля пока недоступна.</div>
       <button class="btn" id="verifyWalletOwner" style="display:none;margin-top:10px" data-i18n="wvVerifyOwner">Подтвердить владение</button>
-      <div id="autoBox" style="display:none;margin-top:10px">
-        <div class="me-sub" id="autoState" style="font-weight:700"></div>
-        <button class="btn" id="autoEnableBtn" style="display:none;margin-top:8px" data-i18n="autoEnable">Включить автоставки</button>
-        <button class="btn ghost" id="autoSettingsBtn" style="display:none;margin-top:8px" data-i18n="autoSettings">Настройки автоставок</button>
-        <div class="me-sub" id="autoSettingsBox" style="display:none;margin-top:8px"></div>
-        <button class="btn ghost" id="autoSwitchBtn" style="display:none;margin-top:8px" data-i18n="autoSwitch">Сменить кошелёк</button>
-        <button class="btn ghost" id="autoDisconnectBtn" style="display:none;margin-top:8px" data-i18n="autoDisconnect">Отключить кошелёк</button>
-        <button class="btn" id="autoDisableBtn" style="display:none;margin-top:8px;color:#ef4444" data-i18n="autoDisable">Отключить автоставки</button>
-        <button class="btn ghost" id="autoRetryBtn" style="display:none;margin-top:8px" data-i18n="autoRetry">Повторить</button>
-      </div>
-      <div id="botAccountBox" style="display:none;margin-top:10px">
-        <div class="k" data-i18n="botAccTitle">Торговый счёт бота</div>
-        <div class="me-sub" id="botAccState" style="font-weight:700"></div>
-        <div class="me-sub" id="botAccDetails"></div>
-        <button class="btn ghost" id="botAccTopupBtn" style="display:none;margin-top:8px" data-i18n="botAccTopup">Пополнить</button>
-        <div class="me-sub" id="botAccTopupBox" style="display:none;margin-top:8px"></div>
+      <div id="taBox" style="display:none;margin-top:12px">
+        <div class="k" data-i18n="taPersonalTitle">Личный счёт Polymarket</div>
+        <div class="me-sub" id="taPersonal"></div>
+        <div class="k" style="margin-top:10px" data-i18n="taTitle">Торговый счёт AISports</div>
+        <div class="me-sub" id="taState" style="font-weight:700"></div>
+        <div class="me-sub" id="taDetails"></div>
+        <div class="me-sub" id="taCustody" data-i18n="taCustody">Счёт создаётся для автоматической торговли. Его ключ хранит сервис. Основной ключ вашего кошелька не передаётся.</div>
+        <button class="btn" id="taCreateBtn" style="display:none;margin-top:8px" data-i18n="taCreate">Создать торговый счёт</button>
+        <button class="btn" id="taFundBtn" style="display:none;margin-top:8px" data-i18n="taFund">Пополнить</button>
+        <div id="taFundBox" style="display:none;margin-top:8px">
+          <div class="bankrow"><input type="text" inputmode="decimal" id="taFundAmount" class="binput" style="min-width:0;font-size:13px" placeholder="10.00" autocomplete="off"><button class="btn small" id="taFundGo" data-i18n="taFundGo">Далее</button></div>
+          <div class="me-sub" id="taFundSummary"></div>
+        </div>
+        <button class="btn" id="taEnableBtn" style="display:none;margin-top:8px" data-i18n="taEnable">Включить автоставки</button>
+        <div id="taPolicyBox" style="display:none;margin-top:8px">
+          <div class="me-sub" id="taPolicyText"></div>
+          <button class="btn" id="taPolicyAccept" style="margin-top:8px" data-i18n="taPolicyAccept">Принять и включить</button>
+        </div>
+        <button class="btn ghost" id="taSettingsBtn" style="display:none;margin-top:8px" data-i18n="taSettings">Настройки</button>
+        <button class="btn" id="taStopBtn" style="display:none;margin-top:8px;color:#ef4444" data-i18n="taStop">Остановить</button>
+        <button class="btn ghost" id="taWithdrawBtn" style="display:none;margin-top:8px" data-i18n="taWithdraw">Вывести</button>
+        <div id="taWithdrawBox" style="display:none;margin-top:8px">
+          <div class="bankrow"><input type="text" inputmode="decimal" id="taWithdrawAmount" class="binput" style="min-width:0;font-size:13px" placeholder="0.00" autocomplete="off"><button class="btn small" id="taWithdrawGo" data-i18n="taFundGo">Далее</button></div>
+          <div class="me-sub" id="taWithdrawSummary"></div>
+        </div>
+        <button class="btn ghost" id="taRetryBtn" style="display:none;margin-top:8px" data-i18n="taRetry">Повторить</button>
+        <button class="btn ghost" id="taHistoryBtn" style="display:none;margin-top:8px" data-i18n="taHistory">История</button>
+        <div class="me-sub" id="taPending" style="margin-top:8px"></div>
+        <div class="me-sub" id="taHistoryBox" style="display:none;margin-top:8px"></div>
       </div>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
@@ -1000,7 +1013,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v127";
+const BUILD = "v128";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1243,6 +1256,59 @@ const T = {
   botAccNotDeployed: ["кошелёк ещё не развёрнут", "wallet not deployed yet", "钱包尚未部署"],
   botAccSeparate: ["Это отдельный счёт с отдельным балансом. Ваш основной кошелёк и его средства не затронуты.", "This is a separate account with its own balance. Your main wallet and its funds are not affected.", "这是一个独立账户，余额独立。您的主钱包及其资金不受影响。"],
   botAccTopupHint: ["Переведите pUSD в сети Polygon на этот адрес — это игровой банк бота. Ставка не более 10 % доступного банка, до 10 позиций.", "Send pUSD on Polygon to this address — it is the bot's bankroll. Stake ≤ 10 % of available bank, up to 10 positions.", "在 Polygon 网络向此地址转入 pUSD——这是机器人的资金。单注不超过可用资金的 10%，最多 10 个持仓。"],
+  taPersonalTitle: ["Личный счёт Polymarket", "Personal Polymarket account", "个人 Polymarket 账户"],
+  taTitle: ["Торговый счёт AISports", "AISports trading account", "AISports 交易账户"],
+  taCustody: ["Счёт создаётся для автоматической торговли. Его ключ хранит сервис. Основной ключ вашего кошелька не передаётся.", "The account is created for automated trading. Its key is held by the service. Your wallet's main key is never transferred.", "该账户用于自动交易。其密钥由服务保管。您钱包的主密钥不会被传输。"],
+  taCreate: ["Создать торговый счёт", "Create trading account", "创建交易账户"],
+  taFund: ["Пополнить", "Top up", "充值"],
+  taFundGo: ["Далее", "Next", "下一步"],
+  taEnable: ["Включить автоставки", "Enable auto-bets", "开启自动投注"],
+  taPolicyAccept: ["Принять и включить", "Accept and enable", "接受并开启"],
+  taSettings: ["Настройки", "Settings", "设置"],
+  taStop: ["Остановить", "Stop", "停止"],
+  taWithdraw: ["Вывести", "Withdraw", "提取"],
+  taRetry: ["Повторить", "Retry", "重试"],
+  taHistory: ["История", "History", "历史"],
+  taNeedOwned: ["Сначала подключите личный кошелёк и подтвердите владение", "First connect your personal wallet and verify ownership", "请先连接个人钱包并验证所有权"],
+  taNoServer: ["Сервер торговых счетов недоступен", "Trading accounts server is unavailable", "交易账户服务器不可用"],
+  taNoAccount: ["Торговый счёт ещё не создан", "Trading account not created yet", "交易账户尚未创建"],
+  taCreating: ["Создаём счёт…", "Creating the account…", "正在创建账户…"],
+  taPreparing: ["Подготовка торговли…", "Preparing trading…", "正在准备交易…"],
+  taNeedFunding: ["Нужно пополнение", "Top-up needed", "需要充值"],
+  taReady: ["Готов к включению", "Ready to enable", "可以开启"],
+  taOnNoSignal: ["Автоставки включены — подходящих прогнозов пока нет", "Auto-bets enabled — no qualifying forecasts yet", "自动投注已开启——暂无合适的预测"],
+  taOn: ["Автоставки включены", "Auto-bets enabled", "自动投注已开启"],
+  taUncertain: ["Состояние неопределённо: сервер давно не отчитывался", "State uncertain: the server has not reported recently", "状态不确定：服务器已久未汇报"],
+  taStopped: ["Новые ставки остановлены", "New bets stopped", "新投注已停止"],
+  taRestore: ["Счёт требует восстановления — обратитесь в поддержку", "The account needs restoration — contact support", "账户需要恢复——请联系支持"],
+  taLastCheck: ["последняя проверка", "last check", "最近检查"],
+  taFree: ["свободно", "free", "可用"],
+  taReserved: ["зарезервировано", "reserved", "已预留"],
+  taPositions: ["позиции", "positions", "持仓"],
+  taPnl: ["подтверждённый P&L", "confirmed P&L", "已确认盈亏"],
+  taChecked: ["сверка", "reconciled", "对账"],
+  taAddr: ["адрес", "address", "地址"],
+  taFundHint: ["Сумма pUSD. Источник — ваш личный счёт Polymarket, получатель — торговый счёт AISports, сеть Polygon, токен pUSD. Подпись в кошельке разрешает перевод денег; комиссия сети оплачивается сервисом (gasless).", "Amount in pUSD. Source — your personal Polymarket account, recipient — the AISports trading account, Polygon network, pUSD token. The wallet signature authorizes the money transfer; network fee is paid by the service (gasless).", "金额（pUSD）。来源为您的个人 Polymarket 账户，接收方为 AISports 交易账户，Polygon 网络，pUSD 代币。钱包签名将授权资金转移；网络费用由服务承担（免 gas）。"],
+  taFundSummary: ["Перевод {amt} pUSD с {from} на {to} (Polygon). Подтвердите в кошельке.", "Transfer {amt} pUSD from {from} to {to} (Polygon). Confirm in your wallet.", "从 {from} 向 {to} 转账 {amt} pUSD（Polygon）。请在钱包中确认。"],
+  taWithdrawHint: ["Сумма не больше свободной. Получатель — ваш личный счёт Polymarket. Подпись намерения в кошельке.", "Amount up to the free balance. Recipient — your personal Polymarket account. Sign the intent in your wallet.", "金额不超过可用余额。接收方为您的个人 Polymarket 账户。请在钱包中签署意图。"],
+  taWithdrawSummary: ["Вернуть {amt} pUSD на {to}. Подтвердите намерение в кошельке.", "Return {amt} pUSD to {to}. Confirm the intent in your wallet.", "将 {amt} pUSD 返回到 {to}。请在钱包中确认意图。"],
+  taOpenSign: ["Открыть кошелёк для подписи", "Open wallet to sign", "打开钱包签名"],
+  taOpWait: ["Операция выполняется…", "Operation in progress…", "操作进行中…"],
+  taOpDone: ["Операция подтверждена", "Operation confirmed", "操作已确认"],
+  taOpUnknown: ["Исход операции уточняется — деньги удерживаются до сверки", "Operation outcome is being verified — funds are held until reconciled", "操作结果正在核实——资金在对账前保留"],
+  taOpFailed: ["Операция не выполнена", "Operation failed", "操作失败"],
+  taOpCancelled: ["Операция отменена, ничего не отправлено", "Operation cancelled, nothing was sent", "操作已取消，未发送任何内容"],
+  taPolicyText: ["Виды: {sports}. Размер ставки: доля стратегии, не более {frac}% доступного банка. Одновременно до {maxopen} позиций. Доступный банк: {bank} pUSD. Версия политики {ver}.", "Sports: {sports}. Stake: strategy fraction, at most {frac}% of available bank. Up to {maxopen} open positions. Available bank: {bank} pUSD. Policy version {ver}.", "运动：{sports}。投注额：策略比例，最多为可用资金的 {frac}%。最多 {maxopen} 个持仓。可用资金：{bank} pUSD。策略版本 {ver}。"],
+  taPending: ["Незавершённые операции", "Pending operations", "未完成操作"],
+  taBadAmount: ["Введите корректную сумму", "Enter a valid amount", "请输入有效金额"],
+  taTooMuch: ["Сумма больше свободной", "Amount exceeds the free balance", "金额超过可用余额"],
+  taErrRejected: ["Кошелёк не подтвердил действие", "The wallet did not confirm the action", "钱包未确认此操作"],
+  taErrMinLot: ["Недостаточно денег для минимального лота", "Not enough funds for the minimum lot", "资金不足以满足最小手数"],
+  taErrSource: ["Источник данных недоступен", "Data source unavailable", "数据源不可用"],
+  taErrProvider: ["Платформа отклонила запрос", "The platform declined the request", "平台拒绝了请求"],
+  taErrGeneric: ["Не удалось выполнить: {code}", "Could not complete: {code}", "无法完成：{code}"],
+  taNoHistory: ["Ставок ещё не было", "No bets yet", "尚无投注"],
+  taSkipReason: ["пропуск", "skipped", "跳过"],
   autoExecOff: ["Исполнение ордеров ещё не включено на сервере — ставки не отправляются.", "Order execution is not enabled on the server yet — no bets are sent.", "服务器尚未开启下单执行——不会发送投注。"],
   wvLoading: ["Ищем аккаунт…", "Looking up the account…", "正在查找账户……"],
   wvBadAddr: ["Это не EVM-адрес: нужно 0x и 40 шестнадцатеричных символов", "Not an EVM address: 0x followed by 40 hex characters is required", "这不是 EVM 地址：需要 0x 加 40 个十六进制字符"],
@@ -1749,7 +1815,6 @@ function coreFeed(force){
       if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0)
         throw new Error("лента не PAPER_ONLY");
       window.__coreFeed = feed; window.__coreFeedError = null;
-      try { botAccountRender(feed && feed.bot_account); } catch(e) {}
       return feed;
     } catch (e) {
       window.__coreFeedError = e; window.__coreFeed = null;
@@ -2770,7 +2835,7 @@ function wvRenderConnected(view, value, serverSaved, bal){
   if (connectBtn) connectBtn.style.display = "block";
   if (addrRow) addrRow.style.display = "flex";
   if (verifyBtn) verifyBtn.style.display = "none";
-  autoRefresh(window.__wv && window.__wv.session);
+  taRefresh(window.__wv && window.__wv.session);
 }
 function wvRenderDashCard(view, value, bal, bound, gen, addr){
   // W1/v112: карточка «Кошелёк Polymarket» на дашборде — pUSD выбранного адреса и стоимость позиций раздельно;
@@ -2796,7 +2861,7 @@ function wvRenderEmpty(msg){
   if (connectBtn) connectBtn.style.display = "block";
   if (addrRow) addrRow.style.display = "none";
   if (verifyBtn) verifyBtn.style.display = "none";
-  const ab = document.getElementById("autoBox"); if (ab) ab.style.display = "none";
+  const tb = document.getElementById("taBox"); if (tb) tb.style.display = "none";
 }
 
 // v122: единый выбор кошелька. Telegram initData переносится во фрагменте URL,
@@ -2828,99 +2893,198 @@ document.getElementById("walletChoicePublic").addEventListener("click", () => {
   row.style.display = "flex"; inp.readOnly = false; inp.focus();
 });
 document.getElementById("verifyWalletOwner").addEventListener("click", openMetaMaskFlow);
-// v125: состояние Auto по двум серверным фактам — OWNED (wallet_link_status) и полномочие;
-// ссылка подписи содержит build, чтобы внешний браузер не переиспользовал устаревший mm.html.
-// Session Key (trading_grant_status). Все подписи — в кошельке пользователя (страница mm.html, flow=auto|revoke); ключей, адресов и Terminal нет.
-function openAutoFlow(kind){
-  const target = new URL(walletTarget("../aisports-wallet-test/mm.html"));
-  target.searchParams.set("flow", kind);
-  const tgApp = window.Telegram && window.Telegram.WebApp;
-  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-  if (!mobile && tgApp && tgApp.initData && tgApp.openLink) tgApp.openLink(target.href, {try_instant_view:false});
-  else location.href = target.href;
+// v128 (AUTO_ACCOUNTS §3): «Торговый счёт AISports» — многопользовательский счёт с серверным ключом; все данные — приватные RPC ta_* по initData
+// (сервер сверяет account.user_id == uid). В URL внешнего браузера уходит только одноразовый токен handoff; initData/подписи/ключи — никогда.
+const TA_BASE = 1e6;
+function taFmt(base){ const n = Number(base); return Number.isFinite(n) ? (n / TA_BASE).toFixed(2) : "—"; }
+function taParseAmount(text){ const v = Number(String(text || "").replace(",", ".").trim()); if (!Number.isFinite(v) || v <= 0) return null; return Math.floor(v * TA_BASE); }
+function taFill(key, vars){ let x = t(key); Object.keys(vars || {}).forEach(k => { x = x.split("{" + k + "}").join(String(vars[k])); }); return x; }
+function taIdem(slot){ let v = null; try { v = sessionStorage.getItem("ta_idem_" + slot); } catch(e) {} if (!v) { v = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); try { sessionStorage.setItem("ta_idem_" + slot, v); } catch(e) {} } return v; }
+function taIdemDone(slot){ try { sessionStorage.removeItem("ta_idem_" + slot); } catch(e) {} }
+async function taSha256(text){ const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)); return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join(""); }
+function taEl(id){ return document.getElementById(id); }
+function taShow(ids){
+  ["taCreateBtn","taFundBtn","taEnableBtn","taSettingsBtn","taStopBtn","taWithdrawBtn","taRetryBtn","taHistoryBtn"].forEach(id => { const el = taEl(id); if (el) el.style.display = ids.includes(id) ? "block" : "none"; });
+  if (!ids.includes("taFundBtn")) taEl("taFundBox").style.display = "none";
+  if (!ids.includes("taWithdrawBtn")) taEl("taWithdrawBox").style.display = "none";
+  if (!ids.includes("taEnableBtn")) taEl("taPolicyBox").style.display = "none";
 }
-function autoShow(ids){
-  ["autoEnableBtn","autoSettingsBtn","autoSwitchBtn","autoDisconnectBtn","autoDisableBtn","autoRetryBtn"].forEach(id => {
-    const el = document.getElementById(id); if (el) el.style.display = ids.includes(id) ? "block" : "none";
-  });
-  const sb = document.getElementById("autoSettingsBox"); if (sb && !ids.includes("autoSettingsBtn")) sb.style.display = "none";
+function taHuman(code){
+  const c = String(code || "");
+  if (/REJECT|DENIED_BY_USER|USER_CANCEL/i.test(c)) return t("taErrRejected");
+  if (/MIN_LOT|MIN_ORDER/i.test(c)) return t("taErrMinLot");
+  if (/SOURCE|UNAVAILABLE|503|TIMEOUT/i.test(c)) return t("taErrSource");
+  if (/PROVIDER|401|403|429/i.test(c)) return t("taErrProvider");
+  return taFill("taErrGeneric", {code: c || "?"});
 }
-function autoRender(r){
-  const box = document.getElementById("autoBox"), st = document.getElementById("autoState"), apiHint = document.getElementById("apiHint");
+function taRenderPersonal(view, link){
+  const el = taEl("taPersonal"); if (!el) return;
+  const addr = view ? (view.resolved_address || view.input_address || "") : "";
+  const owned = !!(link && link.state === "OWNED" && String(link.trading_account || "").toLowerCase() === String(addr).toLowerCase());
+  el.innerHTML = addr ? `${v3Esc(wvShortAddr(addr))} · ${owned ? `<span class="pos">${t("wvLinkOwner")}</span>` : `<span style="color:var(--mut)">${t("wvStatusLine")}</span>`}` : `<span style="color:var(--mut)">${t("wvEmpty")}</span>`;
+  return owned;
+}
+function taRender(r){
+  const box = taEl("taBox"), st = taEl("taState"), det = taEl("taDetails"), pend = taEl("taPending");
   if (!box || !st) return;
-  box.style.display = "block"; window.__auto = r;
-  if (r.mode === "NOT_OWNED") { st.innerHTML = `<span style="color:var(--mut)">${t("autoNotOwned")}</span>`; autoShow([]); return; }
-  const g = r.grant, state = g ? g.state : null;
-  if (!r.grantServer) { st.innerHTML = `<span style="color:var(--mut)">${t("autoNoServer")}</span>`; autoShow(["autoRetryBtn","autoSwitchBtn","autoDisconnectBtn"]); window.__autoRetry = "refresh"; return; }
-  if (state === "TRADING_AUTHORIZED") {
-    st.innerHTML = `<span class="pos">${t("autoOn")}</span>`; autoShow(["autoSettingsBtn","autoDisableBtn"]);
-    if (apiHint) apiHint.innerHTML = `${t("wvNoKeys")} ${t("autoExecOff")}`;
-    return;
+  box.style.display = "block"; window.__ta = r;
+  det.innerHTML = ""; pend.innerHTML = ""; taEl("taHistoryBox").style.display = "none";
+  if (r.mode === "NOT_OWNED") { st.innerHTML = `<span style="color:var(--mut)">${t("taNeedOwned")}</span>`; taShow([]); return; }
+  if (r.mode === "NO_SERVER") { st.innerHTML = `<span style="color:var(--mut)">${t("taNoServer")}</span>`; taShow(["taRetryBtn"]); return; }
+  const d = r.data || {}, acc = d.account, tr = d.trading || {}, bal = d.balances || {};
+  if (!acc) { st.innerHTML = `<span style="color:var(--mut)">${t("taNoAccount")}</span>`; taShow(["taCreateBtn"]); return; }
+  const life = String(acc.lifecycle || "");
+  const money = bal && bal.free_base != null ? `${t("taFree")}: ${taFmt(bal.free_base)} pUSD · ${t("taReserved")}: ${taFmt(bal.reserved_base)} · ${t("taPositions")}: ${taFmt(bal.positions_cost_base)} · ${t("taPnl")}: ${taFmt(bal.realized_pnl_base)}` + (bal.checked_at ? ` · ${t("taChecked")} ${v3Esc(String(bal.checked_at).slice(11, 16))} UTC` : "") : "";
+  det.innerHTML = `${t("taAddr")}: <code style="word-break:break-all">${v3Esc(String(acc.bot_deposit_wallet || "—"))}</code>` + (money ? `<br>${money}` : "");
+  const ops = Array.isArray(d.pending_operations) ? d.pending_operations : [];
+  if (ops.length) pend.innerHTML = `${t("taPending")}: ` + ops.map(o => `${v3Esc(String(o.kind || ""))} · ${v3Esc(String(o.state || ""))}`).join("; ");
+  if (life === "RESTORE_REQUIRED") { st.innerHTML = `<span class="neg">${t("taRestore")}</span>`; taShow(["taRetryBtn","taHistoryBtn"]); return; }
+  if (life === "CREATING" || life === "KEY_READY") { st.innerHTML = `<span style="color:var(--mut)">${t("taCreating")}</span>`; taShow(["taRetryBtn"]); return; }
+  if (life === "CREDS_READY" || life === "DEPLOYED") { st.innerHTML = `<span style="color:var(--mut)">${t("taPreparing")}</span>`; taShow(["taRetryBtn"]); return; }
+  const free = Number(bal.free_base || 0);
+  if (tr.stop) { st.innerHTML = `<span class="neg">${t("taStopped")}</span>`; taShow(["taFundBtn","taWithdrawBtn","taSettingsBtn","taHistoryBtn","taRetryBtn"]); return; }
+  if (tr.enabled) {
+    const hb = tr.last_heartbeat ? (Date.now() - Date.parse(tr.last_heartbeat)) / 1000 : Infinity;
+    const stale = !(hb < 300) || !tr.executor_ready;
+    const label = stale ? `<span style="color:var(--mut)">${t("taUncertain")}</span>` : (tr.state_label === "ACTIVE_NO_SIGNAL" ? `<span class="pos">${t("taOnNoSignal")}</span>` : `<span class="pos">${t("taOn")}</span>`);
+    st.innerHTML = label + (tr.last_heartbeat ? `<br><span style="color:var(--mut);font-weight:400">${t("taLastCheck")}: ${v3Esc(String(tr.last_heartbeat).slice(11, 16))} UTC</span>` : "");
+    taShow(["taFundBtn","taSettingsBtn","taStopBtn","taWithdrawBtn","taHistoryBtn"]); return;
   }
-  if (state === "PAUSED") { st.innerHTML = `<span class="neg">${t("autoPaused")}</span>`; autoShow(["autoDisableBtn"]); return; }
-  if (state === "REVOKING") { st.innerHTML = `<span style="color:var(--mut)">${t("autoRevoking")}</span>`; autoShow(["autoRetryBtn"]); window.__autoRetry = "revoke"; return; }
-  if (g && (g.awaiting_signature || state === "AUTHORIZING" || state === "UNKNOWN" || (g.job && (g.job.status === "PENDING" || g.job.status === "CLAIMED")))) {
-    st.innerHTML = `<span style="color:var(--mut)">${t("autoPending")}</span>`; autoShow(["autoRetryBtn","autoDisableBtn"]); window.__autoRetry = "auto"; return;
-  }
-  if (g && String(g.reason || "").startsWith("PROVIDER_ACCESS_DENIED")) {       // 23.09: точный внешний blocker — без повторной подписи
-    st.innerHTML = `<span class="neg">${t("autoProviderDenied")}</span>`; autoShow(["autoRetryBtn","autoSwitchBtn","autoDisconnectBtn"]); window.__autoRetry = "refresh"; return;
-  }
-  st.innerHTML = `<span style="color:var(--mut)">${t("autoOff")}</span>`;      // NOT_CONNECTED / OWNED / REVOKED / EXPIRED
-  autoShow(["autoEnableBtn","autoSwitchBtn","autoDisconnectBtn"]);
+  if (life !== "READY") { st.innerHTML = `<span style="color:var(--mut)">${t("taPreparing")}</span>`; taShow(["taRetryBtn","taHistoryBtn"]); return; }
+  if (free <= 0) { st.innerHTML = `<span style="color:var(--mut)">${t("taNeedFunding")}</span>`; taShow(["taFundBtn","taHistoryBtn","taRetryBtn"]); return; }
+  st.innerHTML = `<span class="pos">${t("taReady")}</span>`; taShow(["taEnableBtn","taFundBtn","taWithdrawBtn","taHistoryBtn"]);
 }
-async function autoRefresh(bound){
-  const box = document.getElementById("autoBox"); if (!box) return;
+async function taRefresh(bound){
+  const box = taEl("taBox"); if (!box) return;
   const cur = wvInit(), view = window.__wv && window.__wv.view;
   if (!cur || !view) { box.style.display = "none"; return; }
   let link;
   try { link = await wvRpc("wallet_link_status", {p_init_data: cur}); } catch(e) { link = {server: false}; }
+  if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;          // поздний ответ прежней сессии не рисуется
+  const owned = taRenderPersonal(view, link.server ? link.data : null);
+  if (!owned) { taRender({mode: "NOT_OWNED"}); return; }
+  let r;
+  try { r = await wvRpc("ta_get", {p_init_data: cur}); } catch(e) { r = {server: false}; }
   if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
-  if (!link.server || !link.data) { box.style.display = "none"; return; }
-  const acct = String(link.data.trading_account || "").toLowerCase(), mine = String(view.resolved_address || view.input_address || "").toLowerCase();
-  if (link.data.state !== "OWNED" || acct !== mine) { autoRender({mode: "NOT_OWNED"}); return; }
-  let grant;
-  try { grant = await wvRpc("trading_grant_status", {p_init_data: cur}); } catch(e) { grant = {server: false}; }
-  if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
-  autoRender({mode: "OWNED", owner: link.data.signer, grant: grant.server ? grant.data : null, grantServer: grant.server});
+  if (!r.server || !r.data) { taRender({mode: "NO_SERVER"}); return; }
+  taRender({mode: "OK", data: r.data});
 }
-// v127 (Астра 23.09 п.4): «Торговый счёт бота» — отдельный счёт с отдельным ключом на сервере; только публичные факты из core_feed.bot_account
-function botAccountRender(ba){
-  const box = document.getElementById("botAccountBox"), st = document.getElementById("botAccState"), det = document.getElementById("botAccDetails");
-  if (!box || !st) return;
-  if (!ba || ba.error || !ba.deposit_wallet) { box.style.display = "block"; st.innerHTML = `<span style="color:var(--mut)">${t("botAccNone")}</span>`; det.innerHTML = ""; document.getElementById("botAccTopupBtn").style.display = "none"; return; }
-  box.style.display = "block";
-  const on = !!ba.trading_possible_now, stop = !!ba.stop;
-  st.innerHTML = stop ? `<span class="neg">${t("botAccStopped")}</span>` : on ? `<span class="pos">${t("botAccOn")}</span>` : `<span style="color:var(--mut)">${t("botAccOff")}</span>`;
-  const bal = ba.balance_pusd == null ? "—" : Number(ba.balance_pusd).toFixed(2) + " pUSD";
-  det.innerHTML = `${t("botAccBalance")}: ${bal}${ba.deployed === false ? " · " + t("botAccNotDeployed") : ""} · ${v3Esc(wvShortAddr(ba.deposit_wallet))}<br>` +
-                  `<span style="color:var(--mut);font-weight:400">${t("botAccSeparate")}<br>${v3Esc(String(ba.custody || ""))}</span>`;
-  document.getElementById("botAccTopupBtn").style.display = "block";
-  const tb = document.getElementById("botAccTopupBox"); tb.style.display = "none";
-  tb.innerHTML = `${t("botAccTopupHint")}<br><code style="word-break:break-all">${v3Esc(String(ba.deposit_wallet))}</code>`;
+async function taCall(name, params){
+  const cur = wvInit(); if (!cur) throw new Error("NO_SESSION");
+  const r = await wvRpc(name, Object.assign({p_init_data: cur}, params || {}));
+  if (!r.server) throw new Error("NO_SERVER");
+  return r.data;
 }
-document.getElementById("botAccTopupBtn").addEventListener("click", () => { const tb = document.getElementById("botAccTopupBox"); tb.style.display = tb.style.display === "none" ? "block" : "none"; });
-document.getElementById("autoEnableBtn").addEventListener("click", () => openAutoFlow("auto"));
-document.getElementById("autoRetryBtn").addEventListener("click", () => {
-  const k = window.__autoRetry || "refresh";
-  if (k === "refresh") autoRefresh(sessionKey()); else openAutoFlow(k);
+function taProblem(code){ const st = taEl("taState"); if (st) st.innerHTML = `<span class="neg">${v3Esc(taHuman(code))}</span>`; taEl("taRetryBtn").style.display = "block"; }
+// внешний браузер/кошелёк: одноразовый токен handoff, привязанный к операции; initData/подпись в URL не передаются
+function taOpenSign(token){
+  const target = new URL("auto_sign.html", location.href); target.searchParams.set("h", String(token)); target.searchParams.set("build", BUILD);
+  const tgApp = window.Telegram && window.Telegram.WebApp;
+  if (tgApp && tgApp.openLink) tgApp.openLink(target.href, {try_instant_view: false}); else window.open(target.href, "_blank");
+}
+async function taWaitOperation(bound, operationId){
+  for (let i = 0; i < 60; i++) {
+    if (sessionKey() !== bound) return null;
+    let op = null;
+    try { op = await taCall("ta_operation", {p_operation_id: operationId}); } catch(e) {}
+    if (op && ["CONFIRMED","FAILED","CANCELLED","UNKNOWN"].includes(String(op.state))) return op;
+    const st = taEl("taState"); if (st) st.innerHTML = `<span style="color:var(--mut)">${t("taOpWait")}</span>`;
+    await new Promise(r => setTimeout(r, 5000));
+  }
+  return null;
+}
+function taAfterOperation(op){
+  const st = taEl("taState"); if (!st) return;
+  if (!op) { st.innerHTML = `<span style="color:var(--mut)">${t("taOpUnknown")}</span>`; return; }
+  const s = String(op.state);
+  st.innerHTML = s === "CONFIRMED" ? `<span class="pos">${t("taOpDone")}</span>` : s === "UNKNOWN" ? `<span style="color:var(--mut)">${t("taOpUnknown")}</span>` : s === "CANCELLED" ? `<span style="color:var(--mut)">${t("taOpCancelled")}</span>` : `<span class="neg">${t("taOpFailed")}${op.reason ? " · " + v3Esc(taHuman(op.reason)) : ""}</span>`;
+}
+async function taSignedOperation(bound, prepared, slot){
+  // подготовлено сервером → одноразовый токен → подпись во внешнем браузере/кошельке → ход операции с сервера
+  const h = await taCall("ta_handoff_create", {p_operation_id: prepared.operation_id});
+  if (!h || !h.token) throw new Error("HANDOFF");
+  taEl("taState").innerHTML = `<span style="color:var(--mut)">${t("taOpWait")}</span>`;
+  taOpenSign(h.token);
+  const op = await taWaitOperation(bound, prepared.operation_id);
+  if (op && ["CONFIRMED","FAILED","CANCELLED"].includes(String(op.state))) taIdemDone(slot);
+  taAfterOperation(op);
+  await taRefresh(bound);
+}
+taEl("taRetryBtn").addEventListener("click", () => taRefresh(sessionKey()));
+taEl("taCreateBtn").addEventListener("click", async () => {
+  const bound = sessionKey(); taEl("taState").innerHTML = `<span style="color:var(--mut)">${t("taCreating")}</span>`; taShow([]);
+  try { const r = await taCall("ta_create", {p_idempotency_key: taIdem("create")}); if (r && r.status) taIdemDone("create"); } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound) return;
+  await taRefresh(bound);
 });
-document.getElementById("autoSwitchBtn").addEventListener("click", openMetaMaskFlow);
-document.getElementById("autoDisableBtn").addEventListener("click", async () => {
-  const cur = wvInit(); if (!cur) return;
-  try { await wvRpc("trading_grant_revoke", {p_init_data: cur}); } catch(e) {}     // локальный стоп на сервере — сразу, до подписи
-  openAutoFlow("revoke");                                                          // одна подпись отзыва в кошельке
+taEl("taFundBtn").addEventListener("click", () => {
+  const box = taEl("taFundBox"); box.style.display = box.style.display === "none" ? "block" : "none";
+  taEl("taFundSummary").innerHTML = t("taFundHint"); taEl("taFundAmount").value = "";
 });
-document.getElementById("autoDisconnectBtn").addEventListener("click", async () => {
-  const cur = wvInit();
-  try { if (cur) await wvRpc("wallet_link_revoke", {p_init_data: cur}); } catch(e) {}
-  const btn = document.getElementById("saveApiKey"); if (btn && btn.__p0Handler) btn.__p0Handler();   // штатное «Отключить просмотр»
+taEl("taFundGo").addEventListener("click", async () => {
+  const bound = sessionKey(), amt = taParseAmount(taEl("taFundAmount").value);
+  if (!amt) { taEl("taFundSummary").innerHTML = `<span class="neg">${t("taBadAmount")}</span>`; return; }
+  let prep;
+  try { prep = await taCall("ta_fund_prepare", {p_amount_base: amt, p_idempotency_key: taIdem("fund")}); } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound || !prep || prep.status !== "PREPARED") { taProblem(prep && prep.status); return; }
+  const sm = prep.summary || {};
+  taEl("taFundSummary").innerHTML = v3Esc(taFill("taFundSummary", {amt: taFmt(sm.amount_base || amt), from: wvShortAddr(String(sm.from || "")), to: wvShortAddr(String(sm.to || ""))})) + (sm.fee_note ? `<br><span style="color:var(--mut)">${v3Esc(String(sm.fee_note))}</span>` : "");
+  try { await taSignedOperation(bound, prep, "fund"); } catch(e) { taProblem(e.message); }
 });
-document.getElementById("autoSettingsBtn").addEventListener("click", () => {
-  const sb = document.getElementById("autoSettingsBox"), g = window.__auto && window.__auto.grant;
-  if (!sb) return;
-  if (sb.style.display === "block") { sb.style.display = "none"; return; }
-  const until = g && g.valid_until ? new Date(Number(g.valid_until) * 1000).toISOString().slice(0, 10) : "—";
-  sb.innerHTML = `${t("autoGranted")} ${until}<br>${t("autoLimits")}`; sb.style.display = "block";
+taEl("taEnableBtn").addEventListener("click", async () => {
+  const bound = sessionKey(); let pol;
+  try { pol = await taCall("ta_policy_get", {}); } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound) return;
+  const d = window.__ta && window.__ta.data || {}, bal = d.balances || {};
+  const p = pol || {}; const frac = Math.min(Number(p.max_stake_fraction || 0.10), 0.10);
+  const text = taFill("taPolicyText", {sports: (p.sports || ["mlb"]).join(", "), frac: (frac * 100).toFixed(0), maxopen: p.max_open || 10, bank: taFmt(bal.free_base), ver: p.version || 1});
+  window.__taPolicy = {version: p.version || 1, text};
+  taEl("taPolicyText").textContent = text; taEl("taPolicyBox").style.display = "block";
+});
+taEl("taPolicyAccept").addEventListener("click", async () => {
+  const bound = sessionKey(), pol = window.__taPolicy; if (!pol) return;
+  try { const sha = await taSha256(pol.text); const r = await taCall("ta_enable", {p_policy_version: pol.version, p_accepted_text_sha256: sha}); if (!r || r.status !== "ENABLED") { taProblem(r && r.status); return; } } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound) return;
+  showWvToast(t("taOn")); await taRefresh(bound);
+});
+taEl("taSettingsBtn").addEventListener("click", () => taEl("taEnableBtn").click());
+taEl("taStopBtn").addEventListener("click", async () => {
+  const bound = sessionKey();
+  try { await taCall("ta_stop", {}); } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound) return;
+  showWvToast(t("taStopped")); await taRefresh(bound);
+});
+taEl("taWithdrawBtn").addEventListener("click", () => {
+  const box = taEl("taWithdrawBox"); box.style.display = box.style.display === "none" ? "block" : "none";
+  taEl("taWithdrawSummary").innerHTML = t("taWithdrawHint"); taEl("taWithdrawAmount").value = "";
+});
+taEl("taWithdrawGo").addEventListener("click", async () => {
+  const bound = sessionKey(), amt = taParseAmount(taEl("taWithdrawAmount").value);
+  const d = window.__ta && window.__ta.data || {}, free = Number((d.balances || {}).free_base || 0);
+  if (!amt) { taEl("taWithdrawSummary").innerHTML = `<span class="neg">${t("taBadAmount")}</span>`; return; }
+  if (amt > free) { taEl("taWithdrawSummary").innerHTML = `<span class="neg">${t("taTooMuch")}</span>`; return; }
+  let prep;
+  try { prep = await taCall("ta_withdraw_prepare", {p_amount_base: amt, p_idempotency_key: taIdem("withdraw")}); } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound || !prep || prep.status !== "PREPARED") { taProblem(prep && prep.status); return; }
+  const to = (d.account || {}).funding_wallet || (prep.intent_typed_data && prep.intent_typed_data.message && prep.intent_typed_data.message.recipient) || "";
+  taEl("taWithdrawSummary").innerHTML = v3Esc(taFill("taWithdrawSummary", {amt: taFmt(amt), to: wvShortAddr(String(to))}));
+  try { await taSignedOperation(bound, prep, "withdraw"); } catch(e) { taProblem(e.message); }
+});
+taEl("taHistoryBtn").addEventListener("click", async () => {
+  const bound = sessionKey(), box = taEl("taHistoryBox");
+  if (box.style.display === "block") { box.style.display = "none"; return; }
+  let h; try { h = await taCall("ta_history", {p_limit: 30}); } catch(e) { taProblem(e.message); return; }
+  if (sessionKey() !== bound) return;
+  const orders = (h && h.orders) || [];
+  if (!orders.length) { box.innerHTML = `<span style="color:var(--mut)">${t("taNoHistory")}</span>`; box.style.display = "block"; return; }
+  box.innerHTML = orders.map(o => {
+    const head = `${v3Esc(String(o.match || o.fixture_id || ""))} · ${v3Esc(String(o.market || ""))}/${v3Esc(String(o.side || ""))}`;
+    const money = o.amount_base != null ? `${taFmt(o.amount_base)} pUSD` : ""; const price = o.price != null ? ` @ ${Number(o.price).toFixed(3)}` : "";
+    const fee = o.fee_base != null ? ` · fee ${taFmt(o.fee_base)}` : ""; const when = o.created_at ? ` · ${v3Esc(String(o.created_at).slice(0, 16).replace("T", " "))}` : "";
+    const res = o.result ? ` · ${v3Esc(String(o.result))}` : ""; const skip = o.skip_reason ? ` · ${t("taSkipReason")}: ${v3Esc(String(o.skip_reason))}` : "";
+    const ex = o.exchange_order_id ? `<details><summary style="color:var(--mut)">id</summary><code style="word-break:break-all">${v3Esc(String(o.exchange_order_id))}</code></details>` : "";
+    return `<div style="margin-bottom:6px">${head}<br>${money}${price}${fee}${when} · ${v3Esc(String(o.state || ""))}${res}${skip}${ex}</div>`;
+  }).join(""); box.style.display = "block";
 });
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");

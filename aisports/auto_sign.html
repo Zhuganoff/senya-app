@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI Sports — подпись операции</title>
+<!-- v128 (AUTO_ACCOUNTS §3): одноразовый переход для подписи операции торгового счёта во внешнем браузере/кошельке.
+     В URL — только токен handoff (h=…), привязанный сервером к одной операции и подтверждённой сессии, одно использование, 10 мин.
+     initData, подписи и ключи в URL/аналитику/логи не попадают. typed-data приходит с сервера (ta_handoff_get), подпись уходит на сервер
+     (ta_handoff_submit); страница ничего не хранит. Подключение MetaMask — как в инженерной mm.html (расширение Chrome / MetaMask SDK на телефоне). -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+ body{margin:0;background:#0b0f19;color:#e8ecf4;font:15px/1.4 -apple-system,system-ui,sans-serif;padding:16px}
+ h1{font-size:18px;margin:0 0 8px} .m{color:#9aa4b8;font-size:13px}
+ button{display:block;width:100%;padding:14px;margin:10px 0;border:0;border-radius:12px;background:#1d2a44;color:#fff;font-size:16px}
+ button:disabled{opacity:.45} button.p{background:#2f6df6}
+ .st{padding:10px;border-radius:10px;background:#141c30;margin:8px 0;word-break:break-word} .ok{background:#123a2a} .bad{background:#3a1212}
+ code{word-break:break-all}
+</style></head><body>
+<h1>Подпись операции AI Sports</h1>
+<div class="m">Подключите кошелёк, которым подтверждено владение вашим личным счётом Polymarket. Ниже показано, что именно вы подписываете. Отмена в кошельке ничего не отправляет.</div>
+<div class="st" id="what">Загружаем операцию…</div>
+<button class="p" id="b1">Подключить MetaMask</button>
+<button class="p" id="b2" disabled>Подписать</button>
+<div class="st" id="acc">кошелёк не подключён</div>
+<div class="st" id="res" style="display:none"></div>
+<script type="module">
+const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";   // aisports (official); ключ anon — публичный, тот же, что в витрине
+const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M";
+const tg = window.Telegram && window.Telegram.WebApp; try { tg && tg.ready(); } catch (e) {}
+const $ = id => document.getElementById(id);
+const token = new URLSearchParams(location.search).get("h") || "";
+let sdk, provider, signer = "", handoff = null;
+function status(el, text, cls) { const e = $(el); e.style.display = "block"; e.textContent = text; e.className = "st" + (cls ? " " + cls : ""); }
+async function rpc(name, params) {
+  const r = await fetch(SB + "/rpc/" + name, { method: "POST", headers: { "Content-Type": "application/json", apikey: KEY, Authorization: "Bearer " + KEY }, body: JSON.stringify(params) });
+  const txt = await r.text();
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return txt ? JSON.parse(txt) : null;
+}
+function describe(h) {
+  const td = h.typed_data || {}, m = td.message || {}, d = td.domain || {};
+  const kind = String(h.kind || "");
+  if (kind === "FUND") return `Пополнение торгового счёта: перевод ${fmt(h.amount_base)} pUSD с ${short(h.from)} на ${short(h.to)} (Polygon, chainId ${d.chainId || 137}). Это перевод денег.`;
+  if (kind === "WITHDRAW") return `Возврат ${fmt(m.amount_base || h.amount_base)} pUSD с торгового счёта на ваш личный счёт ${short(m.recipient || h.to)} (Polygon). Намерение действует до ${m.expires_at ? new Date(Number(m.expires_at) * 1000).toISOString().slice(0, 16) : "—"} UTC.`;
+  return `Операция ${kind || "?"}: ${td.primaryType || "typed data"} для ${short(d.verifyingContract || h.to)}.`;
+}
+function fmt(b) { const n = Number(b); return Number.isFinite(n) ? (n / 1e6).toFixed(2) : "—"; }
+function short(a) { a = String(a || ""); return a ? a.slice(0, 6) + "…" + a.slice(-4) : "—"; }
+async function load() {
+  if (!token) { status("what", "Нет токена операции. Откройте эту страницу из приложения AI Sports.", "bad"); $("b1").disabled = true; return; }
+  try {
+    handoff = await rpc("ta_handoff_get", { p_token: token });
+    if (!handoff || !handoff.typed_data) throw new Error((handoff && handoff.status) || "нет данных");
+    status("what", describe(handoff) + " Подписать может только аккаунт " + short(handoff.expected_signer) + ".");
+  } catch (e) { status("what", "Операция недоступна или токен уже использован: " + (e.message || e), "bad"); $("b1").disabled = true; }
+}
+function setAccount(a, chain) { signer = (a || "").toLowerCase(); $("acc").textContent = signer ? `подключён: ${signer} · chainId ${chain || "?"}` : "кошелёк не подключён"; $("b2").disabled = !signer || !handoff; }
+async function ensurePolygon() {
+  const cid = await provider.request({ method: "eth_chainId" });
+  if (cid !== "0x89") await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x89" }] });
+}
+async function requestInjectedAccount() {
+  try { await window.ethereum.request({ method: "wallet_requestPermissions", params: [{ eth_accounts: {} }] }); }
+  catch (e) { if (Number(e && e.code) === 4001) throw e; }
+  let accounts = await window.ethereum.request({ method: "eth_accounts" });
+  if (!accounts || !accounts.length) accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+  return accounts;
+}
+async function mobileConnect() {
+  const mod = await import("https://cdn.jsdelivr.net/npm/@metamask/sdk@0.34.0/+esm");
+  sdk = new mod.MetaMaskSDK({ dappMetadata: { name: "AI Sports (official)", url: location.origin }, useDeeplink: true, checkInstallationImmediately: false, logging: { developerMode: false } });
+  const accounts = await sdk.connect();
+  return { accounts, provider: sdk.getProvider() };
+}
+$("b1").onclick = async () => {
+  $("b1").disabled = true;
+  try {
+    let conn;
+    if (window.ethereum) conn = { accounts: await requestInjectedAccount(), provider: window.ethereum };
+    else conn = await mobileConnect();
+    provider = conn.provider;
+    provider.on && provider.on("accountsChanged", a => setAccount(a[0], null));
+    setAccount(conn.accounts[0], await provider.request({ method: "eth_chainId" }));
+  } catch (e) { status("res", "Подключение не выполнено: " + (e.message || e), "bad"); }
+  finally { $("b1").disabled = false; }
+};
+$("b2").onclick = async () => {
+  $("b2").disabled = true;
+  try {
+    const expected = String(handoff.expected_signer || "").toLowerCase();
+    if (expected && expected !== signer) throw new Error("выбран не тот аккаунт: нужен " + short(expected));
+    await ensurePolygon();
+    const td = handoff.typed_data;
+    const full = Object.assign({}, td, { types: Object.assign({ EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }].concat(td.domain && td.domain.verifyingContract ? [{ name: "verifyingContract", type: "address" }] : []) }, td.types) });
+    const sig = await provider.request({ method: "eth_signTypedData_v4", params: [signer, JSON.stringify(full)] });
+    const r = await rpc("ta_handoff_submit", { p_token: token, p_signature: sig });
+    if (!r || !["SUBMITTING", "ACCEPTED", "OK"].includes(String(r.status))) throw new Error((r && r.status) || "отказ сервера");
+    status("res", "Подпись принята. Вернитесь в приложение AI Sports — ход операции показан там.", "ok");
+    $("b1").disabled = true;
+  } catch (e) { status("res", "Не подписано: " + (e.shortMessage || e.message || e) + ". Ничего не отправлено.", "bad"); $("b2").disabled = !signer; }
+};
+load();
+if (new URLSearchParams(location.search).get("auto") !== "0") setTimeout(() => { if (window.ethereum || /iPhone|iPad|Android/i.test(navigator.userAgent)) $("b1").click(); }, 300);
+</script></body></html>
