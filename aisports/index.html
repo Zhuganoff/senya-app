@@ -1225,6 +1225,7 @@ const T = {
   autoNoServer: ["Сервер автоставок временно недоступен", "Auto-bet server is temporarily unavailable", "自动投注服务器暂时不可用"],
   autoGranted: ["Полномочие выдано: только ордера Polymarket, без вывода средств, до", "Permission granted: Polymarket orders only, no withdrawals, until", "已授权：仅限 Polymarket 下单，不可提现，有效期至"],
   autoLimits: ["Ставка не более 10 % доступного банка · одновременно до 10 позиций · отключение одной кнопкой", "Stake ≤ 10 % of available bank · up to 10 open positions · one-tap disable", "单注不超过可用资金的 10% · 最多 10 个持仓 · 一键关闭"],
+  autoProviderDenied: ["Polymarket ещё не выдал доступ к автоторговле для этого приложения — заявка подана, ждём ответа. Ваш кошелёк и подписи в порядке.", "Polymarket has not yet granted auto-trading access to this app — the request is filed, awaiting reply. Your wallet and signatures are fine.", "Polymarket 尚未向本应用开放自动交易权限——申请已提交，等待回复。您的钱包和签名没有问题。"],
   autoExecOff: ["Исполнение ордеров ещё не включено на сервере — ставки не отправляются.", "Order execution is not enabled on the server yet — no bets are sent.", "服务器尚未开启下单执行——不会发送投注。"],
   wvLoading: ["Ищем аккаунт…", "Looking up the account…", "正在查找账户……"],
   wvBadAddr: ["Это не EVM-адрес: нужно 0x и 40 шестнадцатеричных символов", "Not an EVM address: 0x followed by 40 hex characters is required", "这不是 EVM 地址：需要 0x 加 40 个十六进制字符"],
@@ -2840,6 +2841,9 @@ function autoRender(r){
   if (state === "REVOKING") { st.innerHTML = `<span style="color:var(--mut)">${t("autoRevoking")}</span>`; autoShow(["autoRetryBtn"]); window.__autoRetry = "revoke"; return; }
   if (g && (g.awaiting_signature || state === "AUTHORIZING" || state === "UNKNOWN" || (g.job && (g.job.status === "PENDING" || g.job.status === "CLAIMED")))) {
     st.innerHTML = `<span style="color:var(--mut)">${t("autoPending")}</span>`; autoShow(["autoRetryBtn","autoDisableBtn"]); window.__autoRetry = "auto"; return;
+  }
+  if (g && String(g.reason || "").startsWith("PROVIDER_ACCESS_DENIED")) {       // 23.09: точный внешний blocker — без повторной подписи
+    st.innerHTML = `<span class="neg">${t("autoProviderDenied")}</span>`; autoShow(["autoRetryBtn","autoSwitchBtn","autoDisconnectBtn"]); window.__autoRetry = "refresh"; return;
   }
   st.innerHTML = `<span style="color:var(--mut)">${t("autoOff")}</span>`;      // NOT_CONNECTED / OWNED / REVOKED / EXPIRED
   autoShow(["autoEnableBtn","autoSwitchBtn","autoDisconnectBtn"]);

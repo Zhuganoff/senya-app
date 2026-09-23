@@ -210,6 +210,8 @@ const HUMAN = { NOT_OWNED: "Сначала подтвердите владени
   SIGNATURE_FORMAT: "Кошелёк вернул подпись неожиданного формата", NOTHING_TO_SIGN: "Подписывать пока нечего — обновите статус",
   HTTP404: "Сервер автоставок ещё не установлен", PENDING_TIMEOUT: "Сервер не ответил вовремя — нажмите «Повторить»" };
 function wvShort(a) { a = String(a || ""); return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
+const DENIED = "Polymarket ещё не выдал доступ к автоторговле для этого приложения — заявка подана, ждём ответа. Ваш кошелёк и подписи в порядке; повторно подписывать ничего не нужно.";
+function providerText(st) { return st && String(st.reason || "").startsWith("PROVIDER_ACCESS_DENIED") ? DENIED : ""; }
 function human(status) { return HUMAN[status] || (String(status || "").startsWith("STATE_") ? "Полномочие уже в состоянии " + String(status).slice(6) : "Ошибка: " + status); }
 function autoStatus(text, ok) { const el = $("auto"); el.style.display = "block"; el.textContent = text; el.style.background = ok === true ? "#123a2a" : ok === false ? "#3a1212" : "#141c30"; }
 async function grantStatus() { return await rpc("trading_grant_status", { p_init_data: tg.initData }); }
@@ -261,12 +263,12 @@ async function enableAuto() {
     autoStatus("Готовим подтверждение…");
     st = await waitGrant(s => s && (s.awaiting_signature || s.state === "TRADING_AUTHORIZED" || (!s.job && ["OWNED", "NOT_CONNECTED", "REVOKED", "EXPIRED"].includes(s.state) && step > 0)), 120);
     if (st.state === "TRADING_AUTHORIZED") { autoStatus("Кошелёк подключён · автоставки включены", true); return; }
-    if (!st.awaiting_signature) throw new Error("Поставщик отклонил полномочие — нажмите «Повторить»");
+    if (!st.awaiting_signature) throw new Error(providerText(st) || "Поставщик отклонил полномочие — нажмите «Повторить»");
     await signPending(st, acct);
   }
   st = await waitGrant(s => s && (s.state === "TRADING_AUTHORIZED" || ["OWNED", "REVOKED", "EXPIRED"].includes(s.state)), 300);
   if (st.state === "TRADING_AUTHORIZED") autoStatus("Кошелёк подключён · автоставки включены", true);
-  else throw new Error("Поставщик не подтвердил полномочие — нажмите «Повторить»");
+  else throw new Error(providerText(st) || "Поставщик не подтвердил полномочие — нажмите «Повторить»");
 }
 async function revokeAuto() {
   const link = await rpc("wallet_link_status", { p_init_data: tg.initData });
@@ -285,6 +287,7 @@ async function runFlow() {
     $("bAuto").style.display = "none";
   } catch (e) {
     const msg = e && e.message ? e.message : String(e);
+    if (msg === DENIED) { autoStatus(msg, false); $("bAuto").style.display = "none"; return; }     // внешний blocker: повторов/подписей не предлагаем
     autoStatus((/HTTP 404/.test(msg) ? HUMAN.HTTP404 : msg) + " · нажмите «Повторить»", false);
     $("bAuto").textContent = "Повторить"; $("bAuto").style.display = "block";
   }
