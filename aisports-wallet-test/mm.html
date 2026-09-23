@@ -202,7 +202,7 @@ async function signConfirmation() {
   finally { $("b2").disabled = !signer; }
 }
 $("b2").onclick = signConfirmation;
-// v123 (владелец 23.09 «подключил кошелёк и готово»): полномочие Session Key Polymarket — подписи только в кошельке.
+// v124: полномочие Session Key Polymarket — подписи только в кошельке; подпись отправляется с idempotency_key подготовленного задания.
 // flow=auto: реквизиты владельца (ClobAuth) → полномочие (Batch authorizeSessionSigner: только ордера CLOB, без вывода, 180 дней);
 // flow=revoke: локальный стоп уже поставлен витриной, здесь одна подпись отзыва (Batch revokeSessionSigner). Ключей/адресов/Terminal нет.
 const FLOW = new URLSearchParams(location.search).get("flow");
@@ -245,7 +245,11 @@ async function signPending(st, tradingAccount) {
   const td = st.typed_data;
   const full = Object.assign({}, td, { types: Object.assign({ EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }].concat(td.domain && td.domain.verifyingContract ? [{ name: "verifyingContract", type: "address" }] : []) }, td.types) });
   const sig = await provider.request({ method: "eth_signTypedData_v4", params: [signer, JSON.stringify(full)] });
-  const r = await rpc("trading_grant_sign", { p_init_data: tg.initData, p_signature: sig });
+  const r = await rpc("trading_grant_sign", {
+    p_init_data: tg.initData,
+    p_idempotency_key: st.idempotency_key,
+    p_signature: sig
+  });
   if (!r || r.status !== "PENDING") throw new Error(human(r && r.status));
 }
 async function enableAuto() {
