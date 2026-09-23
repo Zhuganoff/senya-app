@@ -28,6 +28,8 @@
 <button id="b2" disabled>2. Подписать подтверждение (eth_signTypedData_v4)</button>
 <button id="b3" disabled>Сменить кошелёк</button>
 <div class="st" id="acc">кошелёк не подключён</div>
+<div class="st" id="auto" style="display:none"></div>
+<button class="p" id="bAuto" style="display:none">Включить автоставки</button>
 <pre id="log"></pre>
 <script type="module">
 const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";   // aisports (official); ключ anon — публичный, тот же, что в витрине
@@ -140,7 +142,14 @@ async function connectMetaMask() {
     provider.on && provider.on("accountsChanged", a => { setAccount(a[0], null); log("accountsChanged"); });
     provider.on && provider.on("chainChanged", c => log(`chainChanged: ${c}`));
     setAccount(accounts[0], await provider.request({ method: "eth_chainId" }));
-    if ($("srv").checked && tg && tg.initData) await signConfirmation();
+    if ($("srv").checked && tg && tg.initData) {
+      let already = null;
+      try { already = await rpc("wallet_link_status", { p_init_data: tg.initData }); } catch (e) {}
+      if (already && already.state === "OWNED" && String(already.signer || "").toLowerCase() === signer) {
+        log(`владение уже подтверждено этим аккаунтом (${wvShort(already.trading_account)}) — подпись владения не нужна`);
+        if (FLOW) await runFlow(); else $("bAuto").style.display = "block";
+      } else await signConfirmation();
+    }
   } catch (e) { log("connect failed: " + (e.shortMessage || e.message || e)); }
   finally { $("b1").disabled = false; }
 }
@@ -182,13 +191,106 @@ async function signConfirmation() {
       for (let i = 0; i < 36 && sub && sub.status === "PENDING"; i++) {
         await new Promise(r => setTimeout(r, 5000));
         const st = await rpc("wallet_link_status", { p_init_data: tg.initData });
-        if (st && st.state !== "PENDING") { log("итог: " + JSON.stringify(st)); break; }
+        if (st && st.state !== "PENDING") {
+          log("итог: " + JSON.stringify(st));
+          if (st.state === "OWNED") { if (FLOW) await runFlow(); else $("bAuto").style.display = "block"; }
+          break;
+        }
       }
     }
   } catch (e) { log("sign failed: " + (e.shortMessage || e.message || e)); }
   finally { $("b2").disabled = !signer; }
 }
 $("b2").onclick = signConfirmation;
+// v123 (владелец 23.09 «подключил кошелёк и готово»): полномочие Session Key Polymarket — подписи только в кошельке.
+// flow=auto: реквизиты владельца (ClobAuth) → полномочие (Batch authorizeSessionSigner: только ордера CLOB, без вывода, 180 дней);
+// flow=revoke: локальный стоп уже поставлен витриной, здесь одна подпись отзыва (Batch revokeSessionSigner). Ключей/адресов/Terminal нет.
+const FLOW = new URLSearchParams(location.search).get("flow");
+const HUMAN = { NOT_OWNED: "Сначала подтвердите владение кошельком", BUSY: "Сервер ещё обрабатывает предыдущий шаг — подождите и нажмите «Повторить»",
+  SIGNATURE_FORMAT: "Кошелёк вернул подпись неожиданного формата", NOTHING_TO_SIGN: "Подписывать пока нечего — обновите статус",
+  HTTP404: "Сервер автоставок ещё не установлен", PENDING_TIMEOUT: "Сервер не ответил вовремя — нажмите «Повторить»" };
+function wvShort(a) { a = String(a || ""); return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
+function human(status) { return HUMAN[status] || (String(status || "").startsWith("STATE_") ? "Полномочие уже в состоянии " + String(status).slice(6) : "Ошибка: " + status); }
+function autoStatus(text, ok) { const el = $("auto"); el.style.display = "block"; el.textContent = text; el.style.background = ok === true ? "#123a2a" : ok === false ? "#3a1212" : "#141c30"; }
+async function grantStatus() { return await rpc("trading_grant_status", { p_init_data: tg.initData }); }
+async function waitGrant(pred, seconds) {
+  for (let i = 0; i < seconds / 3; i++) {
+    const st = await grantStatus();
+    if (pred(st)) return st;
+    await new Promise(r => setTimeout(r, 3000));
+  }
+  throw new Error(HUMAN.PENDING_TIMEOUT);
+}
+function verifyTyped(st, tradingAccount) {
+  const td = st.typed_data || {}; const m = td.message || {}; const d = td.domain || {};
+  if (st.kind === "owner_creds") {
+    if (td.primaryType !== "ClobAuth" || String(m.address || "").toLowerCase() !== signer) throw new Error("typed-data реквизитов не для этого аккаунта");
+    return "1/2 · доступ к чтению вашего аккаунта Polymarket (реквизиты только для проверки, ордера этим не разрешаются)";
+  }
+  if (st.kind === "authorize" || st.kind === "revoke") {
+    if (td.primaryType !== "Batch" || Number(d.chainId) !== 137 || String(d.verifyingContract || "").toLowerCase() !== tradingAccount) throw new Error("typed-data полномочия не для этого Deposit Wallet");
+    if (!Array.isArray(m.calls) || m.calls.length !== 1) throw new Error("в полномочии больше одного действия — отказ");
+    if (!Array.isArray(st.scopes) || st.scopes.some(x => x !== "CLOB")) { if (st.kind === "authorize") throw new Error("полномочие шире, чем «только ордера» — отказ"); }
+    return st.kind === "authorize" ? "2/2 · разрешение серверу ставить с этого кошелька: только ордера Polymarket, без вывода средств, до " + new Date(Number(st.valid_until) * 1000).toISOString().slice(0, 10) + ", отключается одной кнопкой"
+                                   : "отзыв разрешения: сервер больше не сможет ставить с этого кошелька";
+  }
+  throw new Error("неизвестный тип подписи: " + st.kind);
+}
+async function signPending(st, tradingAccount) {
+  const what = verifyTyped(st, tradingAccount);
+  autoStatus("Подтвердите в кошельке: " + what);
+  await ensurePolygon();
+  const td = st.typed_data;
+  const full = Object.assign({}, td, { types: Object.assign({ EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }].concat(td.domain && td.domain.verifyingContract ? [{ name: "verifyingContract", type: "address" }] : []) }, td.types) });
+  const sig = await provider.request({ method: "eth_signTypedData_v4", params: [signer, JSON.stringify(full)] });
+  const r = await rpc("trading_grant_sign", { p_init_data: tg.initData, p_signature: sig });
+  if (!r || r.status !== "PENDING") throw new Error(human(r && r.status));
+}
+async function enableAuto() {
+  const link = await rpc("wallet_link_status", { p_init_data: tg.initData });
+  if (!link || link.state !== "OWNED" || String(link.signer || "").toLowerCase() !== signer) throw new Error(HUMAN.NOT_OWNED);
+  const acct = String(link.trading_account || "").toLowerCase();
+  let st = await grantStatus();
+  if (st && st.state === "TRADING_AUTHORIZED") { autoStatus("Кошелёк подключён · автоставки включены", true); return; }
+  const busy = st && st.job && (st.job.status === "PENDING" || st.job.status === "CLAIMED");
+  if (!(st && st.awaiting_signature) && !busy && !(st && (st.state === "AUTHORIZING" || st.state === "UNKNOWN"))) {
+    const r = await rpc("trading_grant_request", { p_init_data: tg.initData });
+    if (!r || r.status !== "PENDING") throw new Error(human(r && r.status));
+  }
+  for (let step = 0; step < 3; step++) {
+    autoStatus("Готовим подтверждение…");
+    st = await waitGrant(s => s && (s.awaiting_signature || s.state === "TRADING_AUTHORIZED" || (!s.job && ["OWNED", "NOT_CONNECTED", "REVOKED", "EXPIRED"].includes(s.state) && step > 0)), 120);
+    if (st.state === "TRADING_AUTHORIZED") { autoStatus("Кошелёк подключён · автоставки включены", true); return; }
+    if (!st.awaiting_signature) throw new Error("Поставщик отклонил полномочие — нажмите «Повторить»");
+    await signPending(st, acct);
+  }
+  st = await waitGrant(s => s && (s.state === "TRADING_AUTHORIZED" || ["OWNED", "REVOKED", "EXPIRED"].includes(s.state)), 300);
+  if (st.state === "TRADING_AUTHORIZED") autoStatus("Кошелёк подключён · автоставки включены", true);
+  else throw new Error("Поставщик не подтвердил полномочие — нажмите «Повторить»");
+}
+async function revokeAuto() {
+  const link = await rpc("wallet_link_status", { p_init_data: tg.initData });
+  const acct = String((link && link.trading_account) || "").toLowerCase();
+  let st = await grantStatus();
+  if (!st || ["OWNED", "NOT_CONNECTED", "REVOKED", "EXPIRED"].includes(st.state)) { autoStatus("Автоставки выключены", true); return; }
+  if (st.state !== "REVOKING") await rpc("trading_grant_revoke", { p_init_data: tg.initData });
+  st = await waitGrant(s => s && (s.awaiting_signature || ["OWNED", "REVOKED", "EXPIRED"].includes(s.state)), 120);
+  if (st.awaiting_signature) await signPending(st, acct);
+  st = await waitGrant(s => s && ["OWNED", "REVOKED", "EXPIRED"].includes(s.state), 300);
+  autoStatus("Автоставки выключены · разрешение отозвано", true);
+}
+async function runFlow() {
+  try {
+    if (FLOW === "revoke") await revokeAuto(); else await enableAuto();
+    $("bAuto").style.display = "none";
+  } catch (e) {
+    const msg = e && e.message ? e.message : String(e);
+    autoStatus((/HTTP 404/.test(msg) ? HUMAN.HTTP404 : msg) + " · нажмите «Повторить»", false);
+    $("bAuto").textContent = "Повторить"; $("bAuto").style.display = "block";
+  }
+}
+$("bAuto").onclick = runFlow;
+if (FLOW) { $("bAuto").textContent = FLOW === "revoke" ? "Отключить автоставки" : "Включить автоставки"; }
 if (new URLSearchParams(location.search).get("auto") === "1") {
   setTimeout(() => {
     if (window.ethereum || /iPhone|iPad|Android/i.test(navigator.userAgent)) connectMetaMask();

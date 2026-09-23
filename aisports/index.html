@@ -836,6 +836,16 @@ body.splash-on{overflow:hidden}
       <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Приватный ключ и сид-фраза не нужны. Автоторговля пока недоступна.</div>
       <button class="btn" id="verifyWalletOwner" style="display:none;margin-top:10px" data-i18n="wvVerifyOwner">Подтвердить владение</button>
+      <div id="autoBox" style="display:none;margin-top:10px">
+        <div class="me-sub" id="autoState" style="font-weight:700"></div>
+        <button class="btn" id="autoEnableBtn" style="display:none;margin-top:8px" data-i18n="autoEnable">Включить автоставки</button>
+        <button class="btn ghost" id="autoSettingsBtn" style="display:none;margin-top:8px" data-i18n="autoSettings">Настройки автоставок</button>
+        <div class="me-sub" id="autoSettingsBox" style="display:none;margin-top:8px"></div>
+        <button class="btn ghost" id="autoSwitchBtn" style="display:none;margin-top:8px" data-i18n="autoSwitch">Сменить кошелёк</button>
+        <button class="btn ghost" id="autoDisconnectBtn" style="display:none;margin-top:8px" data-i18n="autoDisconnect">Отключить кошелёк</button>
+        <button class="btn" id="autoDisableBtn" style="display:none;margin-top:8px;color:#ef4444" data-i18n="autoDisable">Отключить автоставки</button>
+        <button class="btn ghost" id="autoRetryBtn" style="display:none;margin-top:8px" data-i18n="autoRetry">Повторить</button>
+      </div>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
     <div id="exchBlock" style="display:none">
@@ -983,7 +993,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v122";
+const BUILD = "v123";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1200,6 +1210,22 @@ const T = {
            "输入公开地址即可查看所选账户的余额与操作。连接仅提供查看。"],
   wvNoKeys: ["Приватный ключ и сид-фраза не нужны.", "A private key and seed phrase are not needed.", "无需私钥和助记词。"],
   wvTradingOff: ["Автоторговля пока недоступна.", "Auto-trading is not available yet.", "自动交易暂不可用。"],
+  autoEnable: ["Включить автоставки", "Enable auto-bets", "开启自动投注"],
+  autoSettings: ["Настройки автоставок", "Auto-bet settings", "自动投注设置"],
+  autoSwitch: ["Сменить кошелёк", "Switch wallet", "更换钱包"],
+  autoDisconnect: ["Отключить кошелёк", "Disconnect wallet", "断开钱包"],
+  autoDisable: ["Отключить автоставки", "Disable auto-bets", "关闭自动投注"],
+  autoRetry: ["Повторить", "Retry", "重试"],
+  autoOn: ["Кошелёк подключён · автоставки включены", "Wallet connected · auto-bets enabled", "钱包已连接 · 自动投注已开启"],
+  autoOff: ["Кошелёк подключён · автоставки выключены", "Wallet connected · auto-bets off", "钱包已连接 · 自动投注已关闭"],
+  autoPending: ["Подтверждение в кошельке ещё не завершено", "Wallet confirmation is not finished yet", "钱包确认尚未完成"],
+  autoRevoking: ["Отключаем автоставки — нужна одна подпись в кошельке", "Disabling auto-bets — one wallet signature needed", "正在关闭自动投注——需要一次钱包签名"],
+  autoPaused: ["Автоставки приостановлены (стоп)", "Auto-bets paused (stop)", "自动投注已暂停（停止）"],
+  autoNotOwned: ["Владение кошельком не подтверждено — нажмите «Подключить кошелёк»", "Wallet ownership not confirmed — tap “Connect wallet”", "钱包所有权未确认——请点击“连接钱包”"],
+  autoNoServer: ["Сервер автоставок временно недоступен", "Auto-bet server is temporarily unavailable", "自动投注服务器暂时不可用"],
+  autoGranted: ["Полномочие выдано: только ордера Polymarket, без вывода средств, до", "Permission granted: Polymarket orders only, no withdrawals, until", "已授权：仅限 Polymarket 下单，不可提现，有效期至"],
+  autoLimits: ["Ставка не более 10 % доступного банка · одновременно до 10 позиций · отключение одной кнопкой", "Stake ≤ 10 % of available bank · up to 10 open positions · one-tap disable", "单注不超过可用资金的 10% · 最多 10 个持仓 · 一键关闭"],
+  autoExecOff: ["Исполнение ордеров ещё не включено на сервере — ставки не отправляются.", "Order execution is not enabled on the server yet — no bets are sent.", "服务器尚未开启下单执行——不会发送投注。"],
   wvLoading: ["Ищем аккаунт…", "Looking up the account…", "正在查找账户……"],
   wvBadAddr: ["Это не EVM-адрес: нужно 0x и 40 шестнадцатеричных символов", "Not an EVM address: 0x followed by 40 hex characters is required", "这不是 EVM 地址：需要 0x 加 40 个十六进制字符"],
   wvNotFound: ["Аккаунт Polymarket не найден по этому адресу", "No Polymarket account found for this address", "未找到与此地址对应的 Polymarket 账户"],
@@ -2725,6 +2751,7 @@ function wvRenderConnected(view, value, serverSaved, bal){
   if (connectBtn) connectBtn.style.display = "block";
   if (addrRow) addrRow.style.display = "flex";
   if (verifyBtn) verifyBtn.style.display = "none";
+  autoRefresh(window.__wv && window.__wv.session);
 }
 function wvRenderDashCard(view, value, bal, bound, gen, addr){
   // W1/v112: карточка «Кошелёк Polymarket» на дашборде — pUSD выбранного адреса и стоимость позиций раздельно;
@@ -2750,6 +2777,7 @@ function wvRenderEmpty(msg){
   if (connectBtn) connectBtn.style.display = "block";
   if (addrRow) addrRow.style.display = "none";
   if (verifyBtn) verifyBtn.style.display = "none";
+  const ab = document.getElementById("autoBox"); if (ab) ab.style.display = "none";
 }
 
 // v122: единый выбор кошелька. Telegram initData переносится во фрагменте URL,
@@ -2780,6 +2808,80 @@ document.getElementById("walletChoicePublic").addEventListener("click", () => {
   row.style.display = "flex"; inp.readOnly = false; inp.focus();
 });
 document.getElementById("verifyWalletOwner").addEventListener("click", openMetaMaskFlow);
+// v123 (владелец 23.09 «подключил кошелёк и готово»): состояние Auto по двум серверным фактам — OWNED (wallet_link_status) и полномочие
+// Session Key (trading_grant_status). Все подписи — в кошельке пользователя (страница mm.html, flow=auto|revoke); ключей, адресов и Terminal нет.
+function openAutoFlow(kind){
+  const target = new URL(walletTarget("../aisports-wallet-test/mm.html"));
+  target.searchParams.set("flow", kind);
+  const tgApp = window.Telegram && window.Telegram.WebApp;
+  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if (!mobile && tgApp && tgApp.initData && tgApp.openLink) tgApp.openLink(target.href, {try_instant_view:false});
+  else location.href = target.href;
+}
+function autoShow(ids){
+  ["autoEnableBtn","autoSettingsBtn","autoSwitchBtn","autoDisconnectBtn","autoDisableBtn","autoRetryBtn"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = ids.includes(id) ? "block" : "none";
+  });
+  const sb = document.getElementById("autoSettingsBox"); if (sb && !ids.includes("autoSettingsBtn")) sb.style.display = "none";
+}
+function autoRender(r){
+  const box = document.getElementById("autoBox"), st = document.getElementById("autoState"), apiHint = document.getElementById("apiHint");
+  if (!box || !st) return;
+  box.style.display = "block"; window.__auto = r;
+  if (r.mode === "NOT_OWNED") { st.innerHTML = `<span style="color:var(--mut)">${t("autoNotOwned")}</span>`; autoShow([]); return; }
+  const g = r.grant, state = g ? g.state : null;
+  if (!r.grantServer) { st.innerHTML = `<span style="color:var(--mut)">${t("autoNoServer")}</span>`; autoShow(["autoRetryBtn","autoSwitchBtn","autoDisconnectBtn"]); window.__autoRetry = "refresh"; return; }
+  if (state === "TRADING_AUTHORIZED") {
+    st.innerHTML = `<span class="pos">${t("autoOn")}</span>`; autoShow(["autoSettingsBtn","autoDisableBtn"]);
+    if (apiHint) apiHint.innerHTML = `${t("wvNoKeys")} ${t("autoExecOff")}`;
+    return;
+  }
+  if (state === "PAUSED") { st.innerHTML = `<span class="neg">${t("autoPaused")}</span>`; autoShow(["autoDisableBtn"]); return; }
+  if (state === "REVOKING") { st.innerHTML = `<span style="color:var(--mut)">${t("autoRevoking")}</span>`; autoShow(["autoRetryBtn"]); window.__autoRetry = "revoke"; return; }
+  if (g && (g.awaiting_signature || state === "AUTHORIZING" || state === "UNKNOWN" || (g.job && (g.job.status === "PENDING" || g.job.status === "CLAIMED")))) {
+    st.innerHTML = `<span style="color:var(--mut)">${t("autoPending")}</span>`; autoShow(["autoRetryBtn","autoDisableBtn"]); window.__autoRetry = "auto"; return;
+  }
+  st.innerHTML = `<span style="color:var(--mut)">${t("autoOff")}</span>`;      // NOT_CONNECTED / OWNED / REVOKED / EXPIRED
+  autoShow(["autoEnableBtn","autoSwitchBtn","autoDisconnectBtn"]);
+}
+async function autoRefresh(bound){
+  const box = document.getElementById("autoBox"); if (!box) return;
+  const cur = wvInit(), view = window.__wv && window.__wv.view;
+  if (!cur || !view) { box.style.display = "none"; return; }
+  let link;
+  try { link = await wvRpc("wallet_link_status", {p_init_data: cur}); } catch(e) { link = {server: false}; }
+  if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
+  if (!link.server || !link.data) { box.style.display = "none"; return; }
+  const acct = String(link.data.trading_account || "").toLowerCase(), mine = String(view.resolved_address || view.input_address || "").toLowerCase();
+  if (link.data.state !== "OWNED" || acct !== mine) { autoRender({mode: "NOT_OWNED"}); return; }
+  let grant;
+  try { grant = await wvRpc("trading_grant_status", {p_init_data: cur}); } catch(e) { grant = {server: false}; }
+  if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
+  autoRender({mode: "OWNED", owner: link.data.signer, grant: grant.server ? grant.data : null, grantServer: grant.server});
+}
+document.getElementById("autoEnableBtn").addEventListener("click", () => openAutoFlow("auto"));
+document.getElementById("autoRetryBtn").addEventListener("click", () => {
+  const k = window.__autoRetry || "refresh";
+  if (k === "refresh") autoRefresh(sessionKey()); else openAutoFlow(k);
+});
+document.getElementById("autoSwitchBtn").addEventListener("click", openMetaMaskFlow);
+document.getElementById("autoDisableBtn").addEventListener("click", async () => {
+  const cur = wvInit(); if (!cur) return;
+  try { await wvRpc("trading_grant_revoke", {p_init_data: cur}); } catch(e) {}     // локальный стоп на сервере — сразу, до подписи
+  openAutoFlow("revoke");                                                          // одна подпись отзыва в кошельке
+});
+document.getElementById("autoDisconnectBtn").addEventListener("click", async () => {
+  const cur = wvInit();
+  try { if (cur) await wvRpc("wallet_link_revoke", {p_init_data: cur}); } catch(e) {}
+  const btn = document.getElementById("saveApiKey"); if (btn && btn.__p0Handler) btn.__p0Handler();   // штатное «Отключить просмотр»
+});
+document.getElementById("autoSettingsBtn").addEventListener("click", () => {
+  const sb = document.getElementById("autoSettingsBox"), g = window.__auto && window.__auto.grant;
+  if (!sb) return;
+  if (sb.style.display === "block") { sb.style.display = "none"; return; }
+  const until = g && g.valid_until ? new Date(Number(g.valid_until) * 1000).toISOString().slice(0, 10) : "—";
+  sb.innerHTML = `${t("autoGranted")} ${until}<br>${t("autoLimits")}`; sb.style.display = "block";
+});
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");
   window.__wv = {session: bound, view: null, server: null, gen: 0};
