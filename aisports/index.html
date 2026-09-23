@@ -819,7 +819,14 @@ body.splash-on{overflow:hidden}
       <div class="themes" id="exchSel">
         <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
       </div>
-      <div class="bankrow" style="margin-top:10px">
+      <button class="btn" id="connectWalletMenu" style="margin-top:10px" data-i18n="wvConnectWallet">Подключить кошелёк</button>
+      <div id="walletConnectChoices" style="display:none;margin-top:8px">
+        <button class="btn" id="walletChoiceMetaMask" data-i18n="wvChooseMetaMask">MetaMask</button>
+        <button class="btn ghost" id="walletChoiceOther" data-i18n="wvChooseOther">Другой кошелёк · WalletConnect</button>
+        <button class="btn ghost" id="walletChoicePublic" data-i18n="wvChoosePublic">Только просмотр по адресу</button>
+        <div class="me-sub" data-i18n="wvChooseHint">Выберите кошелёк. После выбора откроется приложение кошелька и придёт запрос на подтверждение владения без перевода и комиссии.</div>
+      </div>
+      <div class="bankrow" id="walletAddressRow" style="display:none;margin-top:10px">
         <input type="password" id="apiKeyInput" class="binput" style="min-width:0;font-size:13px"
                placeholder="0x…" autocomplete="off">
         <button class="btn small" id="saveApiKey" aria-label="Сохранить ключ" style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg></button>
@@ -976,7 +983,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v121";
+const BUILD = "v122";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1201,6 +1208,13 @@ const T = {
   wvConnected: ["Подключён для просмотра", "Connected for viewing", "已连接（仅查看）"],
   wvStatusLine: ["Торговля выключена · владение адресом не проверено", "Trading is off · address ownership not verified", "交易关闭 · 地址所有权未验证"],
   wvVerifyOwner: ["Подтвердить владение", "Verify ownership", "验证所有权"],
+  wvConnectWallet: ["Подключить кошелёк", "Connect wallet", "连接钱包"],
+  wvChooseMetaMask: ["MetaMask", "MetaMask", "MetaMask"],
+  wvChooseOther: ["Другой кошелёк · WalletConnect", "Another wallet · WalletConnect", "其他钱包 · WalletConnect"],
+  wvChoosePublic: ["Только просмотр по адресу", "View by public address only", "仅通过公开地址查看"],
+  wvChooseHint: ["Выберите кошелёк. После выбора откроется приложение кошелька и придёт запрос на подтверждение владения без перевода и комиссии.",
+                 "Choose a wallet. The wallet app will open and ask you to confirm ownership, with no transfer or fee.",
+                 "选择钱包后，钱包应用会打开并请求确认所有权，不会转账或收取费用。"],
   wvDataLabel: ["Данные выбранного аккаунта", "Data of the selected account", "所选账户数据"],
   wvPositions: ["стоимость позиций", "positions value", "持仓价值"],
   wvBalance: ["остаток по публичным данным", "balance per public data", "公开数据余额"],
@@ -2697,6 +2711,7 @@ function wvRenderConnected(view, value, serverSaved, bal){
   const apiState = document.getElementById("apiState"), hint = document.getElementById("budgetHint"), apiHint = document.getElementById("apiHint");
   const btn = document.getElementById("saveApiKey"), inp = document.getElementById("apiKeyInput");
   const verifyBtn = document.getElementById("verifyWalletOwner");
+  const connectBtn = document.getElementById("connectWalletMenu"), addrRow = document.getElementById("walletAddressRow");
   const name = view.profile_name ? v3Esc(view.profile_name) : "";
   apiState.innerHTML = `<span class="pos">${t("wvConnected")}</span> · ${name ? name + " · " : ""}${v3Esc(wvShortAddr(view.resolved_address || view.input_address))}` +
     `<br><span style="color:var(--mut);font-weight:400">${t("wvStatusLine")}${view.input_address !== view.resolved_address && view.resolved_address ? " · " + t("wvResolvedAs") + " " + v3Esc(wvShortAddr(view.resolved_address)) : ""}` +
@@ -2707,7 +2722,9 @@ function wvRenderConnected(view, value, serverSaved, bal){
   apiHint.innerHTML = `${t("wvNoKeys")} ${t("wvTradingOff")}`;
   inp.value = view.input_address; inp.readOnly = true;
   btn.innerHTML = t("wvDisconnect"); btn.setAttribute("aria-label", t("wvDisconnect")); btn.style.color = "#ef4444";
-  if (verifyBtn) verifyBtn.style.display = "block";
+  if (connectBtn) connectBtn.style.display = "block";
+  if (addrRow) addrRow.style.display = "flex";
+  if (verifyBtn) verifyBtn.style.display = "none";
 }
 function wvRenderDashCard(view, value, bal, bound, gen, addr){
   // W1/v112: карточка «Кошелёк Polymarket» на дашборде — pUSD выбранного адреса и стоимость позиций раздельно;
@@ -2724,22 +2741,45 @@ function wvRenderEmpty(msg){
   const apiState = document.getElementById("apiState"), hint = document.getElementById("budgetHint"), apiHint = document.getElementById("apiHint");
   const btn = document.getElementById("saveApiKey"), inp = document.getElementById("apiKeyInput");
   const verifyBtn = document.getElementById("verifyWalletOwner");
+  const connectBtn = document.getElementById("connectWalletMenu"), addrRow = document.getElementById("walletAddressRow");
   apiState.innerHTML = `<span style="color:var(--mut)">${msg || t("wvEmpty")}</span>`;
   hint.innerHTML = t("wvHint");
   apiHint.innerHTML = `${t("wvNoKeys")} ${t("wvTradingOff")}`;
   inp.readOnly = false; inp.disabled = false; inp.type = "text"; inp.placeholder = t("wvPlaceholder"); inp.setAttribute("aria-label", t("wvFieldLabel"));
   btn.innerHTML = t("wvConnect"); btn.setAttribute("aria-label", t("wvConnect")); btn.style.color = "";
+  if (connectBtn) connectBtn.style.display = "block";
+  if (addrRow) addrRow.style.display = "none";
   if (verifyBtn) verifyBtn.style.display = "none";
 }
 
-// v120: подтверждение владельца открывается из уже авторизованного Telegram Mini App.
-// Хэш Telegram переносится целиком, поэтому служебная страница получает тот же initData;
-// повторное добавление Deposit Wallet и его пополнение не требуются.
-document.getElementById("verifyWalletOwner").addEventListener("click", () => {
-  const target = new URL("../aisports-wallet-test/mm.html", location.href);
+// v122: единый выбор кошелька. Telegram initData переносится во фрагменте URL,
+// поэтому внешний Chrome получает ту же серверную сессию, но секрет не уходит GitHub.
+function walletTarget(path){
+  const target = new URL(path, location.href);
+  target.searchParams.set("auto", "1");
   target.hash = location.hash;
-  location.href = target.href;
+  return target.href;
+}
+function openMetaMaskFlow(){
+  const target = walletTarget("../aisports-wallet-test/mm.html");
+  const tgApp = window.Telegram && window.Telegram.WebApp;
+  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if (!mobile && tgApp && tgApp.initData && tgApp.openLink) tgApp.openLink(target, {try_instant_view:false});
+  else location.href = target;
+}
+const connectWalletMenu = document.getElementById("connectWalletMenu");
+const walletConnectChoices = document.getElementById("walletConnectChoices");
+connectWalletMenu.addEventListener("click", () => {
+  walletConnectChoices.style.display = walletConnectChoices.style.display === "none" ? "block" : "none";
 });
+document.getElementById("walletChoiceMetaMask").addEventListener("click", openMetaMaskFlow);
+document.getElementById("walletChoiceOther").addEventListener("click", () => { location.href = walletTarget("../aisports-wallet-test/index.html"); });
+document.getElementById("walletChoicePublic").addEventListener("click", () => {
+  walletConnectChoices.style.display = "none";
+  const row = document.getElementById("walletAddressRow"), inp = document.getElementById("apiKeyInput");
+  row.style.display = "flex"; inp.readOnly = false; inp.focus();
+});
+document.getElementById("verifyWalletOwner").addEventListener("click", openMetaMaskFlow);
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");
   window.__wv = {session: bound, view: null, server: null, gen: 0};

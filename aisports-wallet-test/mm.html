@@ -19,18 +19,20 @@
  label{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:14px}
 </style></head><body>
 <h1>Подтверждение владения кошельком</h1>
-<div class="m">Кошелёк Polymarket уже подключён для просмотра. Здесь MetaMask только подтверждает владельца подписью сообщения: без перевода, approve и комиссии.</div>
+<div class="m">Выберите кошелёк. Он откроет выбор аккаунта, проверит владельца Polymarket и только правильному аккаунту покажет запрос подписи: без перевода, approve и комиссии.</div>
 <div class="st" id="env">…</div>
 <label><input type="checkbox" id="srv"> сохранить подтверждение на сервере</label>
 <button class="p" id="b0" style="display:none">Открыть в Chrome с MetaMask</button>
-<button class="p" id="b1">1. Подключить MetaMask</button>
+<button class="p" id="b1">Подключить MetaMask</button>
+<button id="bAlt">Другой кошелёк · WalletConnect</button>
 <button id="b2" disabled>2. Подписать подтверждение (eth_signTypedData_v4)</button>
-<button id="b3" disabled>3. Отключить сессию MetaMask SDK</button>
+<button id="b3" disabled>Сменить кошелёк</button>
 <div class="st" id="acc">кошелёк не подключён</div>
 <pre id="log"></pre>
 <script type="module">
 const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";   // aisports (official); ключ anon — публичный, тот же, что в витрине
 const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M";
+const POLYGON_RPCS = ["https://polygon-bor-rpc.publicnode.com", "https://polygon.drpc.org"];
 const tg = window.Telegram && window.Telegram.WebApp; try { tg && tg.ready(); tg && tg.expand(); } catch (e) {}
 const $ = id => document.getElementById(id);
 const t0 = Date.now();
@@ -55,6 +57,11 @@ $("b0").onclick = () => {
   if (!(tg && tg.openLink)) { log("Не удалось открыть Chrome: откройте эту страницу внешним браузером из меню Telegram"); return; }
   log("Открываем ту же серверную сессию в Chrome; данные Telegram остаются во фрагменте URL и не отправляются GitHub");
   tg.openLink(location.href, {try_instant_view: false});
+};
+$("bAlt").onclick = () => {
+  const target = new URL("index.html", location.href);
+  target.searchParams.set("auto", "1"); target.hash = location.hash;
+  location.href = target.href;
 };
 
 async function mobileConnect() {
@@ -82,6 +89,20 @@ async function rpc(name, params) {
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return txt ? JSON.parse(txt) : null;
 }
+async function contractOwner(tradingAccount) {
+  let last = "";
+  for (const url of POLYGON_RPCS) {
+    try {
+      const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({jsonrpc:"2.0", id:1, method:"eth_call", params:[{to:tradingAccount, data:"0x8da5cb5b"}, "latest"]})});
+      const j = await r.json();
+      if (!r.ok || j.error || !/^0x[0-9a-fA-F]{64}$/.test(String(j.result || ""))) throw new Error((j.error && j.error.message) || `HTTP ${r.status}`);
+      const owner = "0x" + j.result.slice(-40).toLowerCase();
+      if (/^0x0{40}$/.test(owner)) throw new Error("owner() вернул нулевой адрес");
+      return owner;
+    } catch (e) { last = e.message || String(e); }
+  }
+  throw new Error("не удалось проверить owner() через Polygon RPC: " + last);
+}
 function localTypedData(s) {   // режим «устройство»: тот же формат, что private.wallet_link_typed_data; nonce нулевой, tradingAccount = signer
   const now = Math.floor(Date.now() / 1000);
   return { types: { WalletLink: [{ name: "purpose", type: "string" }, { name: "app", type: "string" }, { name: "network", type: "string" },
@@ -92,13 +113,26 @@ function localTypedData(s) {   // режим «устройство»: тот ж
                app: "AI Sports official — @aisports0bot", network: "Polygon (chainId 137)", tradingAccount: s, signer: s, telegramUserId: "0",
                nonce: "0x" + "00".repeat(32), issuedAt: String(now), expiresAt: String(now + 300) } };
 }
-$("b1").onclick = async () => {
+async function requestInjectedAccount() {
+  try {
+    log("MetaMask: открываем выбор аккаунта");
+    await window.ethereum.request({method:"wallet_requestPermissions", params:[{eth_accounts:{}}]});
+  } catch (e) {
+    const code = Number(e && e.code);
+    if (code === 4001) throw e;
+    log("выбор аккаунта отдельным методом недоступен — используем стандартное подключение");
+  }
+  let accounts = await window.ethereum.request({method:"eth_accounts"});
+  if (!accounts || !accounts.length) accounts = await window.ethereum.request({method:"eth_requestAccounts"});
+  return accounts;
+}
+async function connectMetaMask() {
   $("b1").disabled = true;
   try {
     const ts = Date.now(); let conn;
     if (window.ethereum) {
-      log("connect: запрашиваем аккаунт у расширения MetaMask в Chrome");
-      const accounts = await window.ethereum.request({method: "eth_requestAccounts"});
+      log("connect: запрашиваем выбор аккаунта у расширения MetaMask в Chrome");
+      const accounts = await requestInjectedAccount();
       conn = {accounts, provider: window.ethereum, source: "MetaMask Chrome"};
     } else conn = await mobileConnect();
     const accounts = conn.accounts; provider = conn.provider;
@@ -106,11 +140,17 @@ $("b1").onclick = async () => {
     provider.on && provider.on("accountsChanged", a => { setAccount(a[0], null); log("accountsChanged"); });
     provider.on && provider.on("chainChanged", c => log(`chainChanged: ${c}`));
     setAccount(accounts[0], await provider.request({ method: "eth_chainId" }));
+    if ($("srv").checked && tg && tg.initData) await signConfirmation();
   } catch (e) { log("connect failed: " + (e.shortMessage || e.message || e)); }
   finally { $("b1").disabled = false; }
+}
+$("b1").onclick = connectMetaMask;
+$("b3").onclick = async () => {
+  if (window.ethereum) { setAccount("", null); await connectMetaMask(); return; }
+  try { if (sdk) await sdk.terminate(); } catch (e) {}
+  provider = null; setAccount("", null); log("локальная сессия подтверждения закрыта");
 };
-$("b3").onclick = async () => { try { if (sdk) await sdk.terminate(); } catch (e) {} provider = null; setAccount("", null); log("локальная сессия подтверждения закрыта"); };
-$("b2").onclick = async () => {
+async function signConfirmation() {
   $("b2").disabled = true;
   try {
     const server = $("srv").checked;
@@ -120,7 +160,16 @@ $("b2").onclick = async () => {
       const ch = await rpc("wallet_link_challenge", { p_init_data: tg.initData, p_signer: signer });
       if (!ch || ch.status !== "CHALLENGE") throw new Error("challenge: " + JSON.stringify(ch));
       td = ch.typed_data; nonce = ch.nonce;
-      if (td.message.signer !== signer) throw new Error("signer в typed_data ≠ подключённому");
+      if (String(td.message.signer || "").toLowerCase() !== signer) throw new Error("signer в typed_data ≠ подключённому");
+      const tradingAccount = String(td.message.tradingAccount || "").toLowerCase();
+      if (!/^0x[0-9a-f]{40}$/.test(tradingAccount)) throw new Error("сервер не вернул корректный tradingAccount");
+      const expectedOwner = await contractOwner(tradingAccount);
+      log(`проверка owner(): ${tradingAccount.slice(0,8)}… → ${expectedOwner}`);
+      if (expectedOwner !== signer) {
+        $("acc").textContent = `выбран ${signer} · нужен владелец ${expectedOwner}`;
+        throw new Error(`выбран не тот аккаунт. В MetaMask выберите ${expectedOwner}`);
+      }
+      log("аккаунт совпал с владельцем Polymarket — отправляем запрос подписи");
     } else td = localTypedData(signer);
     await ensurePolygon();
     const full = Object.assign({}, td, { types: Object.assign({ EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }] }, td.types) });
@@ -138,5 +187,12 @@ $("b2").onclick = async () => {
     }
   } catch (e) { log("sign failed: " + (e.shortMessage || e.message || e)); }
   finally { $("b2").disabled = !signer; }
-};
+}
+$("b2").onclick = signConfirmation;
+if (new URLSearchParams(location.search).get("auto") === "1") {
+  setTimeout(() => {
+    if (window.ethereum || /iPhone|iPad|Android/i.test(navigator.userAgent)) connectMetaMask();
+    else log("MetaMask не найден в этом окне — нажмите «Открыть в Chrome с MetaMask»");
+  }, 250);
+}
 </script></body></html>

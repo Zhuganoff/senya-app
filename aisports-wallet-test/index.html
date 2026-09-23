@@ -29,6 +29,7 @@
 const PROJECT_ID = "7a8db6320f67ab65e3f5cb00543ea2c4";   // Reown Dashboard, команда владельца, проект «AI Sports» (11.09.2026); публичный. Переопределяется ?pid=…
 const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";   // aisports (official); ключ anon — публичный, тот же, что в витрине
 const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M";
+const POLYGON_RPCS = ["https://polygon-bor-rpc.publicnode.com", "https://polygon.drpc.org"];
 const pid = new URLSearchParams(location.search).get("pid") || PROJECT_ID;
 const tg = window.Telegram && window.Telegram.WebApp; try { tg && tg.ready(); tg && tg.expand(); } catch (e) {}
 const $ = id => document.getElementById(id);
@@ -41,8 +42,9 @@ window.addEventListener("pageshow", e => log(`pageshow persisted=${e.persisted}`
 window.addEventListener("error", e => log(`error: ${e.message}`));
 window.addEventListener("unhandledrejection", e => log(`rejection: ${(e.reason && e.reason.message) || e.reason}`));
 if (!pid) { $("b1").disabled = true; log("projectId не задан — WalletConnect не инициализирован"); }
+if (tg && tg.initData) { $("srv").checked = true; $("srv").disabled = true; }
 
-let AK, adapter, modal, signer = "";
+let AK, adapter, modal, signer = "", autoSigner = "", signBusy = false;
 async function init() {
   log("загрузка @reown/appkit-cdn 1.8.23 …");
   AK = await import("https://cdn.jsdelivr.net/npm/@reown/appkit-cdn@1.8.23/dist/appkit.js");
@@ -52,7 +54,7 @@ async function init() {
     adapters: [adapter], networks, projectId: pid,
     metadata: { name: "AI Sports (official)", description: "Подтверждение контроля кошелька для просмотра", url: location.origin, icons: [location.origin + "/senya-app/aisports/logo.svg"] },
     features: { email: false, socials: false, analytics: false, swaps: false, onramp: false, send: false, history: false },
-    enableWalletGuide: false, allWallets: "HIDE",
+    enableWalletGuide: false, allWallets: "SHOW",
     featuredWalletIds: ["c57ca95b47569778a828d19178114f4db188b89b763c899ba0be274e97267d96"],   // MetaMask
   });
   AK.WagmiCore.watchAccount(adapter.wagmiConfig, { onChange(a) {
@@ -60,8 +62,12 @@ async function init() {
     $("acc").textContent = signer ? `подключён: ${signer} · chainId ${a.chainId} · ${a.connector ? a.connector.name : ""}` : "кошелёк не подключён";
     $("b2").disabled = !signer; $("b3").disabled = !signer;
     log(`account: status=${a.status} address=${signer ? signer.slice(0, 10) + "…" : "-"} chain=${a.chainId}`);
+    if (signer && signer !== autoSigner && new URLSearchParams(location.search).get("auto") === "1" && $("srv").checked && tg && tg.initData) {
+      autoSigner = signer; setTimeout(signConfirmation, 100);
+    }
   } });
   log("AppKit готов");
+  if (new URLSearchParams(location.search).get("auto") === "1") await modal.open({view:"Connect"});
 }
 init().catch(e => log("init failed: " + (e.message || e)));
 
@@ -70,6 +76,20 @@ async function rpc(name, params) {
   const txt = await r.text(); log(`rpc ${name}: HTTP ${r.status} ${txt.slice(0, 200)}`);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return txt ? JSON.parse(txt) : null;
+}
+async function contractOwner(tradingAccount) {
+  let last = "";
+  for (const url of POLYGON_RPCS) {
+    try {
+      const r = await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({jsonrpc:"2.0", id:1, method:"eth_call", params:[{to:tradingAccount, data:"0x8da5cb5b"}, "latest"]})});
+      const j = await r.json();
+      if (!r.ok || j.error || !/^0x[0-9a-fA-F]{64}$/.test(String(j.result || ""))) throw new Error((j.error && j.error.message) || `HTTP ${r.status}`);
+      const owner = "0x" + j.result.slice(-40).toLowerCase();
+      if (/^0x0{40}$/.test(owner)) throw new Error("owner() вернул нулевой адрес");
+      return owner;
+    } catch (e) { last = e.message || String(e); }
+  }
+  throw new Error("не удалось проверить owner() через Polygon RPC: " + last);
 }
 function localTypedData(s) {   // режим «устройство»: тот же формат, что private.wallet_link_typed_data; nonce нулевой, tradingAccount = signer
   const now = Math.floor(Date.now() / 1000);
@@ -89,7 +109,9 @@ function toViem(td) {   // uint256 → BigInt, EIP712Domain из types убир�
 }
 $("b1").onclick = async () => { log("open modal (connect)"); await modal.open({ view: "Connect" }); };
 $("b3").onclick = async () => { await AK.WagmiCore.disconnect(adapter.wagmiConfig); log("disconnect: сессия WalletConnect завершена"); };
-$("b2").onclick = async () => {
+async function signConfirmation() {
+  if (signBusy) return;
+  signBusy = true;
   $("b2").disabled = true;
   try {
     const server = $("srv").checked;
@@ -99,7 +121,16 @@ $("b2").onclick = async () => {
       const ch = await rpc("wallet_link_challenge", { p_init_data: tg.initData, p_signer: signer });
       if (!ch || ch.status !== "CHALLENGE") throw new Error("challenge: " + JSON.stringify(ch));
       td = ch.typed_data; nonce = ch.nonce;
-      if (td.message.signer !== signer) throw new Error("signer в typed_data ≠ подключённому");
+      if (String(td.message.signer || "").toLowerCase() !== signer) throw new Error("signer в typed_data ≠ подключённому");
+      const tradingAccount = String(td.message.tradingAccount || "").toLowerCase();
+      if (!/^0x[0-9a-f]{40}$/.test(tradingAccount)) throw new Error("сервер не вернул корректный tradingAccount");
+      const expectedOwner = await contractOwner(tradingAccount);
+      log(`проверка owner(): ${tradingAccount.slice(0,8)}… → ${expectedOwner}`);
+      if (expectedOwner !== signer) {
+        $("acc").textContent = `выбран ${signer} · нужен владелец ${expectedOwner}`;
+        throw new Error(`выбран не тот аккаунт. Выберите ${expectedOwner}`);
+      }
+      log("аккаунт совпал с владельцем Polymarket — отправляем запрос подписи");
     } else td = localTypedData(signer);
     const ts = Date.now(); log("sign: запрос eth_signTypedData_v4 → MetaMask (ждём возврата в Telegram)");
     const sig = await AK.WagmiCore.signTypedData(adapter.wagmiConfig, toViem(td));
@@ -114,6 +145,7 @@ $("b2").onclick = async () => {
       }
     }
   } catch (e) { log("sign failed: " + (e.shortMessage || e.message || e)); }
-  finally { $("b2").disabled = !signer; }
-};
+  finally { signBusy = false; $("b2").disabled = !signer; }
+}
+$("b2").onclick = signConfirmation;
 </script></body></html>
