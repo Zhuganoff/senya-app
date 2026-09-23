@@ -208,7 +208,7 @@ $("b2").onclick = signConfirmation;
 const FLOW = new URLSearchParams(location.search).get("flow");
 const HUMAN = { NOT_OWNED: "Сначала подтвердите владение кошельком", BUSY: "Сервер ещё обрабатывает предыдущий шаг — подождите и нажмите «Повторить»",
   SIGNATURE_FORMAT: "Кошелёк вернул подпись неожиданного формата", NOTHING_TO_SIGN: "Подписывать пока нечего — обновите статус",
-  HTTP404: "Сервер автоставок ещё не установлен", PENDING_TIMEOUT: "Сервер не ответил вовремя — нажмите «Повторить»" };
+  TIMESTAMP_STALE: "Часы устройства расходятся с сервером больше чем на минуту — поправьте время и нажмите «Повторить»", HTTP404: "Сервер автоставок ещё не установлен", PENDING_TIMEOUT: "Сервер не ответил вовремя — нажмите «Повторить»" };
 function wvShort(a) { a = String(a || ""); return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
 const DENIED = "Polymarket ещё не выдал доступ к автоторговле для этого приложения — заявка подана, ждём ответа. Ваш кошелёк и подписи в порядке; повторно подписывать ничего не нужно.";
 function providerText(st) { return st && String(st.reason || "").startsWith("PROVIDER_ACCESS_DENIED") ? DENIED : ""; }
@@ -242,13 +242,18 @@ async function signPending(st, tradingAccount) {
   const what = verifyTyped(st, tradingAccount);
   autoStatus("Подтвердите в кошельке: " + what);
   await ensurePolygon();
-  const td = st.typed_data;
+  // v126 (23.09): CLOB принимает подпись ClobAuth только ~100 с от её timestamp, поэтому для реквизитов владельца timestamp ставится
+  // ЗДЕСЬ, в момент подписи, и передаётся серверу (p_clob_auth_timestamp); worker проверяет подпись по этому же timestamp
+  let clobTs = null;
+  const td = JSON.parse(JSON.stringify(st.typed_data));
+  if (st.kind === "owner_creds") { clobTs = Math.floor(Date.now() / 1000); td.message.timestamp = String(clobTs); }
   const full = Object.assign({}, td, { types: Object.assign({ EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }].concat(td.domain && td.domain.verifyingContract ? [{ name: "verifyingContract", type: "address" }] : []) }, td.types) });
   const sig = await provider.request({ method: "eth_signTypedData_v4", params: [signer, JSON.stringify(full)] });
   const r = await rpc("trading_grant_sign", {
     p_init_data: tg.initData,
     p_idempotency_key: st.idempotency_key,
-    p_signature: sig
+    p_signature: sig,
+    p_clob_auth_timestamp: clobTs
   });
   if (!r || r.status !== "PENDING") throw new Error(human(r && r.status));
 }
