@@ -846,6 +846,13 @@ body.splash-on{overflow:hidden}
         <button class="btn" id="autoDisableBtn" style="display:none;margin-top:8px;color:#ef4444" data-i18n="autoDisable">Отключить автоставки</button>
         <button class="btn ghost" id="autoRetryBtn" style="display:none;margin-top:8px" data-i18n="autoRetry">Повторить</button>
       </div>
+      <div id="botAccountBox" style="display:none;margin-top:10px">
+        <div class="k" data-i18n="botAccTitle">Торговый счёт бота</div>
+        <div class="me-sub" id="botAccState" style="font-weight:700"></div>
+        <div class="me-sub" id="botAccDetails"></div>
+        <button class="btn ghost" id="botAccTopupBtn" style="display:none;margin-top:8px" data-i18n="botAccTopup">Пополнить</button>
+        <div class="me-sub" id="botAccTopupBox" style="display:none;margin-top:8px"></div>
+      </div>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
     <div id="exchBlock" style="display:none">
@@ -993,7 +1000,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v126";
+const BUILD = "v127";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1225,7 +1232,17 @@ const T = {
   autoNoServer: ["Сервер автоставок временно недоступен", "Auto-bet server is temporarily unavailable", "自动投注服务器暂时不可用"],
   autoGranted: ["Полномочие выдано: только ордера Polymarket, без вывода средств, до", "Permission granted: Polymarket orders only, no withdrawals, until", "已授权：仅限 Polymarket 下单，不可提现，有效期至"],
   autoLimits: ["Ставка не более 10 % доступного банка · одновременно до 10 позиций · отключение одной кнопкой", "Stake ≤ 10 % of available bank · up to 10 open positions · one-tap disable", "单注不超过可用资金的 10% · 最多 10 个持仓 · 一键关闭"],
-  autoProviderDenied: ["Polymarket ещё не выдал доступ к автоторговле для этого приложения — заявка подана, ждём ответа. Ваш кошелёк и подписи в порядке.", "Polymarket has not yet granted auto-trading access to this app — the request is filed, awaiting reply. Your wallet and signatures are fine.", "Polymarket 尚未向本应用开放自动交易权限——申请已提交，等待回复。您的钱包和签名没有问题。"],
+  autoProviderDenied: ["Polymarket отклонил выдачу торгового разрешения. Проверяем причину доступа; повторная подпись сейчас не требуется.", "Polymarket declined to issue the trading permission. We are checking the access reason; no new signature is needed now.", "Polymarket 拒绝签发交易授权。正在核查访问原因；目前无需重新签名。"],
+  botAccTitle: ["Торговый счёт бота", "Bot trading account", "机器人交易账户"],
+  botAccTopup: ["Пополнить", "Top up", "充值"],
+  botAccNone: ["Отдельный счёт бота ещё не создан", "The bot's separate account is not created yet", "机器人独立账户尚未创建"],
+  botAccOn: ["Автоставки со счёта бота включены", "Auto-bets from the bot account are on", "机器人账户自动投注已开启"],
+  botAccOff: ["Автоставки со счёта бота выключены", "Auto-bets from the bot account are off", "机器人账户自动投注已关闭"],
+  botAccStopped: ["Остановлено (STOP)", "Stopped (STOP)", "已停止（STOP）"],
+  botAccBalance: ["баланс счёта бота", "bot account balance", "机器人账户余额"],
+  botAccNotDeployed: ["кошелёк ещё не развёрнут", "wallet not deployed yet", "钱包尚未部署"],
+  botAccSeparate: ["Это отдельный счёт с отдельным балансом. Ваш основной кошелёк и его средства не затронуты.", "This is a separate account with its own balance. Your main wallet and its funds are not affected.", "这是一个独立账户，余额独立。您的主钱包及其资金不受影响。"],
+  botAccTopupHint: ["Переведите pUSD в сети Polygon на этот адрес — это игровой банк бота. Ставка не более 10 % доступного банка, до 10 позиций.", "Send pUSD on Polygon to this address — it is the bot's bankroll. Stake ≤ 10 % of available bank, up to 10 positions.", "在 Polygon 网络向此地址转入 pUSD——这是机器人的资金。单注不超过可用资金的 10%，最多 10 个持仓。"],
   autoExecOff: ["Исполнение ордеров ещё не включено на сервере — ставки не отправляются.", "Order execution is not enabled on the server yet — no bets are sent.", "服务器尚未开启下单执行——不会发送投注。"],
   wvLoading: ["Ищем аккаунт…", "Looking up the account…", "正在查找账户……"],
   wvBadAddr: ["Это не EVM-адрес: нужно 0x и 40 шестнадцатеричных символов", "Not an EVM address: 0x followed by 40 hex characters is required", "这不是 EVM 地址：需要 0x 加 40 个十六进制字符"],
@@ -1732,6 +1749,7 @@ function coreFeed(force){
       if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0)
         throw new Error("лента не PAPER_ONLY");
       window.__coreFeed = feed; window.__coreFeedError = null;
+      try { botAccountRender(feed && feed.bot_account); } catch(e) {}
       return feed;
     } catch (e) {
       window.__coreFeedError = e; window.__coreFeed = null;
@@ -2865,6 +2883,22 @@ async function autoRefresh(bound){
   if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
   autoRender({mode: "OWNED", owner: link.data.signer, grant: grant.server ? grant.data : null, grantServer: grant.server});
 }
+// v127 (Астра 23.09 п.4): «Торговый счёт бота» — отдельный счёт с отдельным ключом на сервере; только публичные факты из core_feed.bot_account
+function botAccountRender(ba){
+  const box = document.getElementById("botAccountBox"), st = document.getElementById("botAccState"), det = document.getElementById("botAccDetails");
+  if (!box || !st) return;
+  if (!ba || ba.error || !ba.deposit_wallet) { box.style.display = "block"; st.innerHTML = `<span style="color:var(--mut)">${t("botAccNone")}</span>`; det.innerHTML = ""; document.getElementById("botAccTopupBtn").style.display = "none"; return; }
+  box.style.display = "block";
+  const on = !!ba.trading_possible_now, stop = !!ba.stop;
+  st.innerHTML = stop ? `<span class="neg">${t("botAccStopped")}</span>` : on ? `<span class="pos">${t("botAccOn")}</span>` : `<span style="color:var(--mut)">${t("botAccOff")}</span>`;
+  const bal = ba.balance_pusd == null ? "—" : Number(ba.balance_pusd).toFixed(2) + " pUSD";
+  det.innerHTML = `${t("botAccBalance")}: ${bal}${ba.deployed === false ? " · " + t("botAccNotDeployed") : ""} · ${v3Esc(wvShortAddr(ba.deposit_wallet))}<br>` +
+                  `<span style="color:var(--mut);font-weight:400">${t("botAccSeparate")}<br>${v3Esc(String(ba.custody || ""))}</span>`;
+  document.getElementById("botAccTopupBtn").style.display = "block";
+  const tb = document.getElementById("botAccTopupBox"); tb.style.display = "none";
+  tb.innerHTML = `${t("botAccTopupHint")}<br><code style="word-break:break-all">${v3Esc(String(ba.deposit_wallet))}</code>`;
+}
+document.getElementById("botAccTopupBtn").addEventListener("click", () => { const tb = document.getElementById("botAccTopupBox"); tb.style.display = tb.style.display === "none" ? "block" : "none"; });
 document.getElementById("autoEnableBtn").addEventListener("click", () => openAutoFlow("auto"));
 document.getElementById("autoRetryBtn").addEventListener("click", () => {
   const k = window.__autoRetry || "refresh";
