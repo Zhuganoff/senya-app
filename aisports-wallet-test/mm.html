@@ -202,7 +202,7 @@ async function signConfirmation() {
   finally { $("b2").disabled = !signer; }
 }
 $("b2").onclick = signConfirmation;
-// v124: полномочие Session Key Polymarket — подписи только в кошельке; подпись отправляется с idempotency_key подготовленного задания.
+// v125: полномочие Session Key Polymarket — подписи только в кошельке; подпись отправляется с idempotency_key подготовленного задания.
 // flow=auto: реквизиты владельца (ClobAuth) → полномочие (Batch authorizeSessionSigner: только ордера CLOB, без вывода, 180 дней);
 // flow=revoke: локальный стоп уже поставлен витриной, здесь одна подпись отзыва (Batch revokeSessionSigner). Ключей/адресов/Terminal нет.
 const FLOW = new URLSearchParams(location.search).get("flow");
