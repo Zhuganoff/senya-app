@@ -2,7 +2,7 @@
 
 The official `aisports/index.html` now hosts the account flow. It calls authenticated POST RPCs; the public feed is not a source of private accounts or personal bets. The existing personal Polymarket view remains separate from the new account and its money.
 
-`aisports/bot-account.js` exports the real `Controller` and DOM `mount` used by the page and tests. The injected boundaries are `rpc(name, parameters)`, `session()` (current raw initData in memory only), `wallet()` (EIP-1193 provider), and `resolveWallet(address)` (existing public Gamma resolver). `create`, `settings`, `enable`, `stop`, `prepare`, `signTransfer`, `openOperation`, `refresh`, and `connect` are the supported actions. Reads run on return to the page and every ten seconds; they never sign or submit automatically. Session changes discard private state and late responses.
+`aisports/bot-account.js` exports the real `Controller` and DOM `mount` used by the page and tests. The injected boundaries are `rpc(name, parameters)`, `session()` (current raw initData in memory only), `wallet()` (EIP-1193 provider), `resolveWallet(address)` (existing public Gamma resolver), and `eligibility()` (a strict, fresh browser-side region check before Enable). `create`, `settings`, `enable`, `stop`, `prepare`, `signTransfer`, `openOperation`, `refresh`, and `connect` are the supported actions. Reads run on return to the page and every ten seconds; they never sign or submit automatically. Session changes discard private state and late responses.
 
 ## Server contract
 
@@ -27,7 +27,7 @@ This follows the [official MetaMask Connect EVM interface](https://github.com/Me
 
 The actual bundle, upstream license, source integrity, dependency lock and build recipe are included. `aisports/vendor/metamask-connect-manifest.json` records SHA256 and SHA384 SRI; the loader enforces SRI. The deprecated SDK 0.34.0 is not a runtime or lockfile dependency. MetaMask's shipped license defines an active-user threshold of 10,000; review the included license before growth beyond that threshold.
 
-Deployment CSP must allow `wss://mm-sdk-relay.api.cx.metamask.io`, `img-src data:` and the SDK's injected modal styles, plus the app's existing Polygon RPC. No analytics endpoint is needed with analytics disabled. The frontend must publish `bot-account.js`, `wallet-connect.js` and the `vendor` files with the HTML in one release.
+Deployment CSP must allow `wss://mm-sdk-relay.api.cx.metamask.io`, `img-src data:` and the SDK's injected modal styles, plus the app's existing Polygon RPC and `https://polymarket.com` for the browser region check. No analytics endpoint is needed with analytics disabled. The frontend must publish `bot-account.js`, `wallet-connect.js` and the `vendor` files with the HTML in one release. Actual public hosting and a staging command are documented in [bot-account-delivery.md](bot-account-delivery.md).
 
 ## Reproducible checks
 

@@ -102,11 +102,22 @@
     }
     return td;
   }
+  async function checkEligibility(fetcher) {
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+    try {
+      const r=await fetcher("https://polymarket.com/api/geoblock",{method:"GET",credentials:"omit",cache:"no-store",referrerPolicy:"no-referrer",headers:{Accept:"application/json"},signal:controller.signal});
+      if(!r.ok)fail("GEOBLOCK_UNVERIFIED");
+      const data=await r.json();
+      if(!data||typeof data.blocked!=="boolean"||typeof data.country!=="string"||!/^[A-Z]{2}$/i.test(data.country))fail("GEOBLOCK_UNVERIFIED");
+      return !data.blocked;
+    }catch(_){fail("GEOBLOCK_UNVERIFIED");}finally{clearTimeout(timer);}
+  }
 
   class Controller {
-    constructor({rpc, session, wallet, resolveWallet, render = () => {}, uuid, now = Date.now}) {
+    constructor({rpc, session, wallet, resolveWallet, eligibility = async()=>fail("GEOBLOCK_UNVERIFIED"), render = () => {}, uuid, now = Date.now}) {
       this.rpc = rpc; this.session = session; this.wallet = wallet; this.resolveWallet = resolveWallet;
       this.render = render; this.uuid = uuid || (() => globalThis.crypto.randomUUID()); this.now = now;
+      this.eligibility=eligibility;
       this.epoch = 0; this.auth = null; this.idempotency = new Map(); this.state = {};
     }
     reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],busy:false,error:null}; this.render(this.state); }
@@ -185,6 +196,8 @@
       return this.run(async c => {
         const a = accountCheck(this.state.account);
         if (accepted !== true || !a.policy) fail("POLICY_ACCEPT_REQUIRED");
+        const eligible=await this.eligibility();this.assert(c);
+        if(eligible!==true)fail(eligible===false?"GEOBLOCKED":"GEOBLOCK_UNVERIFIED");
         return this.adopt(c,await this.call(c,"bot_account_enable",{p_expected_version:a.policy.version,p_idempotency_key:this.key("enable:"+a.policy.version)}));
       });
     }
@@ -296,9 +309,10 @@
     title:["Торговый счёт AISports","AISports trading account","AISports 交易账户"],
     custody:["Это отдельный счёт для автоматической торговли. Его полный ключ хранит сервис: он может ставить и переводить деньги этого счёта. Основной ключ вашего кошелька не передаётся. При компрометации сервера средства этого отдельного счёта могут быть потеряны.","This separate account is controlled by a key held by the service, including trading and transfers. Your main wallet key is never shared. A compromised server could put this account’s funds at risk.","这是独立的自动交易账户。服务保管其完整密钥，可交易及转账。不会获取您的主钱包密钥。服务器被攻破可能导致该账户资金损失。"],
     custodyAccept:["Понимаю, кто хранит ключ отдельного счёта","I understand who controls this account’s key","我了解此账户密钥的保管方式"],
+    custodyShort:["Ключ счёта AISports хранит сервис. Основной ключ вашего кошелька не передаётся.","The service holds the AISports account key. Your main wallet key is never shared.","AISports 账户密钥由服务保管，不会获取您的主钱包密钥。"],
     create:["Создать торговый счёт","Create trading account","创建交易账户"], connect:["Подключить MetaMask","Connect MetaMask","连接 MetaMask"],
     connectHint:["В браузере подключится расширение MetaMask. В Telegram на компьютере используйте QR для MetaMask на телефоне; расширение Chrome внутри Telegram недоступно. На телефоне подтвердите подключение в приложении MetaMask и вернитесь сюда.","A browser can connect to the MetaMask extension. In desktop Telegram, use the QR code with MetaMask on your phone; Chrome extensions are unavailable inside Telegram. On mobile, approve in MetaMask and return here.","浏览器可连接 MetaMask 扩展。桌面 Telegram 请用手机 MetaMask 扫描二维码，Telegram 内不能使用 Chrome 扩展。手机上请在 MetaMask 确认后返回。"],
-    refresh:["Обновить","Refresh","刷新"], fund:["Пополнить","Add funds","充值"], withdraw:["Вернуть на мой счёт Polymarket","Return to my Polymarket account","退回我的 Polymarket 账户"],
+    refresh:["Обновить","Refresh","刷新"], fund:["Пополнить","Add funds","充值"], withdraw:["Вывести","Withdraw","提现"],
     settings:["Настройки","Settings","设置"], stop:["Остановить новые ставки","Stop new bets","停止新投注"], enable:["Включить автоставки","Enable auto-bets","启用自动投注"],
     amount:["Сумма pUSD","Amount in pUSD","pUSD 金额"], prepare:["Проверить перевод","Review transfer","检查转账"], sign:["Подтвердить в кошельке","Confirm in wallet","在钱包中确认"],
     transferAccept:["Проверил сумму и оба счёта. Подпись разрешает движение денег.","I checked the amount and both accounts. This signature authorizes moving funds.","我已核对金额与两个账户，此签名授权资金转移。"],
@@ -307,6 +321,7 @@
     source:["Откуда","From","来源"], recipient:["Куда","To","目标"], fees:["Комиссия","Fee","费用"], unverifiedFee:["Уточняется — будет показана до подписи","Pending — shown before signing","待确认，将在签名前显示"],
     history:["Мои операции и ставки","My transactions and bets","我的交易与投注"], empty:["Операций пока нет","No transactions yet","暂无交易"],
     maxStake:["Максимум одной ставки, % свободного банка (не более 10)","Maximum stake, % of available funds (up to 10)","单注上限：可用资金百分比（不超过10）"],
+    stakeLimit:["Лимит одной ставки","Stake limit","单注上限"],
     save:["Сохранить настройки","Save settings","保存设置"], policyAccept:["Принимаю показанное правило ставок","I accept this betting policy","我接受此投注规则"],
     policy:["MLB. Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Максимум открытых позиций:","MLB. The lower of the strategy allocation and your maximum; fees count toward risk. Maximum open positions:","MLB。采用策略比例和您上限中的较低值，费用计入风险。最大未平仓数量："],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
@@ -328,6 +343,8 @@
     FAILED:["Операция не выполнена","Transaction failed","交易失败"], REJECTED:["Операция отклонена","Transaction rejected","交易被拒绝"], CANCELLED:["Операция отменена","Transaction cancelled","交易已取消"], EXPIRED:["Срок подтверждения истёк","Confirmation expired","确认已过期"]
   };
   const errors = {
+    GEOBLOCKED:["Торговля недоступна в вашем регионе. Автоставки не включены.","Trading is unavailable in your region. Auto-bets were not enabled.","您所在地区不支持交易，未启用自动投注。"],
+    GEOBLOCK_UNVERIFIED:["Не удалось проверить доступность торговли в вашем регионе. Включение остановлено.","Could not verify trading availability in your region. Enabling was stopped.","无法核实您所在地区是否允许交易，已停止启用操作。"],
     NOT_READY:["Счёт или исполнитель ещё не готовы. Обновите состояние.","The account or execution service is not ready. Refresh status.","账户或交易服务尚未就绪，请刷新。"],
     VERSION_CONFLICT:["Настройки изменились на другом устройстве. Обновите и проверьте их.","Settings changed on another device. Refresh and review them.","设置已在其他设备修改，请刷新并检查。"],
     BALANCE_STALE:["Нужна свежая сверка баланса. Ожидаем подтверждения.","A fresh balance check is required. Awaiting confirmation.","需要重新核对余额，正在等待确认。"],
@@ -353,6 +370,13 @@
     MIN_LOT:["Маленькая сумма для минимальной ставки","Amount below the minimum bet","金额低于最低投注"],
     MIN_ORDER_UNMET:["Маленькая сумма для минимальной ставки","Amount below the minimum bet","金额低于最低投注"],
     PRICE_CHANGED:["Цена изменилась","Price changed","价格已变化"],
+    PRICE_RANGE:["Цена изменилась","Price changed","价格已变化"],
+    LOW_EV:["Не прошёл отбор стратегии","Did not meet the strategy criteria","未满足策略筛选条件"],
+    QUALITY_GATE:["Не прошёл отбор стратегии","Did not meet the strategy criteria","未满足策略筛选条件"],
+    SIGNAL_EXPIRED:["Срок прогноза истёк","Signal expired","预测已过期"],
+    BOOK_STALE:["Данные цены устарели","Price data is stale","价格数据已过期"],
+    INVALID_SIGNAL_OR_QUOTE:["Источник не подтвердил данные","Source data could not be verified","无法核实来源数据"],
+    QUOTE_REJECTED:["Площадка не подтвердила доступную цену","The venue did not confirm an available price","平台未确认可用价格"],
     MATCH_STARTED:["Матч уже начался","Match already started","比赛已开始"],
     CHECK_FAILED:["Источник недоступен — проверка не завершена","Source unavailable — check incomplete","来源不可用，检查未完成"],
     ACCOUNT_BALANCE_UNPROVEN:["Баланс ещё не подтверждён","Balance not yet confirmed","余额尚未确认"]
@@ -373,8 +397,17 @@
     const doc=root.ownerDocument, tr=k=>textFor(copy,k,lang), stateText=k=>textFor(states,k,lang),reasonText=k=>textFor(reasons,k,lang),kindText=k=>textFor(kinds,k,lang);
     let transferKind=null, inputAmount="", settingsOpen=false, percent="", lastAccount=null;
     function el(tag,text,cls) { const n=doc.createElement(tag); if(text!=null)n.textContent=text;if(cls)n.className=cls;return n; }
-    function button(text,fn,disabled=false) { const b=el("button",text,"btn ghost"); b.type="button";b.disabled=disabled;b.style.marginTop="8px";b.onclick=fn;return b; }
+    function button(text,fn,disabled=false,primary=false) { const b=el("button",text,primary?"btn":"btn ghost"); b.type="button";b.disabled=disabled;b.style.marginTop="8px";b.onclick=fn;if(primary)b.dataset.primary="true";return b; }
     function line(label,value) { const n=el("div",label+": "+value,"me-sub"); n.style.overflowWrap="anywhere";return n; }
+    function addressLine(label,value) {
+      if(!value)return line(label,"—");
+      const text=String(value),n=line(label,text.length>16?text.slice(0,6)+"…"+text.slice(-4):text);
+      const b=el("button",lang==="ru"?"Копировать":lang==="zh"?"复制":"Copy");b.type="button";b.title=text;b.setAttribute("aria-label",(lang==="ru"?"Копировать адрес ":"Copy address ")+label);
+      Object.assign(b.style,{marginLeft:"8px",padding:"2px 5px",border:"0",background:"transparent",color:"var(--accent)",fontSize:"inherit",cursor:"pointer"});
+      b.onclick=async()=>{try{await doc.defaultView.navigator.clipboard.writeText(text);b.textContent=lang==="ru"?"Скопировано":lang==="zh"?"已复制":"Copied";}catch(_){b.textContent=lang==="ru"?"Не удалось":lang==="zh"?"失败":"Unavailable";}};n.append(b);return n;
+    }
+    function compactRow(){const n=el("div");Object.assign(n.style,{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"10px"});return n;}
+    function compactButton(row,label,fn,disabled){const b=button(label,fn,disabled);Object.assign(b.style,{width:"auto",flex:"1 1 auto",padding:"7px 10px",marginTop:"0",fontSize:"12px"});row.append(b);}
     function consent(label) {const wrap=el("label",null,"me-sub"), check=el("input");check.type="checkbox";wrap.append(check,doc.createTextNode(" "+label));return {wrap,check};}
     function paint(s) {
       root.style.display="block"; root.replaceChildren();root.append(el("div",tr("title"),"k"));
@@ -383,58 +416,66 @@
       if(s.error)root.append(el("p",textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"me-sub"));
       const a=s.account;
       if(!a) {
-        if(s.status==="NOT_CONNECTED")root.append(el("p",tr("connectHint"),"me-sub"),button(tr("connect"),()=>controller.connect(),s.busy));
+        if(s.status==="NOT_CONNECTED")root.append(el("p",tr("connectHint"),"me-sub"),button(tr("connect"),()=>controller.connect(),s.busy,true));
         if(s.status==="NOT_CREATED") {
           root.append(el("p",tr("custody"),"me-sub"));const c=consent(tr("custodyAccept"));root.append(c.wrap);
-          root.append(button(tr("create"),()=>controller.create(c.check.checked),s.busy));
+          root.append(button(tr("create"),()=>controller.create(c.check.checked),s.busy,true));
         }
         root.append(button(tr("refresh"),()=>controller.refresh(),s.busy));return;
       }
       if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";}
       root.append(el("p",tr("separate"),"me-sub"));
-      root.append(line("Polymarket",a.funding_wallet),line("AISports",a.bot_deposit_wallet || "—"));
+      root.append(addressLine("Polymarket",a.funding_wallet),addressLine("AISports",a.bot_deposit_wallet));
+      root.append(el("p",tr("custodyShort"),"me-sub"));
       root.append(line(tr("available"),formatUnits(a.balance&&a.balance.available_units)+" pUSD"),line(tr("reserved"),formatUnits(a.balance&&a.balance.reserved_units)+" pUSD"));
       root.append(line(tr("positions"),formatUnits(a.balance&&a.balance.position_value_units)+" pUSD"),line(tr("pnl"),signedUnits(a.balance&&a.balance.realized_pnl_units)+" pUSD"));
       root.append(line(tr("checked"),(a.balance&&a.balance.checked_at)?new Date(a.balance.checked_at).toLocaleString(lang):"—"));
       if(a.policy&&a.policy.enabled)root.append(line(lang==="ru"?"Проверка торговли":lang==="zh"?"交易检查":"Trading check",a.last_checked_at?new Date(a.last_checked_at).toLocaleString(lang):"—"));
       if(a.reason&&a.reason!=="NO_SIGNAL")root.append(line(lang==="ru"?"Причина":"Reason",reasonText(a.reason)));
-      root.append(button(tr("refresh"),()=>controller.refresh(),s.busy));
-      const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral;
-      if(ready) {
-        root.append(button(tr("fund"),()=>{transferKind="FUNDING";paint(s);},s.busy),button(tr("withdraw"),()=>{transferKind="WITHDRAW";paint(s);},s.busy));
-        root.append(button(tr("settings"),()=>{settingsOpen=!settingsOpen;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy));
+      const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral, o=s.operation;
+      const unfinished=o&&!TERMINAL.has(o.state), hasFunds=!!(a.balance&&/^[1-9][0-9]*$/.test(a.balance.available_units));
+      const openTransfer=kind=>{transferKind=kind;settingsOpen=false;paint(s);};
+      const actions=compactRow();compactButton(actions,tr("refresh"),()=>controller.refresh(),s.busy);
+      if(ready){
+        if(hasFunds||unfinished||transferKind||settingsOpen)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!unfinished);
+        compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
+        if(a.policy)compactButton(actions,tr("settings"),()=>{settingsOpen=!settingsOpen;transferKind=null;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy||!!unfinished);
       }
+      if(a.policy&&a.policy.enabled)compactButton(actions,tr("stop"),()=>controller.stop(),s.busy);
+      root.append(actions);
+      if(ready&&!hasFunds&&!unfinished&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
       if(a.policy) {
-        root.append(el("p",tr("policy")+" "+a.policy.max_open+". "+a.policy.max_stake_bps/100+"% · v"+a.policy.version,"me-sub"));
+        root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
         if(settingsOpen) {
           const label=el("label",tr("maxStake"),"me-sub"), input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.value=percent;input.oninput=()=>{percent=input.value;};label.append(input);root.append(label);
-          root.append(button(tr("save"),()=>controller.settings(percent),s.busy));
+          root.append(button(tr("save"),()=>controller.settings(percent),s.busy,true));
         }
-        if(!a.policy.enabled&&ready) {const c=consent(tr("policyAccept"));root.append(c.wrap,button(tr("enable"),()=>controller.enable(c.check.checked),s.busy));}
-        root.append(button(tr("stop"),()=>controller.stop(),s.busy),el("p",tr("stopInfo"),"me-sub"));
+        if(!a.policy.enabled&&ready&&hasFunds&&!unfinished&&!transferKind&&!settingsOpen) {const c=consent(tr("policyAccept"));root.append(c.wrap,button(tr("enable"),()=>controller.enable(c.check.checked),s.busy,true));}
+        if(a.policy.enabled||a.reason==="USER_STOP")root.append(el("p",tr("stopInfo"),"me-sub"));
       }
-      const o=s.operation;
       if(transferKind&&(!o||TERMINAL.has(o.state))) {
         const label=el("label",tr("amount"),"me-sub"),input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);root.append(label);
-        root.append(button(tr("prepare"),()=>controller.prepare(transferKind,inputAmount),s.busy));
+        root.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount);if(result){transferKind=null;inputAmount="";}},s.busy,true));
       }
       if(o) {
         root.append(el("p",kindText(o.kind)+" · "+stateText(o.state),"me-sub"));
         if(o.intent) {
-          root.append(line(tr("amount"),formatUnits(o.amount_units)+" pUSD"),line(tr("source"),o.intent.source),line(tr("recipient"),o.intent.recipient),line("Polygon", "pUSD · "+o.intent.token));
+          root.append(line(tr("amount"),formatUnits(o.amount_units)+" pUSD · Polygon"),addressLine(tr("source"),o.intent.source),addressLine(tr("recipient"),o.intent.recipient));
           root.append(line(tr("fees"),o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD"));
           root.append(el("p",tr("transferSigning"),"me-sub"));
         }
         if(o.state==="AWAITING_SIGNATURE") {
-          const c=consent(tr("transferAccept"));root.append(c.wrap,button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy || o.fee_units==null));
+          const c=consent(tr("transferAccept"));root.append(c.wrap,button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy || o.fee_units==null,true));
         }
         if(o.reason)root.append(line(lang==="ru"?"Причина":"Reason",reasonText(o.reason)));
       }
       root.append(el("h4",tr("history")));
       if(!s.history.length)root.append(el("p",tr("empty"),"me-sub"));
       for(const h of s.history.slice(0,100)) {
-        const d=el("details"), title=[h.match_name||h.fixture_id||kindText(h.kind),stateText(h.state),h.amount_units!=null?formatUnits(h.amount_units)+" pUSD":null].filter(Boolean).join(" · ");d.append(el("summary",title));
-        for(const [key,label] of [["side",lang==="ru"?"Сторона":"Side"],["market_family",lang==="ru"?"Рынок":"Market"],["average_price",lang==="ru"?"Средняя цена исполнения, pUSD за долю":"Average fill price, pUSD/share"],["fee_units",tr("fees")],["realized_pnl_units",tr("pnl")],["created_at",lang==="ru"?"Время":"Time"],["reason",lang==="ru"?"Причина":"Reason"],["order_id","Order"],["tx_hash","Transaction"],["provider_id",lang==="ru"?"Идентификатор платформы":"Platform ID"],["operation_id",tr("details")]]) if(h[key]!=null)d.append(line(label,key==="fee_units"?formatUnits(h[key])+" pUSD":key==="realized_pnl_units"?signedUnits(h[key])+" pUSD":String(h[key])));
+        const d=el("details"), title=[h.match||h.match_name||kindText(h.kind),stateText(h.state),h.amount_units!=null?formatUnits(h.amount_units)+" pUSD":null].filter(Boolean).join(" · ");d.append(el("summary",title));
+        for(const [key,label] of [["side",lang==="ru"?"Сторона":"Side"],["market_family",lang==="ru"?"Рынок":"Market"],["average_price",lang==="ru"?"Средняя цена исполнения, pUSD за долю":"Average fill price, pUSD/share"],["fee_units",tr("fees")],["realized_pnl_units",tr("pnl")],["created_at",lang==="ru"?"Время":"Time"],["reason",lang==="ru"?"Причина":"Reason"]]) if(h[key]!=null)d.append(line(label,key==="fee_units"?formatUnits(h[key])+" pUSD":key==="realized_pnl_units"?signedUnits(h[key])+" pUSD":String(h[key])));
+        if(h.result)d.append(line(lang==="ru"?"Исполнение":"Execution",h.result==="FILLED"?(lang==="ru"?"Ставка исполнена":"Order filled"):h.result==="SETTLED"?(lang==="ru"?"Выплата подтверждена":"Payout confirmed"):h.result));
+        if(h.order_id)d.append(addressLine(lang==="ru"?"Ордер":"Order",h.order_id));if(h.tx_hash)d.append(addressLine(lang==="ru"?"Транзакция":"Transaction",h.tx_hash));
         if(UUID.test(h.operation_id))d.append(button(tr("details"),()=>controller.openOperation(h.operation_id),s.busy));root.append(d);
       }
       if(Array.isArray(a.latest_decisions)&&a.latest_decisions.length){
@@ -445,5 +486,5 @@
     controller.render=paint;controller.reset();
     return {refresh:()=>controller.refresh(),reset:()=>{transferKind=null;inputAmount="";settingsOpen=false;percent="";lastAccount=null;controller.reset();},controller};
   }
-  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,stateLabel,mount};
+  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,checkEligibility,stateLabel,mount};
 });

@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <title>AI Sports</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="qr.js"></script>
+<script src="../qr.js"></script>
 <style>
 /* ── Inter Variable, вшит в страницу ──────────────────────────────────────────
    Ставим шрифт data-URI, а не ссылкой на CDN: Mini App должен рисоваться сразу
@@ -2794,12 +2794,13 @@ const botWallet = () => botConnector.connect();
 const botAccountController = new AISportsBotAccount.Controller({
   session: wvInit,
   rpc: async (name, params) => { const r = await wvRpc(name, params); if (!r.server) throw new AISportsBotAccount.ClientError("SOURCE_UNAVAILABLE"); return r.data; },
-  wallet: botWallet, resolveWallet: wvResolve
+  wallet: botWallet, resolveWallet: wvResolve, eligibility: () => AISportsBotAccount.checkEligibility(window.fetch.bind(window))
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
 const botAccountPaint = botAccountController.render;
 botAccountController.render = state => {
   window.__privateRealBets = {session:sessionKey(),rows:[]};
+  document.getElementById("connectWalletMenu").classList.toggle("ghost",!!state.account || state.status === "NOT_CREATED");
   // Personal transaction history is rendered only in the private account section. Public forecast lists stay separate.
   botAccountPaint(state);
 };

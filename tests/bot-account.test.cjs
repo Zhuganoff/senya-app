@@ -26,7 +26,7 @@ function setup({mutate,request}={}){
  let auth='telegram-user-A',a=account(),o=operation(); const calls=[],walletCalls=[],renders=[];
  const provider={request:async p=>{walletCalls.push(p);if(request)return request(p);if(['eth_accounts','eth_requestAccounts'].includes(p.method))return [owner];if(p.method==='eth_chainId')return '0x89';if(p.method==='eth_signTypedData_v4')return '0x'+'a'.repeat(130);throw Error('unexpected wallet method');}};
  const rpc=async(name,p)=>{calls.push({name,p}); if(mutate){const r=await mutate(name,p);if(r!==undefined)return r;}if(name==='bot_account_get')return {api_version:1,status:'OK',account:clone(a)};if(name==='bot_account_history')return {api_version:1,status:'OK',operations:[]};if(name==='bot_account_operation')return {api_version:1,status:'OK',operation:clone(o)};return {api_version:1,status:'OK',account:clone(a),operation:{...clone(o),state:'PENDING'}};};
- const c=new Controller({rpc,session:()=>auth,wallet:async()=>provider,resolveWallet:async()=>({status:'ok',proxy:funding,name:'Account'}),render:s=>renders.push(clone(s)),now:()=>NOW,uuid:()=>operationId});
+ const c=new Controller({rpc,session:()=>auth,wallet:async()=>provider,resolveWallet:async()=>({status:'ok',proxy:funding,name:'Account'}),eligibility:async()=>true,render:s=>renders.push(clone(s)),now:()=>NOW,uuid:()=>operationId});
  c.reset();return {c,calls,walletCalls,renders,provider,setAuth:x=>auth=x,setOp:x=>o=x,setAccount:x=>a=x};
 }
 test('decimal amounts retain micro-pUSD precision and reject ambiguous amounts',()=>{
@@ -52,6 +52,18 @@ test('all private reads and mutations use current initData and no client tenant 
 test('invalid policy or missing consent cannot enable or create a hidden daily cap',async()=>{
  const s=setup();await s.c.refresh();await s.c.enable(false);for(const p of ['10.01','0','Infinity','-1','1e1','5.123'])await s.c.settings(p);
  assert.ok(!s.calls.some(x=>['bot_account_enable','bot_account_settings'].includes(x.name)));
+});
+test('browser eligibility strictly validates the official response without session data',async()=>{
+ let request;
+ assert.equal(await api.checkEligibility(async(url,options)=>{request={url,options};return {ok:true,json:async()=>({blocked:false,country:'KZ',ip:'not-retained'})};}),true);
+ assert.equal(request.url,'https://polymarket.com/api/geoblock');assert.equal(request.options.credentials,'omit');assert.equal(request.options.referrerPolicy,'no-referrer');assert.ok(!request.options.body);
+ assert.equal(await api.checkEligibility(async()=>({ok:true,json:async()=>({blocked:true,country:'US'})})),false);
+ for(const data of [null,{},[],{blocked:'false',country:'KZ'},{blocked:false}])await assert.rejects(api.checkEligibility(async()=>({ok:true,json:async()=>data})),/GEOBLOCK_UNVERIFIED/);
+ await assert.rejects(api.checkEligibility(async()=>({ok:false})),/GEOBLOCK_UNVERIFIED/);
+});
+test('blocked or unavailable user location cannot call enable RPC',async()=>{
+ for(const value of [false,null]){const s=setup();await s.c.refresh();s.c.eligibility=async()=>value;await s.c.enable(true);assert.ok(!s.calls.some(c=>c.name==='bot_account_enable'));assert.equal(s.c.state.error,value===false?'GEOBLOCKED':'GEOBLOCK_UNVERIFIED');}
+ const s=setup();await s.c.refresh();s.c.eligibility=async()=>{s.setAuth('B');return true;};await s.c.enable(true);assert.equal(s.c.state.account,null);assert.ok(!s.calls.some(c=>c.name==='bot_account_enable'));
 });
 test('enabled label requires runtime readiness, independent of old session grants',()=>{
  const a=account();a.policy.enabled=true;a.runtime_ready=false;assert.equal(stateLabel({account:a},NOW),'PREPARING');a.runtime_ready=true;a.reason='NO_SIGNAL';assert.equal(stateLabel({account:a},NOW),'ACTIVE_NO_SIGNAL');a.policy.enabled=false;a.reason='USER_STOP';assert.equal(stateLabel({account:a},NOW),'STOPPED');
