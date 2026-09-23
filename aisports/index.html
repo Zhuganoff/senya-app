@@ -2946,7 +2946,8 @@ function taRender(r){
   if (tr.enabled) {
     const hb = tr.last_heartbeat ? (Date.now() - Date.parse(tr.last_heartbeat)) / 1000 : Infinity;
     const stale = !(hb < 300) || !tr.executor_ready;
-    const label = stale ? `<span style="color:var(--mut)">${t("taUncertain")}</span>` : (tr.state_label === "ACTIVE_NO_SIGNAL" ? `<span class="pos">${t("taOnNoSignal")}</span>` : `<span class="pos">${t("taOn")}</span>`);
+    const sl = String(tr.state_label || "");                       // метки считает SQL ta_state_label: ENABLED / ENABLED_NO_SIGNAL / ENABLED_UNCERTAIN / STOPPED…
+    const label = (stale || sl === "ENABLED_UNCERTAIN") ? `<span style="color:var(--mut)">${t("taUncertain")}</span>` : ((sl === "ENABLED_NO_SIGNAL" || sl === "ACTIVE_NO_SIGNAL") ? `<span class="pos">${t("taOnNoSignal")}</span>` : `<span class="pos">${t("taOn")}</span>`);
     st.innerHTML = label + (tr.last_heartbeat ? `<br><span style="color:var(--mut);font-weight:400">${t("taLastCheck")}: ${v3Esc(String(tr.last_heartbeat).slice(11, 16))} UTC</span>` : "");
     taShow(["taFundBtn","taSettingsBtn","taStopBtn","taWithdrawBtn","taHistoryBtn"]); return;
   }
@@ -3025,8 +3026,17 @@ taEl("taFundGo").addEventListener("click", async () => {
   const bound = sessionKey(), amt = taParseAmount(taEl("taFundAmount").value);
   if (!amt) { taEl("taFundSummary").innerHTML = `<span class="neg">${t("taBadAmount")}</span>`; return; }
   let prep;
-  try { prep = await taCall("ta_fund_prepare", {p_amount_base: amt, p_idempotency_key: taIdem("fund")}); } catch(e) { taProblem(e.message); return; }
-  if (sessionKey() !== bound || !prep || prep.status !== "PREPARED") { taProblem(prep && prep.status); return; }
+  // ta_fund_prepare асинхронный (SQL): первый ответ PREPARING — worker готовит nonce/deadline/typed-data; повтор с тем же ключом → PREPARED
+  taEl("taFundSummary").innerHTML = `<span style="color:var(--mut)">${t("taPreparing")}</span>`;
+  try {
+    for (let i = 0; i < 40; i++) {
+      prep = await taCall("ta_fund_prepare", {p_amount_base: amt, p_idempotency_key: taIdem("fund")});
+      if (sessionKey() !== bound) return;
+      if (!prep || prep.status !== "PREPARING") break;
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  } catch(e) { taProblem(e.message); return; }
+  if (!prep || prep.status !== "PREPARED") { taProblem(prep && prep.status === "PREPARING" ? "PENDING_TIMEOUT" : (prep && prep.status)); return; }
   const sm = prep.summary || {};
   taEl("taFundSummary").innerHTML = v3Esc(taFill("taFundSummary", {amt: taFmt(sm.amount_base || amt), from: wvShortAddr(String(sm.from || "")), to: wvShortAddr(String(sm.to || ""))})) + (sm.fee_note ? `<br><span style="color:var(--mut)">${v3Esc(String(sm.fee_note))}</span>` : "");
   try { await taSignedOperation(bound, prep, "fund"); } catch(e) { taProblem(e.message); }
