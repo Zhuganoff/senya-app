@@ -834,25 +834,9 @@ body.splash-on{overflow:hidden}
       <div class="me-sub" id="apiState" style="margin-top:8px;font-weight:700"></div>
       <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть Polymarket</a>
       <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
-      <div class="me-sub" id="apiHint" data-i18n="apiNote">Приватный ключ и сид-фраза не нужны. Автоторговля пока недоступна.</div>
+      <div class="me-sub" id="apiHint" data-i18n="apiNote">Основной приватный ключ и сид-фраза не передаются. Отдельный счёт AISports управляется ниже.</div>
       <button class="btn" id="verifyWalletOwner" style="display:none;margin-top:10px" data-i18n="wvVerifyOwner">Подтвердить владение</button>
-      <div id="autoBox" style="display:none;margin-top:10px">
-        <div class="me-sub" id="autoState" style="font-weight:700"></div>
-        <button class="btn" id="autoEnableBtn" style="display:none;margin-top:8px" data-i18n="autoEnable">Включить автоставки</button>
-        <button class="btn ghost" id="autoSettingsBtn" style="display:none;margin-top:8px" data-i18n="autoSettings">Настройки автоставок</button>
-        <div class="me-sub" id="autoSettingsBox" style="display:none;margin-top:8px"></div>
-        <button class="btn ghost" id="autoSwitchBtn" style="display:none;margin-top:8px" data-i18n="autoSwitch">Сменить кошелёк</button>
-        <button class="btn ghost" id="autoDisconnectBtn" style="display:none;margin-top:8px" data-i18n="autoDisconnect">Отключить кошелёк</button>
-        <button class="btn" id="autoDisableBtn" style="display:none;margin-top:8px;color:#ef4444" data-i18n="autoDisable">Отключить автоставки</button>
-        <button class="btn ghost" id="autoRetryBtn" style="display:none;margin-top:8px" data-i18n="autoRetry">Повторить</button>
-      </div>
-      <div id="botAccountBox" style="display:none;margin-top:10px">
-        <div class="k" data-i18n="botAccTitle">Торговый счёт бота</div>
-        <div class="me-sub" id="botAccState" style="font-weight:700"></div>
-        <div class="me-sub" id="botAccDetails"></div>
-        <button class="btn ghost" id="botAccTopupBtn" style="display:none;margin-top:8px" data-i18n="botAccTopup">Пополнить</button>
-        <div class="me-sub" id="botAccTopupBox" style="display:none;margin-top:8px"></div>
-      </div>
+      <section id="botAccountBox" style="margin-top:18px" aria-label="Торговый счёт AISports" aria-live="polite"></section>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
     <div id="exchBlock" style="display:none">
@@ -860,7 +844,7 @@ body.splash-on{overflow:hidden}
     <div class="card">
       <details>
         <summary class="k" style="cursor:pointer" data-i18n="guideTitle">Просмотр кошелька по публичному адресу</summary>
-        <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение адресом и не разрешает торговлю: автоматических ставок нет, исполнитель ордеров не реализован.</div>
+        <div class="me-sub" style="margin-top:8px" data-i18n="guideBody">1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение и не разрешает торговлю. Для автоставок подтвердите личный кошелёк и создайте отдельный торговый счёт AISports ниже.</div>
       </details>
     </div>
     </div><!-- /exchBlock -->
@@ -878,7 +862,7 @@ body.splash-on{overflow:hidden}
     <div class="card" style="margin-top:10px">
       <div class="k" data-i18n="subTitle2">AI Sports Auto <span class="tag">β</span></div>
       <div class="cur" style="font-size:30px;margin:4px 0 2px">$499<span style="font-size:14px;color:var(--mut)" data-i18n="subPerMon">/мес</span></div>
-      <div class="me-sub" data-i18n="subList2" style="margin:6px 0 10px">• Всё из Pro<br>• Автоматические ставки через твой счёт Polymarket — недоступны: исполнитель ордеров не реализован, дата не назначена; никакие ключи биржи не запрашиваются и подключение просмотра торговлю не включает<br>• Будущее торговое разрешение будет с лимитами и отзывом; безопасность денег не гарантируется абсолютно — риски описываются отдельно</div>
+      <div class="me-sub" data-i18n="subList2" style="margin:6px 0 10px">• Всё из Pro<br>• Автоставки MLB с отдельного счёта AISports после подтверждения кошелька, пополнения и принятия настроек<br>• Ключ отдельного счёта хранит сервис. Доступность и состояние торговли показаны в разделе счёта выше</div>
       <button class="btn" id="subBtn2" data-i18n="subBtn">Узнать о запуске</button>
       <div class="me-sub" id="subHint2" style="margin-top:8px" data-i18n="subSoon">Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.</div>
     </div>
@@ -999,8 +983,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
+<script src="bot-account.js?v=v128"></script>
+<script src="wallet-connect.js?v=v128"></script>
 <script>
-const BUILD = "v127";
+const BUILD = "v128";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1013,7 +999,7 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // v114 (приёмка Астры R1): в official личные списки («Ставки», «Ставки за день», история) берутся ТОЛЬКО из
 // personal_real_bets (подтверждённые сделки аккаунта; исполнителя нет → пусто), а не из PAPER-сигналов стратегии
 const OFFICIAL_PERSONAL_LISTS = APP_PROFILE === "aisports";
-function personalBets(feed){ return (feed && Array.isArray(feed.personal_real_bets)) ? feed.personal_real_bets : []; }
+function personalBets(feed){ const p = window.__privateRealBets; return p && p.session === sessionKey() ? p.rows : []; }
 // 21.09 (перенос футбола в official, владелец; приёмка Астры): общие PAPER-прогнозы стратегии по футболу (лента: paper_forecasts,
 // origin=paper_signal) показываются ОТДЕЛЬНЫМ блоком с собственной подписью НЕЗАВИСИМО от личного списка — записи не смешиваются;
 // в personal_real_bets никогда не попадают; денег в них нет (HIDE_MONEY)
@@ -1089,7 +1075,7 @@ const T = {
   secWr: ["Винрейт по видам спорта", "Win rate by sport", "各项目胜率"],
   secLast: ["Личные сделки", "Personal trades", "个人交易"],
   noPersonalBets: ["Подтверждённых личных сделок нет", "No confirmed personal trades", "暂无已确认的个人交易"],
-  noPersonalBetsHint: ["Реальный исполнитель ордеров не реализован — личная история появится только по подтверждённым сделкам твоего аккаунта. Сигналы стратегии (симуляция) в личный список не попадают.", "The real order executor is not implemented — personal history will appear only from confirmed trades of your account. Strategy signals (simulation) never enter the personal list.", "真实订单执行器尚未实现——个人历史仅来自你账户的已确认交易。策略信号（模拟）不会进入个人列表。"],
+  noPersonalBetsHint: ["Операции и ставки отдельного счёта доступны в «Профиль → Торговый счёт AISports». Здесь нет публичной истории чужих счетов.", "Your separate account’s transactions and bets are in Profile → AISports trading account. Other accounts’ private history is not shown here.", "独立账户的交易与投注请见个人资料 → AISports 交易账户。此处不展示其他账户的私人历史。"],
   secEarn: ["Рефералы", "Referrals", "推荐"],
   secPayouts: ["Выплаты за рефералов", "Referral payouts", "推荐返佣"],
   secLine1: ["Первая линия · 20%", "First line · 20%", "第一层 · 20%"],
@@ -1160,7 +1146,7 @@ const T = {
   walletOk: ["Кошелёк Polymarket подключен", "Polymarket wallet connected", "Polymarket 钱包已连接"],
   walletUnlink: ["Отвязать кошелёк", "Unlink wallet", "解除钱包绑定"],
   secSportsWr: ["Результаты стратегии по видам · симуляция", "Strategy results by sport · simulation", "策略分项结果 · 模拟"],
-  apiNote: ["Приватный ключ и сид-фраза не нужны. Автоторговля пока недоступна.", "A private key and seed phrase are not needed. Auto-trading is not available yet.", "无需私钥和助记词。自动交易暂不可用。"],
+  apiNote: ["Основной приватный ключ и сид-фраза не передаются. Отдельный счёт AISports управляется ниже.", "A private key and seed phrase are not needed. Auto-trading is not available yet.", "无需私钥和助记词。自动交易暂不可用。"],
   apiSaved: ["✅ Ключ сохранён на этом устройстве", "✅ Key saved on this device", "✅ 密钥已保存在本设备"],
   themeTitle: ["Тема приложения", "App theme", "应用主题"],
   themeDark: ["🌙 Тёмная", "🌙 Dark", "🌙 深色"], themeLight: ["☀️ Светлая", "☀️ Light", "☀️ 浅色"], themeAuto: ["🔄 Как в Telegram", "🔄 Match Telegram", "🔄 跟随 Telegram"],
@@ -1216,7 +1202,7 @@ const T = {
            "Enter a public address to see the balance and activity of the selected account. Connection gives view-only access.",
            "输入公开地址即可查看所选账户的余额与操作。连接仅提供查看。"],
   wvNoKeys: ["Приватный ключ и сид-фраза не нужны.", "A private key and seed phrase are not needed.", "无需私钥和助记词。"],
-  wvTradingOff: ["Автоторговля пока недоступна.", "Auto-trading is not available yet.", "自动交易暂不可用。"],
+  wvTradingOff: ["Отдельный торговый счёт настраивается ниже.", "Set up your separate trading account below.", "请在下方设置独立交易账户。"],
   autoEnable: ["Включить автоставки", "Enable auto-bets", "开启自动投注"],
   autoSettings: ["Настройки автоставок", "Auto-bet settings", "自动投注设置"],
   autoSwitch: ["Сменить кошелёк", "Switch wallet", "更换钱包"],
@@ -1250,7 +1236,7 @@ const T = {
   wvSourceErr: ["Источник временно недоступен — попробуй позже", "The source is temporarily unavailable — try again later", "数据源暂时不可用——请稍后再试"],
   wvMismatch: ["Ответ источника не совпал с запросом — подключение не выполнено", "The source response did not match the request — not connected", "数据源响应与请求不匹配——未连接"],
   wvConnected: ["Подключён для просмотра", "Connected for viewing", "已连接（仅查看）"],
-  wvStatusLine: ["Торговля выключена · владение адресом не проверено", "Trading is off · address ownership not verified", "交易关闭 · 地址所有权未验证"],
+  wvStatusLine: ["Публичный просмотр · не подтверждает владение", "Public view · does not prove ownership", "公开查看 · 不证明所有权"],
   wvVerifyOwner: ["Подтвердить владение", "Verify ownership", "验证所有权"],
   wvConnectWallet: ["Подключить кошелёк", "Connect wallet", "连接钱包"],
   wvChooseMetaMask: ["MetaMask", "MetaMask", "MetaMask"],
@@ -1377,7 +1363,7 @@ const T = {
             "• Full access: every bet, stats and CLV in real time<br>• A separate notifier bot messages you each bet: the pick and the odds<br>• You place bets yourself on your exchange · 20% + 5% referrals",
             "• 完整访问：所有投注、统计与 CLV 实时可见<br>• 独立通知机器人推送每笔投注：投什么、什么赔率<br>• 你在自己的交易所自行下注 · 20% + 5% 推荐计划"],
   subTitle2: ["AI Sports Auto <span class=\"tag\">β</span>", "AI Sports Auto <span class=\"tag\">β</span>", "AI Sports Auto <span class=\"tag\">β</span>"],
-  subList2: ["• Всё из Pro<br>• Автоматические ставки через твой счёт Polymarket — недоступны: исполнитель ордеров не реализован, дата не назначена; никакие ключи биржи не запрашиваются и подключение просмотра торговлю не включает<br>• Будущее торговое разрешение будет с лимитами и отзывом; безопасность денег не гарантируется абсолютно — риски описываются отдельно", "• Everything in Pro<br>• Automatic bets via your Polymarket account — not available: the order executor is not implemented, no date set; no exchange keys are requested and the view connection does not enable trading<br>• A future trading permission will come with limits and revocation; money safety is not absolutely guaranteed — risks are described separately", "• Pro 的全部内容<br>• 通过你的 Polymarket 账户自动投注——暂不可用：订单执行器尚未实现，无日期；不索取任何交易所密钥，查看连接也不会启用交易<br>• 未来的交易授权将带有限额和撤销；资金安全无法绝对保证——风险另行说明"],
+  subList2: ["• Всё из Pro<br>• Автоставки MLB с отдельного счёта AISports после подтверждения кошелька, пополнения и принятия настроек<br>• Ключ отдельного счёта хранит сервис. Доступность и состояние торговли показаны в разделе счёта выше", "• Everything in Pro<br>• MLB auto-bets from a separate AISports account after wallet verification, funding and policy acceptance<br>• The service holds the separate account’s key. Availability and trading status are shown in the account section above", "• Pro 的全部内容<br>• 验证钱包、充值并接受设置后，可从独立 AISports 账户进行 MLB 自动投注<br>• 服务保管独立账户密钥，可用性与交易状态见上方账户区域"],
   subBtn: ["Узнать о запуске", "Launch updates", "获取上线通知"],
   subSoon: ["Оплата ещё не запущена — бот напишет первым, когда включится. Пока всё видно бесплатно.",
             "Payments aren't live yet — the bot will message you first when they are. Everything is free to watch for now.",
@@ -1387,7 +1373,7 @@ const T = {
                  "完成——订阅上线时机器人会通知你。"],
   secGuide: ["Справка", "Help", "帮助"],
   guideTitle: ["Просмотр кошелька по публичному адресу", "Wallet view by public address", "按公开地址查看钱包"],
-  guideBody: ["1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение адресом и не разрешает торговлю: автоматических ставок нет, исполнитель ордеров не реализован.", "1️⃣ In Profile, paste a public address (MetaMask or Polymarket account) and tap Connect — the app finds the account and shows the pUSD balance and positions value from public data.<br><br>2️⃣ No secrets: private key, seed phrase and exchange keys are not needed and not accepted.<br><br>3️⃣ If the settings server is unavailable, the address works on this device only and is not saved to the profile — the status says so.<br><br>4️⃣ Viewing does not prove ownership and does not enable trading: there are no automatic bets, the order executor is not implemented.", "1️⃣ 在「个人资料」中粘贴公开地址（MetaMask 或 Polymarket 账户）并点击「连接」——应用会找到账户并按公开数据显示 pUSD 余额和持仓价值。<br><br>2️⃣ 无需任何秘密：不需要也不接受私钥、助记词和交易所密钥。<br><br>3️⃣ 若设置服务器不可用，地址仅在本设备生效且未保存到个人资料——状态会如实显示。<br><br>4️⃣ 查看不证明地址所有权，也不启用交易：没有自动投注，订单执行器尚未实现。"],
+  guideBody: ["1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение и не разрешает торговлю. Для автоставок подтвердите личный кошелёк и создайте отдельный торговый счёт AISports ниже.", "1️⃣ In Profile, paste a public address (MetaMask or Polymarket account) and tap Connect — the app finds the account and shows the pUSD balance and positions value from public data.<br><br>2️⃣ No secrets: private key, seed phrase and exchange keys are not needed and not accepted.<br><br>3️⃣ If the settings server is unavailable, the address works on this device only and is not saved to the profile — the status says so.<br><br>4️⃣ Viewing does not prove ownership or authorize trading. For auto-bets, verify your personal wallet and create a separate AISports trading account below.", "1️⃣ 在「个人资料」中粘贴公开地址（MetaMask 或 Polymarket 账户）并点击「连接」——应用会找到账户并按公开数据显示 pUSD 余额和持仓价值。<br><br>2️⃣ 无需任何秘密：不需要也不接受私钥、助记词和交易所密钥。<br><br>3️⃣ 若设置服务器不可用，地址仅在本设备生效且未保存到个人资料——状态会如实显示。<br><br>4️⃣ 查看不证明地址所有权，也不授权交易。自动投注需要验证个人钱包并在下方创建独立的 AISports 交易账户。"],
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
@@ -1749,7 +1735,6 @@ function coreFeed(force){
       if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0)
         throw new Error("лента не PAPER_ONLY");
       window.__coreFeed = feed; window.__coreFeedError = null;
-      try { botAccountRender(feed && feed.bot_account); } catch(e) {}
       return feed;
     } catch (e) {
       window.__coreFeedError = e; window.__coreFeed = null;
@@ -2466,6 +2451,9 @@ function ensurePrivateSession(){
 function resetPrivateUI(){
   // v108 (W): данные адреса прежней сессии не должны оставаться на экране
   window.__wv = null;
+  window.__privateRealBets = null;
+  window.__auto = null;
+  if (window.__botAccountUI) window.__botAccountUI.reset();
   try { const a = document.getElementById("apiState"); if (a) a.innerHTML = ""; } catch(e) {}
   try { const b = document.getElementById("budgetHint"); if (b) b.innerHTML = ""; } catch(e) {}
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -2483,6 +2471,7 @@ function resetPrivateUI(){
 async function initMe(){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   ensurePrivateSession();                              // v105: до сети, при смене сессии/гостя
+  if (window.__botAccountUI) window.__botAccountUI.refresh();
   if(!u){
     document.getElementById("meSub").textContent = t("openFromBot");
     wvShowBlock();                                     // v113: форма адреса видна и гостю (просмотр без сохранения)
@@ -2796,24 +2785,29 @@ function wvRenderEmpty(msg){
   if (connectBtn) connectBtn.style.display = "block";
   if (addrRow) addrRow.style.display = "none";
   if (verifyBtn) verifyBtn.style.display = "none";
-  const ab = document.getElementById("autoBox"); if (ab) ab.style.display = "none";
+
 }
 
-// v122: единый выбор кошелька. Telegram initData переносится во фрагменте URL,
-// поэтому внешний Chrome получает ту же серверную сессию, но секрет не уходит GitHub.
-function walletTarget(path){
-  const target = new URL(path, location.href);
-  target.searchParams.set("auto", "1");
-  target.searchParams.set("build", BUILD);
-  target.hash = location.hash;
-  return target.href;
-}
-function openMetaMaskFlow(){
-  const target = walletTarget("../aisports-wallet-test/mm.html");
-  const tgApp = window.Telegram && window.Telegram.WebApp;
-  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-  if (!mobile && tgApp && tgApp.initData && tgApp.openLink) tgApp.openLink(target, {try_instant_view:false});
-  else location.href = target;
+// v128: ordinary account flow stays in this official page. Telegram data is never copied to a URL.
+const botConnector = AISportsWallet.createConnector({window,polygonRPC:POLYGON_RPC});
+const botWallet = () => botConnector.connect();
+const botAccountController = new AISportsBotAccount.Controller({
+  session: wvInit,
+  rpc: async (name, params) => { const r = await wvRpc(name, params); if (!r.server) throw new AISportsBotAccount.ClientError("SOURCE_UNAVAILABLE"); return r.data; },
+  wallet: botWallet, resolveWallet: wvResolve
+});
+window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
+const botAccountPaint = botAccountController.render;
+botAccountController.render = state => {
+  window.__privateRealBets = {session:sessionKey(),rows:[]};
+  // Personal transaction history is rendered only in the private account section. Public forecast lists stay separate.
+  botAccountPaint(state);
+};
+async function openMetaMaskFlow(){
+  document.getElementById("walletConnectChoices").style.display = "none";
+  const bound = sessionKey();
+  await botAccountController.connect();
+  if (sessionKey() === bound) await initWalletView(bound);
 }
 const connectWalletMenu = document.getElementById("connectWalletMenu");
 const walletConnectChoices = document.getElementById("walletConnectChoices");
@@ -2821,107 +2815,29 @@ connectWalletMenu.addEventListener("click", () => {
   walletConnectChoices.style.display = walletConnectChoices.style.display === "none" ? "block" : "none";
 });
 document.getElementById("walletChoiceMetaMask").addEventListener("click", openMetaMaskFlow);
-document.getElementById("walletChoiceOther").addEventListener("click", () => { location.href = walletTarget("../aisports-wallet-test/index.html"); });
+// No WalletConnect option until its production project configuration is installed.
+document.getElementById("walletChoiceOther").hidden = true;
+document.getElementById("walletChoiceOther").style.display = "none";
 document.getElementById("walletChoicePublic").addEventListener("click", () => {
   walletConnectChoices.style.display = "none";
   const row = document.getElementById("walletAddressRow"), inp = document.getElementById("apiKeyInput");
   row.style.display = "flex"; inp.readOnly = false; inp.focus();
 });
 document.getElementById("verifyWalletOwner").addEventListener("click", openMetaMaskFlow);
-// v125: состояние Auto по двум серверным фактам — OWNED (wallet_link_status) и полномочие;
-// ссылка подписи содержит build, чтобы внешний браузер не переиспользовал устаревший mm.html.
-// Session Key (trading_grant_status). Все подписи — в кошельке пользователя (страница mm.html, flow=auto|revoke); ключей, адресов и Terminal нет.
-function openAutoFlow(kind){
-  const target = new URL(walletTarget("../aisports-wallet-test/mm.html"));
-  target.searchParams.set("flow", kind);
-  const tgApp = window.Telegram && window.Telegram.WebApp;
-  const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
-  if (!mobile && tgApp && tgApp.initData && tgApp.openLink) tgApp.openLink(target.href, {try_instant_view:false});
-  else location.href = target.href;
+function autoRefresh(bound){
+  if (sessionKey() !== bound) return;
+  return window.__botAccountUI.refresh();
 }
-function autoShow(ids){
-  ["autoEnableBtn","autoSettingsBtn","autoSwitchBtn","autoDisconnectBtn","autoDisableBtn","autoRetryBtn"].forEach(id => {
-    const el = document.getElementById(id); if (el) el.style.display = ids.includes(id) ? "block" : "none";
-  });
-  const sb = document.getElementById("autoSettingsBox"); if (sb && !ids.includes("autoSettingsBtn")) sb.style.display = "none";
+// GET-only recovery on return/refresh. No timer automatically retries a financial mutation or opens a wallet.
+let botLastPoll = 0;
+function botAccountPoll(){
+  ensurePrivateSession();
+  if (document.hidden || !wvInit() || Date.now()-botLastPoll < 5000 || botAccountController.state.busy) return;
+  botLastPoll = Date.now(); window.__botAccountUI.refresh();
 }
-function autoRender(r){
-  const box = document.getElementById("autoBox"), st = document.getElementById("autoState"), apiHint = document.getElementById("apiHint");
-  if (!box || !st) return;
-  box.style.display = "block"; window.__auto = r;
-  if (r.mode === "NOT_OWNED") { st.innerHTML = `<span style="color:var(--mut)">${t("autoNotOwned")}</span>`; autoShow([]); return; }
-  const g = r.grant, state = g ? g.state : null;
-  if (!r.grantServer) { st.innerHTML = `<span style="color:var(--mut)">${t("autoNoServer")}</span>`; autoShow(["autoRetryBtn","autoSwitchBtn","autoDisconnectBtn"]); window.__autoRetry = "refresh"; return; }
-  if (state === "TRADING_AUTHORIZED") {
-    st.innerHTML = `<span class="pos">${t("autoOn")}</span>`; autoShow(["autoSettingsBtn","autoDisableBtn"]);
-    if (apiHint) apiHint.innerHTML = `${t("wvNoKeys")} ${t("autoExecOff")}`;
-    return;
-  }
-  if (state === "PAUSED") { st.innerHTML = `<span class="neg">${t("autoPaused")}</span>`; autoShow(["autoDisableBtn"]); return; }
-  if (state === "REVOKING") { st.innerHTML = `<span style="color:var(--mut)">${t("autoRevoking")}</span>`; autoShow(["autoRetryBtn"]); window.__autoRetry = "revoke"; return; }
-  if (g && (g.awaiting_signature || state === "AUTHORIZING" || state === "UNKNOWN" || (g.job && (g.job.status === "PENDING" || g.job.status === "CLAIMED")))) {
-    st.innerHTML = `<span style="color:var(--mut)">${t("autoPending")}</span>`; autoShow(["autoRetryBtn","autoDisableBtn"]); window.__autoRetry = "auto"; return;
-  }
-  if (g && String(g.reason || "").startsWith("PROVIDER_ACCESS_DENIED")) {       // 23.09: точный внешний blocker — без повторной подписи
-    st.innerHTML = `<span class="neg">${t("autoProviderDenied")}</span>`; autoShow(["autoRetryBtn","autoSwitchBtn","autoDisconnectBtn"]); window.__autoRetry = "refresh"; return;
-  }
-  st.innerHTML = `<span style="color:var(--mut)">${t("autoOff")}</span>`;      // NOT_CONNECTED / OWNED / REVOKED / EXPIRED
-  autoShow(["autoEnableBtn","autoSwitchBtn","autoDisconnectBtn"]);
-}
-async function autoRefresh(bound){
-  const box = document.getElementById("autoBox"); if (!box) return;
-  const cur = wvInit(), view = window.__wv && window.__wv.view;
-  if (!cur || !view) { box.style.display = "none"; return; }
-  let link;
-  try { link = await wvRpc("wallet_link_status", {p_init_data: cur}); } catch(e) { link = {server: false}; }
-  if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
-  if (!link.server || !link.data) { box.style.display = "none"; return; }
-  const acct = String(link.data.trading_account || "").toLowerCase(), mine = String(view.resolved_address || view.input_address || "").toLowerCase();
-  if (link.data.state !== "OWNED" || acct !== mine) { autoRender({mode: "NOT_OWNED"}); return; }
-  let grant;
-  try { grant = await wvRpc("trading_grant_status", {p_init_data: cur}); } catch(e) { grant = {server: false}; }
-  if (sessionKey() !== bound || !(window.__wv && window.__wv.view === view)) return;
-  autoRender({mode: "OWNED", owner: link.data.signer, grant: grant.server ? grant.data : null, grantServer: grant.server});
-}
-// v127 (Астра 23.09 п.4): «Торговый счёт бота» — отдельный счёт с отдельным ключом на сервере; только публичные факты из core_feed.bot_account
-function botAccountRender(ba){
-  const box = document.getElementById("botAccountBox"), st = document.getElementById("botAccState"), det = document.getElementById("botAccDetails");
-  if (!box || !st) return;
-  if (!ba || ba.error || !ba.deposit_wallet) { box.style.display = "block"; st.innerHTML = `<span style="color:var(--mut)">${t("botAccNone")}</span>`; det.innerHTML = ""; document.getElementById("botAccTopupBtn").style.display = "none"; return; }
-  box.style.display = "block";
-  const on = !!ba.trading_possible_now, stop = !!ba.stop;
-  st.innerHTML = stop ? `<span class="neg">${t("botAccStopped")}</span>` : on ? `<span class="pos">${t("botAccOn")}</span>` : `<span style="color:var(--mut)">${t("botAccOff")}</span>`;
-  const bal = ba.balance_pusd == null ? "—" : Number(ba.balance_pusd).toFixed(2) + " pUSD";
-  det.innerHTML = `${t("botAccBalance")}: ${bal}${ba.deployed === false ? " · " + t("botAccNotDeployed") : ""} · ${v3Esc(wvShortAddr(ba.deposit_wallet))}<br>` +
-                  `<span style="color:var(--mut);font-weight:400">${t("botAccSeparate")}<br>${v3Esc(String(ba.custody || ""))}</span>`;
-  document.getElementById("botAccTopupBtn").style.display = "block";
-  const tb = document.getElementById("botAccTopupBox"); tb.style.display = "none";
-  tb.innerHTML = `${t("botAccTopupHint")}<br><code style="word-break:break-all">${v3Esc(String(ba.deposit_wallet))}</code>`;
-}
-document.getElementById("botAccTopupBtn").addEventListener("click", () => { const tb = document.getElementById("botAccTopupBox"); tb.style.display = tb.style.display === "none" ? "block" : "none"; });
-document.getElementById("autoEnableBtn").addEventListener("click", () => openAutoFlow("auto"));
-document.getElementById("autoRetryBtn").addEventListener("click", () => {
-  const k = window.__autoRetry || "refresh";
-  if (k === "refresh") autoRefresh(sessionKey()); else openAutoFlow(k);
-});
-document.getElementById("autoSwitchBtn").addEventListener("click", openMetaMaskFlow);
-document.getElementById("autoDisableBtn").addEventListener("click", async () => {
-  const cur = wvInit(); if (!cur) return;
-  try { await wvRpc("trading_grant_revoke", {p_init_data: cur}); } catch(e) {}     // локальный стоп на сервере — сразу, до подписи
-  openAutoFlow("revoke");                                                          // одна подпись отзыва в кошельке
-});
-document.getElementById("autoDisconnectBtn").addEventListener("click", async () => {
-  const cur = wvInit();
-  try { if (cur) await wvRpc("wallet_link_revoke", {p_init_data: cur}); } catch(e) {}
-  const btn = document.getElementById("saveApiKey"); if (btn && btn.__p0Handler) btn.__p0Handler();   // штатное «Отключить просмотр»
-});
-document.getElementById("autoSettingsBtn").addEventListener("click", () => {
-  const sb = document.getElementById("autoSettingsBox"), g = window.__auto && window.__auto.grant;
-  if (!sb) return;
-  if (sb.style.display === "block") { sb.style.display = "none"; return; }
-  const until = g && g.valid_until ? new Date(Number(g.valid_until) * 1000).toISOString().slice(0, 10) : "—";
-  sb.innerHTML = `${t("autoGranted")} ${until}<br>${t("autoLimits")}`; sb.style.display = "block";
-});
+document.addEventListener("visibilitychange", botAccountPoll);
+window.addEventListener("pageshow", botAccountPoll);
+setInterval(botAccountPoll,10000);
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");
   window.__wv = {session: bound, view: null, server: null, gen: 0};
