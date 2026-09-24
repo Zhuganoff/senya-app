@@ -408,6 +408,43 @@
     function el(tag,text,cls) { const n=doc.createElement(tag); if(text!=null)n.textContent=text;if(cls)n.className=cls;return n; }
     function button(text,fn,disabled=false,primary=false) { const b=el("button",text,primary?"btn":"btn ghost"); b.type="button";b.disabled=disabled;b.style.marginTop="8px";b.onclick=fn;if(primary)b.dataset.primary="true";return b; }
     function line(label,value) { const n=el("div",label+": "+value,"me-sub"); n.style.overflowWrap="anywhere";return n; }
+    function walletCard(items) {
+      // Владелец 24.09: адреса — крупно и аккуратно, без пояснительных абзацев вокруг.
+      const box = el("div"); Object.assign(box.style,{marginTop:"10px",padding:"10px 12px",border:"1px solid var(--line, rgba(125,142,170,.25))",
+                                                      borderRadius:"12px",display:"grid",gap:"8px"});
+      for (const [label,value] of items) {
+        const row = el("div"); Object.assign(row.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px"});
+        const name = el("span",label); Object.assign(name.style,{color:"var(--mut)",fontSize:"12px",flex:"0 0 auto"});
+        const text = String(value||""), short = text.length>16 ? text.slice(0,6)+"…"+text.slice(-4) : (text||"—");
+        const addr = el("span",short); Object.assign(addr.style,{fontSize:"16px",fontWeight:"700",letterSpacing:".01em",fontVariantNumeric:"tabular-nums"});
+        addr.title = text;
+        const right = el("div"); Object.assign(right.style,{display:"flex",alignItems:"center",gap:"6px",minWidth:"0"});
+        right.append(addr);
+        if (text) {
+          const b = el("button",lang==="ru"?"Копировать":lang==="zh"?"复制":"Copy"); b.type="button"; b.title=text;
+          b.setAttribute("aria-label",(lang==="ru"?"Копировать адрес ":"Copy address ")+label);
+          Object.assign(b.style,{padding:"2px 6px",border:"0",background:"transparent",color:"var(--accent)",fontSize:"12px",cursor:"pointer"});
+          b.onclick=async()=>{try{await doc.defaultView.navigator.clipboard.writeText(text);b.textContent=lang==="ru"?"Скопировано":lang==="zh"?"已复制":"Copied";}catch(_){b.textContent=lang==="ru"?"Не удалось":lang==="zh"?"失败":"Unavailable";}};
+          right.append(b);
+        }
+        row.append(name,right); box.append(row);
+      }
+      return box;
+    }
+    function balanceCard(a) {
+      // Свободные средства — крупно; остальное компактной строкой. Время сверки — подсказкой, не отдельной строкой.
+      const bal = a.balance || {}, box = el("div"); Object.assign(box.style,{marginTop:"10px"});
+      const big = el("div"); Object.assign(big.style,{display:"flex",alignItems:"baseline",gap:"8px"});
+      const v = el("span",formatUnits(bal.available_units)+" pUSD"); Object.assign(v.style,{fontSize:"22px",fontWeight:"800",fontVariantNumeric:"tabular-nums"});
+      const c = el("span",tr("available")); Object.assign(c.style,{color:"var(--mut)",fontSize:"12px"});
+      big.append(v,c); box.append(big);
+      const parts=[tr("reserved")+" "+formatUnits(bal.reserved_units)+" pUSD",
+                   tr("positions")+" "+formatUnits(bal.position_value_units)+" pUSD",
+                   tr("pnl")+" "+signedUnits(bal.realized_pnl_units)+" pUSD"];
+      const sub = el("div",parts.join(" · "),"me-sub");
+      if (bal.checked_at) sub.title = tr("checked")+": "+new Date(bal.checked_at).toLocaleString(lang);
+      box.append(sub); return box;
+    }
     function addressLine(label,value) {
       if(!value)return line(label,"—");
       const text=String(value),n=line(label,text.length>16?text.slice(0,6)+"…"+text.slice(-4):text);
@@ -433,12 +470,9 @@
         root.append(button(tr("refresh"),()=>controller.refresh(),s.busy));return;
       }
       if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";}
-      root.append(el("p",tr("separate"),"me-sub"));
-      root.append(addressLine("Polymarket",a.funding_wallet),addressLine("AISports",a.bot_deposit_wallet));
-      root.append(el("p",tr("custodyShort"),"me-sub"));
-      root.append(line(tr("available"),formatUnits(a.balance&&a.balance.available_units)+" pUSD"),line(tr("reserved"),formatUnits(a.balance&&a.balance.reserved_units)+" pUSD"));
-      root.append(line(tr("positions"),formatUnits(a.balance&&a.balance.position_value_units)+" pUSD"),line(tr("pnl"),signedUnits(a.balance&&a.balance.realized_pnl_units)+" pUSD"));
-      root.append(line(tr("checked"),(a.balance&&a.balance.checked_at)?new Date(a.balance.checked_at).toLocaleString(lang):"—"));
+      root.append(walletCard([["Polymarket",a.funding_wallet],["AISports",a.bot_deposit_wallet]]));
+      root.append(balanceCard(a));
+      const custody=el("p",tr("custodyShort"),"me-sub"); custody.style.fontSize="11px"; root.append(custody);
       if(a.policy&&a.policy.enabled)root.append(line(lang==="ru"?"Проверка торговли":lang==="zh"?"交易检查":"Trading check",a.last_checked_at?new Date(a.last_checked_at).toLocaleString(lang):"—"));
       if(a.reason&&a.reason!=="NO_SIGNAL")root.append(line(lang==="ru"?"Причина":"Reason",reasonText(a.reason)));
       const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral, o=s.operation;
@@ -455,7 +489,7 @@
       root.append(actions);
       if(ready&&!hasFunds&&!unfinished&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
       if(a.policy) {
-        root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
+        if(settingsOpen)root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
         if(settingsOpen) {
           const label=el("label",tr("maxStake"),"me-sub"), input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.value=percent;input.oninput=()=>{percent=input.value;};label.append(input);root.append(label);
           root.append(button(tr("save"),()=>controller.settings(percent),s.busy,true));
@@ -479,14 +513,19 @@
         }
         if(o.reason)root.append(line(lang==="ru"?"Причина":"Reason",reasonText(o.reason)));
       }
+      // Владелец 24.09: в списке — только деньги и ставки. Технические шаги счёта (создание, подготовка разрешений)
+      // пользователю не нужны: их исход и так виден состоянием счёта и причиной наверху.
+      const TECH=new Set(["PROVISION","APPROVE"]);
+      const shown=s.history.filter(h=>!TECH.has(h.kind)||h.amount_units!=null&&h.amount_units!=="0");
+      if(shown.length){
       root.append(el("h4",tr("history")));
-      if(!s.history.length)root.append(el("p",tr("empty"),"me-sub"));
-      for(const h of s.history.slice(0,100)) {
+      for(const h of shown.slice(0,100)) {
         const d=el("details"), title=[h.match||h.match_name||kindText(h.kind),stateText(h.state),h.amount_units!=null?formatUnits(h.amount_units)+" pUSD":null].filter(Boolean).join(" · ");d.append(el("summary",title));
         for(const [key,label] of [["side",lang==="ru"?"Сторона":"Side"],["market_family",lang==="ru"?"Рынок":"Market"],["average_price",lang==="ru"?"Средняя цена исполнения, pUSD за долю":"Average fill price, pUSD/share"],["fee_units",tr("fees")],["realized_pnl_units",tr("pnl")],["created_at",lang==="ru"?"Время":"Time"],["reason",lang==="ru"?"Причина":"Reason"]]) if(h[key]!=null)d.append(line(label,key==="fee_units"?formatUnits(h[key])+" pUSD":key==="realized_pnl_units"?signedUnits(h[key])+" pUSD":String(h[key])));
         if(h.result)d.append(line(lang==="ru"?"Исполнение":"Execution",h.result==="FILLED"?(lang==="ru"?"Ставка исполнена":"Order filled"):h.result==="SETTLED"?(lang==="ru"?"Выплата подтверждена":"Payout confirmed"):h.result));
         if(h.order_id)d.append(addressLine(lang==="ru"?"Ордер":"Order",h.order_id));if(h.tx_hash)d.append(addressLine(lang==="ru"?"Транзакция":"Transaction",h.tx_hash));
         if(UUID.test(h.operation_id))d.append(button(tr("details"),()=>controller.openOperation(h.operation_id),s.busy));root.append(d);
+      }
       }
       if(Array.isArray(a.latest_decisions)&&a.latest_decisions.length){
         root.append(el("h4",lang==="ru"?"Последние проверки ставок":lang==="zh"?"最近投注检查":"Recent bet checks"));
