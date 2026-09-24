@@ -44,6 +44,13 @@ test('new account creation requires custody consent and reuses idempotency key o
  await s.c.create(true);await s.c.create(true);
  const c=s.calls.filter(x=>x.name==='bot_account_create');assert.equal(c.length,2);assert.equal(c[0].p.p_idempotency_key,c[1].p.p_idempotency_key);assert.deepEqual(Object.keys(c[0].p).sort(),['p_idempotency_key','p_init_data']);
 });
+test('provider-denied account retry uses current initData and one idempotency key',async()=>{
+ const s=setup();const a=account();a.state='ERROR';a.reason='PROVIDER_ACCESS_DENIED';a.bot_owner_address=null;a.bot_deposit_wallet=null;s.setAccount(a);
+ await s.c.refresh();await s.c.retryProvision();await s.c.retryProvision();
+ const calls=s.calls.filter(x=>x.name==='bot_account_retry');assert.equal(calls.length,2);
+ assert.equal(calls[0].p.p_init_data,'telegram-user-A');assert.equal(calls[0].p.p_idempotency_key,calls[1].p.p_idempotency_key);
+ assert.deepEqual(Object.keys(calls[0].p).sort(),['p_idempotency_key','p_init_data']);
+});
 test('all private reads and mutations use current initData and no client tenant ID',async()=>{
  const s=setup();await s.c.refresh();await s.c.settings('6.25');await s.c.enable(true);await s.c.stop();
  for(const {name,p} of s.calls){assert.equal(p.p_init_data,'telegram-user-A',name);assert.ok(!('p_tg' in p||'account_id' in p||'key_ref' in p));}
@@ -129,7 +136,7 @@ test('ten independently authenticated controllers use the same API without cross
  list[0].setAuth('guest');list[0].c.reset();assert.equal(list[0].c.state.account,null);assert.ok(list[1].c.state.account);
 });
 test('official page uses private module, no raw session URL/test-page redirects/public bot projection',()=>{
- const html=fs.readFileSync(path.join(__dirname,'../aisports/index.html'),'utf8');assert.match(html,/bot-account\.js\?v=v128/);assert.ok(!html.includes('aisports-wallet-test/'));assert.ok(!html.includes('feed.bot_account'));assert.ok(!html.includes('target.hash = location.hash'));assert.ok(!html.includes('trading_grant_request'));
+ const html=fs.readFileSync(path.join(__dirname,'../aisports/index.html'),'utf8');assert.match(html,/bot-account\.js\?v=v129/);assert.ok(!html.includes('aisports-wallet-test/'));assert.ok(!html.includes('feed.bot_account'));assert.ok(!html.includes('target.hash = location.hash'));assert.ok(!html.includes('trading_grant_request'));
  for(const code of [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(x=>x.trim()))assert.doesNotThrow(()=>new vm.Script(code));
- const official=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json')));const root=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json')));assert.equal(official.build,'v128');assert.equal(root.build,official.build);assert.match(html,/const BUILD = "v128"/);
+ const official=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json')));const root=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json')));assert.equal(official.build,'v129');assert.equal(root.build,official.build);assert.match(html,/const BUILD = "v129"/);
 });

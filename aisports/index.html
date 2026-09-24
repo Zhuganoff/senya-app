@@ -983,10 +983,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v128"></script>
-<script src="wallet-connect.js?v=v128"></script>
+<script src="bot-account.js?v=v129"></script>
+<script src="wallet-connect.js?v=v129"></script>
 <script>
-const BUILD = "v128";
+const BUILD = "v129";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2788,7 +2788,7 @@ function wvRenderEmpty(msg){
 
 }
 
-// v128: ordinary account flow stays in this official page. Telegram data is never copied to a URL.
+// v129: ordinary account flow stays in this official page. Telegram data is never copied to a URL.
 const botConnector = AISportsWallet.createConnector({window,polygonRPC:POLYGON_RPC});
 const botWallet = () => botConnector.connect();
 const botAccountController = new AISportsBotAccount.Controller({

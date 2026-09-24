@@ -182,6 +182,13 @@
         return this.adopt(c,await this.call(c,"bot_account_create",{p_idempotency_key:this.key("create")}));
       });
     }
+    async retryProvision() {
+      return this.run(async c => {
+        const a=accountCheck(this.state.account);
+        if(a.state!=="ERROR"||a.reason!=="PROVIDER_ACCESS_DENIED")fail("NOT_RETRYABLE");
+        return this.adopt(c,await this.call(c,"bot_account_retry",{p_idempotency_key:this.key("retry:"+a.version)}));
+      });
+    }
     async settings(maxPercent) {
       return this.run(async c => {
         if (typeof maxPercent !== "string" || !/^(0|[1-9][0-9]?)(\.[0-9]{1,2})?$/.test(maxPercent)) fail("INVALID_POLICY");
@@ -310,7 +317,7 @@
     custody:["Это отдельный счёт для автоматической торговли. Его полный ключ хранит сервис: он может ставить и переводить деньги этого счёта. Основной ключ вашего кошелька не передаётся. При компрометации сервера средства этого отдельного счёта могут быть потеряны.","This separate account is controlled by a key held by the service, including trading and transfers. Your main wallet key is never shared. A compromised server could put this account’s funds at risk.","这是独立的自动交易账户。服务保管其完整密钥，可交易及转账。不会获取您的主钱包密钥。服务器被攻破可能导致该账户资金损失。"],
     custodyAccept:["Понимаю, кто хранит ключ отдельного счёта","I understand who controls this account’s key","我了解此账户密钥的保管方式"],
     custodyShort:["Ключ счёта AISports хранит сервис. Основной ключ вашего кошелька не передаётся.","The service holds the AISports account key. Your main wallet key is never shared.","AISports 账户密钥由服务保管，不会获取您的主钱包密钥。"],
-    create:["Создать торговый счёт","Create trading account","创建交易账户"], connect:["Подключить MetaMask","Connect MetaMask","连接 MetaMask"],
+    create:["Создать торговый счёт","Create trading account","创建交易账户"], retryCreate:["Повторить создание","Retry account creation","重试创建账户"], connect:["Подключить MetaMask","Connect MetaMask","连接 MetaMask"],
     connectHint:["В браузере подключится расширение MetaMask. В Telegram на компьютере используйте QR для MetaMask на телефоне; расширение Chrome внутри Telegram недоступно. На телефоне подтвердите подключение в приложении MetaMask и вернитесь сюда.","A browser can connect to the MetaMask extension. In desktop Telegram, use the QR code with MetaMask on your phone; Chrome extensions are unavailable inside Telegram. On mobile, approve in MetaMask and return here.","浏览器可连接 MetaMask 扩展。桌面 Telegram 请用手机 MetaMask 扫描二维码，Telegram 内不能使用 Chrome 扩展。手机上请在 MetaMask 确认后返回。"],
     refresh:["Обновить","Refresh","刷新"], fund:["Пополнить","Add funds","充值"], withdraw:["Вывести","Withdraw","提现"],
     settings:["Настройки","Settings","设置"], stop:["Остановить новые ставки","Stop new bets","停止新投注"], enable:["Включить автоставки","Enable auto-bets","启用自动投注"],
@@ -333,6 +340,7 @@
     NOT_CONNECTED:["Подтвердите личный кошелёк","Verify your personal wallet","请验证个人钱包"], NOT_CREATED:["Отдельный счёт ещё не создан","Separate account not created","尚未创建独立账户"],
     OWNERSHIP_PENDING:["Проверяем владение кошельком","Verifying wallet ownership","正在验证钱包所有权"],
     CREATING:["Создаём счёт","Creating account","正在创建账户"], PROVISIONING:["Создаём счёт","Creating account","正在创建账户"],
+    ERROR:["Счёт не создан","Account not created","账户未创建"],
     READY:["Готов к включению","Ready to enable","可以启用"], NEEDS_FUNDING:["Нужно пополнение","Funding required","需要充值"],
     PREPARING:["Подготовка торговли","Preparing trading","准备交易中"], ACTIVE:["Автоставки включены","Auto-bets enabled","自动投注已启用"],
     STALE:["Нет свежей проверки — состояние торговли уточняется","No recent check — trading status is uncertain","缺少最近检查，交易状态待确认"],
@@ -379,7 +387,8 @@
     QUOTE_REJECTED:["Площадка не подтвердила доступную цену","The venue did not confirm an available price","平台未确认可用价格"],
     MATCH_STARTED:["Матч уже начался","Match already started","比赛已开始"],
     CHECK_FAILED:["Источник недоступен — проверка не завершена","Source unavailable — check incomplete","来源不可用，检查未完成"],
-    ACCOUNT_BALANCE_UNPROVEN:["Баланс ещё не подтверждён","Balance not yet confirmed","余额尚未确认"]
+    ACCOUNT_BALANCE_UNPROVEN:["Баланс ещё не подтверждён","Balance not yet confirmed","余额尚未确认"],
+    PROVIDER_ACCESS_DENIED:["Polymarket не разрешил приложению создать торговый счёт. Деньги не переводились.","Polymarket did not allow the app to create the trading account. No funds were moved.","Polymarket 未允许应用创建交易账户，资金未转移。"]
   };
   function textFor(table,key,lang) { const x=table[key]; return x ? x[{ru:0,en:1,zh:2}[lang] || 0] : key; }
   function stateLabel(s,now=Date.now()) {
@@ -436,6 +445,7 @@
       const unfinished=o&&!TERMINAL.has(o.state), hasFunds=!!(a.balance&&/^[1-9][0-9]*$/.test(a.balance.available_units));
       const openTransfer=kind=>{transferKind=kind;settingsOpen=false;paint(s);};
       const actions=compactRow();compactButton(actions,tr("refresh"),()=>controller.refresh(),s.busy);
+      if(a.state==="ERROR"&&a.reason==="PROVIDER_ACCESS_DENIED")compactButton(actions,tr("retryCreate"),()=>controller.retryProvision(),s.busy);
       if(ready){
         if(hasFunds||unfinished||transferKind||settingsOpen)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!unfinished);
         compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
