@@ -33,7 +33,7 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
    else if(name==='wallet_link_status')result={state:'OWNED',signer:owner,trading_account:funding};
    else if(name==='get_wallet_view')result={input_address:owner,resolved_address:funding,profile_name:'Local fixture'};
    else if(name==='get_profile_v2')result={tg_id:111,username:'fixture',is_paid:true};
-   else if(name==='app_version')result='v129';
+   else if(name==='app_version')result=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json'),'utf8')).build;
    else result={};
   }else if(url.pathname.endsWith('/app_assets'))result=[{content:{schema_version:1,session:{date:'2026-09-23',bets:0,bets_list:[]},history:[],sports:{},bets:[],paper_forecasts:[],personal_real_bets:[{PRIVATE_PUBLIC_LEAK:true}],bot_account:{bot_deposit_wallet:'PUBLIC_LEAK'}}}];
   else if(url.hostname==='polygon-bor-rpc.publicnode.com')result={jsonrpc:'2.0',id:1,result:'0x89'};

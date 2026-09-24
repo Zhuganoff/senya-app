@@ -460,7 +460,7 @@
     }
     function compactRow(){const n=el("div");Object.assign(n.style,{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"10px"});return n;}
     function compactButton(row,label,fn,disabled){const b=button(label,fn,disabled);Object.assign(b.style,{width:"auto",flex:"1 1 auto",padding:"7px 10px",marginTop:"0",fontSize:"12px"});row.append(b);}
-    function switchRow(checked,disabled,onChange,hint) {
+    function switchRow(checked,disabled,onChange,hint,primary) {
       // Владелец 24.09: видимый включатель режима автоставок. Включение — в два осознанных шага (переключатель → подтверждение правила),
       // выключение — сразу: запрет новых ставок безопасен и подтверждения не требует.
       const wrap=el("div"); Object.assign(wrap.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",
@@ -480,6 +480,7 @@
       const knob=el("span"); Object.assign(knob.style,{position:"absolute",top:"3px",left:checked?"25px":"3px",width:"24px",height:"24px",
                                                        borderRadius:"50%",background:"#fff",transition:"left .15s",boxShadow:"0 1px 3px rgba(0,0,0,.35)"});
       input.onchange=()=>onChange(input.checked);
+      if(primary)wrap.dataset.primary="true";                      // главное действие экрана — переключатель (инвариант «одно главное действие»)
       label.append(input,track,knob); wrap.append(left,label); return wrap;
     }
     function consent(label) {const wrap=el("label",null,"me-sub"), check=el("input");check.type="checkbox";wrap.append(check,doc.createTextNode(" "+label));return {wrap,check};}
@@ -524,10 +525,11 @@
         const on=!!a.policy.enabled;
         // Выключение доступно ВСЕГДА (запрет новых ставок не должен ждать операций): причины блокируют только включение.
         const blocked=on?null:(s.busy?null:!ready?tr("autoNeedReady"):unfinished?tr("autoBusyOp"):!hasFunds?tr("autoNeedFunds"):null);
+        const switchIsPrimary=!on&&!blocked&&!s.busy&&!enableOpen&&!transferKind&&!settingsOpen;
         root.append(switchRow(on,s.busy||!!blocked,checked=>{
           if(!checked){enableOpen=false;controller.stop();return;}      // выключение — сразу, без подтверждения
           enableOpen=true;paint(s);                                     // включение — показать правило и подтвердить
-        },blocked));
+        },blocked,switchIsPrimary));
         if(!on&&enableOpen&&!blocked&&!s.busy) {
           root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
           root.append(button(tr("autoConfirm"),()=>{enableOpen=false;controller.enable(true);},s.busy,true));
