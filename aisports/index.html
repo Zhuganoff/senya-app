@@ -852,6 +852,12 @@ body.splash-on{overflow:hidden}
         <button class="btn" id="taEnableBtn" style="display:none;margin-top:8px" data-i18n="taEnable">Включить автоставки</button>
         <div id="taPolicyBox" style="display:none;margin-top:8px">
           <div class="me-sub" id="taPolicyText"></div>
+          <div class="bankrow" style="margin-top:8px">
+            <input type="number" id="taPolicyFrac" class="binput" min="1" max="10" step="1" inputmode="numeric" style="min-width:0">
+            <input type="number" id="taPolicyMaxOpen" class="binput" min="1" max="10" step="1" inputmode="numeric" style="min-width:0">
+            <button class="btn small" id="taPolicySave" data-i18n="taPolicySave">Сохранить</button>
+          </div>
+          <div class="me-sub" id="taPolicyHint" data-i18n="taPolicyEditHint">Максимальная доля банка на одну ставку, % (не выше 10) и предел одновременных позиций. Доля стратегии может быть меньше.</div>
           <button class="btn" id="taPolicyAccept" style="margin-top:8px" data-i18n="taPolicyAccept">Принять и включить</button>
         </div>
         <button class="btn ghost" id="taSettingsBtn" style="display:none;margin-top:8px" data-i18n="taSettings">Настройки</button>
@@ -1264,6 +1270,11 @@ const T = {
   taFundGo: ["Далее", "Next", "下一步"],
   taEnable: ["Включить автоставки", "Enable auto-bets", "开启自动投注"],
   taPolicyAccept: ["Принять и включить", "Accept and enable", "接受并开启"],
+  taPolicySave: ["Сохранить", "Save", "保存"],
+  taPolicyEditHint: ["Максимальная доля банка на одну ставку, % (не выше 10) и предел одновременных позиций. Доля стратегии может быть меньше.",
+                     "Max share of the bank per bet, % (10 max) and the cap on simultaneous positions. The strategy share may be smaller.",
+                     "单注占资金的最大比例（%，上限 10）和同时持仓上限。策略比例可能更小。"],
+  taPolicySaved: ["Настройки сохранены", "Settings saved", "设置已保存"],
   taSettings: ["Настройки", "Settings", "设置"],
   taStop: ["Остановить", "Stop", "停止"],
   taWithdraw: ["Вывести", "Withdraw", "提取"],
@@ -3050,6 +3061,20 @@ taEl("taEnableBtn").addEventListener("click", async () => {
   const text = taFill("taPolicyText", {sports: (p.sports || ["mlb"]).join(", "), frac: (frac * 100).toFixed(0), maxopen: p.max_open || 10, bank: taFmt(bal.free_base), ver: p.version || 1});
   window.__taPolicy = {version: p.version || 1, text};
   taEl("taPolicyText").textContent = text; taEl("taPolicyBox").style.display = "block";
+  taEl("taPolicyFrac").value = String(Math.round(frac * 100)); taEl("taPolicyMaxOpen").value = String(p.max_open || 10);
+  taEl("taPolicyHint").textContent = t("taPolicyEditHint");
+});
+taEl("taPolicySave").addEventListener("click", async () => {
+  const bound = sessionKey(), pol = window.__taPolicy; if (!pol) return;
+  const fracPct = Math.round(Number(taEl("taPolicyFrac").value)), maxOpen = Math.round(Number(taEl("taPolicyMaxOpen").value));
+  if (!(fracPct >= 1 && fracPct <= 10) || !(maxOpen >= 1 && maxOpen <= 10)) { taEl("taPolicyHint").innerHTML = `<span class="neg">${t("taPolicyEditHint")}</span>`; return; }
+  try {
+    const r = await taCall("ta_policy_set", {p_policy: {sports: ["mlb"], max_stake_fraction: fracPct / 100, max_open: maxOpen}, p_version: pol.version});
+    if (sessionKey() !== bound) return;
+    if (!r || !r.version) { taProblem(r && r.status); return; }
+  } catch(e) { taProblem(e.message); return; }
+  taEl("taPolicyHint").textContent = t("taPolicySaved");
+  taEl("taEnableBtn").click();                                   // перечитать политику новой версии и показать её текст под приём
 });
 taEl("taPolicyAccept").addEventListener("click", async () => {
   const bound = sessionKey(), pol = window.__taPolicy; if (!pol) return;
