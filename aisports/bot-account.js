@@ -330,6 +330,12 @@
     maxStake:["Максимум одной ставки, % свободного банка (не более 10)","Maximum stake, % of available funds (up to 10)","单注上限：可用资金百分比（不超过10）"],
     stakeLimit:["Лимит одной ставки","Stake limit","单注上限"],
     save:["Сохранить настройки","Save settings","保存设置"], policyAccept:["Принимаю показанное правило ставок","I accept this betting policy","我接受此投注规则"],
+    autoSwitch:["Автоставки","Auto-bets","自动投注"],
+    autoOn:["включены","on","已开启"], autoOff:["выключены","off","已关闭"],
+    autoNeedFunds:["Пополните счёт, чтобы включить","Add funds to enable","请先充值再启用"],
+    autoNeedReady:["Счёт ещё готовится","The account is still being prepared","账户仍在准备中"],
+    autoBusyOp:["Дождитесь завершения операции","Wait until the operation finishes","请等待操作完成"],
+    autoConfirm:["Включить автоставки","Enable auto-bets","启用自动投注"],
     policy:["MLB. Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Максимум открытых позиций:","MLB. The lower of the strategy allocation and your maximum; fees count toward risk. Maximum open positions:","MLB。采用策略比例和您上限中的较低值，费用计入风险。最大未平仓数量："],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
@@ -404,7 +410,7 @@
   }
   function mount({root,controller,lang="ru"}) {
     const doc=root.ownerDocument, tr=k=>textFor(copy,k,lang), stateText=k=>textFor(states,k,lang),reasonText=k=>textFor(reasons,k,lang),kindText=k=>textFor(kinds,k,lang);
-    let transferKind=null, inputAmount="", settingsOpen=false, percent="", lastAccount=null;
+    let transferKind=null, inputAmount="", settingsOpen=false, percent="", enableOpen=false, lastAccount=null;
     function el(tag,text,cls) { const n=doc.createElement(tag); if(text!=null)n.textContent=text;if(cls)n.className=cls;return n; }
     function button(text,fn,disabled=false,primary=false) { const b=el("button",text,primary?"btn":"btn ghost"); b.type="button";b.disabled=disabled;b.style.marginTop="8px";b.onclick=fn;if(primary)b.dataset.primary="true";return b; }
     function line(label,value) { const n=el("div",label+": "+value,"me-sub"); n.style.overflowWrap="anywhere";return n; }
@@ -454,6 +460,28 @@
     }
     function compactRow(){const n=el("div");Object.assign(n.style,{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"10px"});return n;}
     function compactButton(row,label,fn,disabled){const b=button(label,fn,disabled);Object.assign(b.style,{width:"auto",flex:"1 1 auto",padding:"7px 10px",marginTop:"0",fontSize:"12px"});row.append(b);}
+    function switchRow(checked,disabled,onChange,hint) {
+      // Владелец 24.09: видимый включатель режима автоставок. Включение — в два осознанных шага (переключатель → подтверждение правила),
+      // выключение — сразу: запрет новых ставок безопасен и подтверждения не требует.
+      const wrap=el("div"); Object.assign(wrap.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",
+                                                      marginTop:"12px",padding:"10px 12px",borderRadius:"12px",
+                                                      border:"1px solid var(--line, rgba(125,142,170,.25))"});
+      const left=el("div"); const name=el("div",tr("autoSwitch")); Object.assign(name.style,{fontSize:"15px",fontWeight:"700"});
+      const state=el("div",checked?tr("autoOn"):tr("autoOff"),"me-sub"); state.style.marginTop="2px";
+      if(checked)state.style.color="var(--accent)";
+      left.append(name,state); if(hint){const h=el("div",hint,"me-sub");h.style.fontSize="11px";left.append(h);}
+      const label=el("label"); Object.assign(label.style,{position:"relative",flex:"0 0 auto",width:"52px",height:"30px",
+                                                          cursor:disabled?"not-allowed":"pointer",opacity:disabled?".45":"1"});
+      const input=el("input"); input.type="checkbox"; input.checked=!!checked; input.disabled=!!disabled;
+      input.setAttribute("aria-label",tr("autoSwitch"));
+      Object.assign(input.style,{position:"absolute",opacity:"0",width:"100%",height:"100%",margin:"0",cursor:"inherit"});
+      const track=el("span"); Object.assign(track.style,{position:"absolute",inset:"0",borderRadius:"999px",transition:"background .15s",
+                                                         background:checked?"var(--accent)":"rgba(125,142,170,.35)"});
+      const knob=el("span"); Object.assign(knob.style,{position:"absolute",top:"3px",left:checked?"25px":"3px",width:"24px",height:"24px",
+                                                       borderRadius:"50%",background:"#fff",transition:"left .15s",boxShadow:"0 1px 3px rgba(0,0,0,.35)"});
+      input.onchange=()=>onChange(input.checked);
+      label.append(input,track,knob); wrap.append(left,label); return wrap;
+    }
     function consent(label) {const wrap=el("label",null,"me-sub"), check=el("input");check.type="checkbox";wrap.append(check,doc.createTextNode(" "+label));return {wrap,check};}
     function paint(s) {
       root.style.display="block"; root.replaceChildren();root.append(el("div",tr("title"),"k"));
@@ -469,7 +497,7 @@
         }
         root.append(button(tr("refresh"),()=>controller.refresh(),s.busy));return;
       }
-      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";}
+      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;}
       root.append(walletCard([["Polymarket",a.funding_wallet],["AISports",a.bot_deposit_wallet]]));
       root.append(balanceCard(a));
       const custody=el("p",tr("custodyShort"),"me-sub"); custody.style.fontSize="11px"; root.append(custody);
@@ -485,7 +513,6 @@
         compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
         if(a.policy)compactButton(actions,tr("settings"),()=>{settingsOpen=!settingsOpen;transferKind=null;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy||!!unfinished);
       }
-      if(a.policy&&a.policy.enabled)compactButton(actions,tr("stop"),()=>controller.stop(),s.busy);
       root.append(actions);
       if(ready&&!hasFunds&&!unfinished&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
       if(a.policy) {
@@ -494,8 +521,17 @@
           const label=el("label",tr("maxStake"),"me-sub"), input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.value=percent;input.oninput=()=>{percent=input.value;};label.append(input);root.append(label);
           root.append(button(tr("save"),()=>controller.settings(percent),s.busy,true));
         }
-        if(!a.policy.enabled&&ready&&hasFunds&&!unfinished&&!transferKind&&!settingsOpen) {const c=consent(tr("policyAccept"));root.append(c.wrap,button(tr("enable"),()=>controller.enable(c.check.checked),s.busy,true));}
-        if(a.policy.enabled||a.reason==="USER_STOP")root.append(el("p",tr("stopInfo"),"me-sub"));
+        const on=!!a.policy.enabled;
+        const blocked=s.busy?null:!ready?tr("autoNeedReady"):unfinished?tr("autoBusyOp"):(!on&&!hasFunds)?tr("autoNeedFunds"):null;
+        root.append(switchRow(on,s.busy||!!blocked,checked=>{
+          if(!checked){enableOpen=false;controller.stop();return;}      // выключение — сразу, без подтверждения
+          enableOpen=true;paint(s);                                     // включение — показать правило и подтвердить
+        },blocked));
+        if(!on&&enableOpen&&!blocked&&!s.busy) {
+          root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
+          root.append(button(tr("autoConfirm"),()=>{enableOpen=false;controller.enable(true);},s.busy,true));
+        }
+        if(on||a.reason==="USER_STOP")root.append(el("p",tr("stopInfo"),"me-sub"));
       }
       if(transferKind&&(!o||TERMINAL.has(o.state))) {
         const label=el("label",tr("amount"),"me-sub"),input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);root.append(label);
@@ -533,7 +569,7 @@
       }
     }
     controller.render=paint;controller.reset();
-    return {refresh:()=>controller.refresh(),reset:()=>{transferKind=null;inputAmount="";settingsOpen=false;percent="";lastAccount=null;controller.reset();},controller};
+    return {refresh:()=>controller.refresh(),reset:()=>{transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
   return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,checkEligibility,stateLabel,mount};
 });
