@@ -982,10 +982,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v132"></script>
-<script src="wallet-connect.js?v=v132"></script>
+<script src="bot-account.js?v=v133"></script>
+<script src="wallet-connect.js?v=v133"></script>
 <script>
-const BUILD = "v132";
+const BUILD = "v133";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2634,8 +2634,12 @@ const WV_ADDR_RE = /^0x[0-9a-fA-F]{40}$/;
 const wvInit = () => (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || "";
 async function wvRpc(name, params){
   // RPC по подписанному initData; 404/PGRST202 = безопасный профиль не установлен → {server:false}
-  const r = await fetch(SB + "/rpc/" + name, {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, H),
-                                               body: JSON.stringify(params)});
+  // v133: ограниченное ожидание — зависший запрос прерывается через 15 с, экран не остаётся «занятым».
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 15000);
+  let r;
+  try { r = await fetch(SB + "/rpc/" + name, {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, H),
+                                               body: JSON.stringify(params), signal: ctl.signal}); }
+  finally { clearTimeout(timer); }
   if (r.status === 404) return {server: false, data: null};
   if (!r.ok) throw new Error("rpc " + r.status);
   return {server: true, data: await r.json()};

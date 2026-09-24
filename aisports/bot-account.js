@@ -10,6 +10,10 @@
   const ADDRESS = /^0x[0-9a-f]{40}$/i;
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const TERMINAL = new Set(["CONFIRMED", "FAILED", "REJECTED", "CANCELLED", "EXPIRED"]);
+  // Operations that still need the user or are about to: a new transfer waits for them. WALLET_PENDING,
+  // SUBMITTED and UNKNOWN only wait for the chain; their amounts are held and the rest stays usable.
+  const INTERACTIVE = new Set(["PENDING", "CLAIMED", "AWAITING_SIGNATURE"]);
+  const SOURCES = ["POLYMARKET", "METAMASK"], MIN_GAS_WEI = 10n ** 16n, SNAPSHOT_MAX_AGE = 120000;
   class ClientError extends Error { constructor(code) { super(code); this.code = code; } }
   const fail = code => { throw new ClientError(code); };
   const address = x => typeof x === "string" && ADDRESS.test(x) ? x.toLowerCase() : fail("INVALID_ADDRESS");
@@ -102,6 +106,36 @@
     }
     return td;
   }
+  function sourceOf(a, kind) {
+    const want = kind === "POLYMARKET" ? a.funding_wallet : a.verified_user_signer;
+    return (Array.isArray(a.sources) ? a.sources : []).find(x => x && x.source_kind === kind && String(x.address).toLowerCase() === String(want).toLowerCase()) || null;
+  }
+  // Instant client-side check on the service-written chain snapshot; the server repeats it before creating anything.
+  function fundingCheck(s, units, now = Date.now()) {
+    const base = {source_kind:s.source_kind,address:s.address,balance_units:s.balance_units,held_units:s.held_units,available_units:s.available_units,needed_units:units,checked_at:s.checked_at,block:s.block};
+    if (s.fresh !== true || !(Date.parse(s.checked_at) > now - SNAPSHOT_MAX_AGE)) return {...base,status:"BALANCE_UNAVAILABLE"};
+    if (s.source_kind === "POLYMARKET" && s.owner_ok === false) return {...base,status:"SOURCE_OWNER_MISMATCH"};
+    if (integer(units) > integer(s.available_units)) return {...base,status:"INSUFFICIENT_BALANCE"};
+    if (s.source_kind === "METAMASK" && BigInt(/^[0-9]+$/.test(String(s.pol_wei)) ? s.pol_wei : "0") < MIN_GAS_WEI) return {...base,status:"GAS_UNAVAILABLE"};
+    return null;
+  }
+  // MetaMask route: a plain pUSD transfer from the verified EOA to this account. Every field is rebuilt locally.
+  function validateWalletTransfer(operation, account, now = Date.now()) {
+    accountCheck(account);
+    const o = operation, i = o && o.intent, c = o && o.challenge;
+    if (!o || !UUID.test(o.operation_id) || !i || !c || o.state !== "AWAITING_SIGNATURE" || o.kind !== "FUNDING" || o.source_kind !== "METAMASK") fail("NOT_READY_TO_SIGN");
+    if (i.kind !== "FUNDING" || i.source_kind !== "METAMASK" || i.operation_id !== o.operation_id || i.account_id !== account.account_id) fail("OPERATION_MISMATCH");
+    if (i.chain_id !== CHAIN || address(i.token) !== PUSD || address(account.collateral) !== PUSD) fail("WRONG_CHAIN_OR_TOKEN");
+    const eoa = address(account.verified_user_signer), to = address(account.bot_deposit_wallet);
+    if (i.amount_units !== o.amount_units || integer(i.amount_units) <= 0n || address(i.source) !== eoa || address(i.recipient) !== to || address(i.verified_user_signer) !== eoa) fail("OPERATION_MISMATCH");
+    exactKeys(c, ["type","signer","from","token","recipient","amount_units","chain_id","data"]);
+    const data = "0xa9059cbb" + to.slice(2).padStart(64,"0") + integer(i.amount_units).toString(16).padStart(64,"0");
+    if (c.type !== "erc20_transfer" || address(c.signer) !== eoa || address(c.from) !== eoa || address(c.token) !== PUSD || address(c.recipient) !== to ||
+        c.amount_units !== i.amount_units || c.chain_id !== CHAIN || String(c.data).toLowerCase() !== data) fail("UNSAFE_TRANSACTION");
+    const expiry = Date.parse(i.expires_at);
+    if (!Number.isFinite(expiry) || expiry <= now || expiry > now + 15 * 60000) fail("SIGNATURE_EXPIRED");
+    return {from:eoa, to:PUSD, data, value:"0x0"};
+  }
   async function checkEligibility(fetcher) {
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
     try {
@@ -114,7 +148,8 @@
   }
 
   class Controller {
-    constructor({rpc, session, wallet, resolveWallet, eligibility = async()=>fail("GEOBLOCK_UNVERIFIED"), render = () => {}, uuid, now = Date.now}) {
+    constructor({rpc, session, wallet, resolveWallet, eligibility = async()=>fail("GEOBLOCK_UNVERIFIED"), render = () => {}, uuid, now = Date.now, rpcTimeoutMs = 15000}) {
+      this.rpcTimeoutMs = rpcTimeoutMs;
       this.rpc = rpc; this.session = session; this.wallet = wallet; this.resolveWallet = resolveWallet;
       this.render = render; this.uuid = uuid || (() => globalThis.crypto.randomUUID()); this.now = now;
       this.eligibility=eligibility;
@@ -131,7 +166,12 @@
     paint(c, update) { this.assert(c); this.state = {...this.state,...update}; this.render(this.state); }
     async call(c, name, params = {}, legacy = false) {
       this.assert(c);
-      const r = await this.rpc(name, {...params,p_init_data:c.auth});
+      // A hung request must not keep the screen busy: bounded wait, then a named error. A lost reply to a
+      // mutation is resolved by reading the operation again, never by repeating it blindly.
+      let timer;
+      const r = await Promise.race([this.rpc(name, {...params,p_init_data:c.auth}),
+        new Promise((_, reject) => { timer = setTimeout(() => reject(new ClientError("SOURCE_TIMEOUT")), this.rpcTimeoutMs); })])
+        .finally(() => clearTimeout(timer));
       this.assert(c);
       return legacy ? r : envelope(r);
     }
@@ -168,7 +208,9 @@
           const h = await this.call(c,"bot_account_history");
           if (!Array.isArray(h.operations)) fail("INVALID_HISTORY");
           const unfinished=h.operations.find(o=>!TERMINAL.has(o.state));
-          this.paint(c,{history:h.operations,...(!this.state.operation&&unfinished?{operation:unfinished}:{})});
+          // After a refused funding the screen explains it (amount, fresh source balance, no debit) instead of spinning.
+          const lastFunding=h.operations.find(o=>o.kind==="FUNDING"), shown=unfinished||(lastFunding&&lastFunding.state==="REJECTED"?lastFunding:null);
+          this.paint(c,{history:h.operations,...(!this.state.operation&&shown?{operation:shown}:{})});
           if (this.state.operation && !TERMINAL.has(this.state.operation.state)) {
             this.adopt(c,await this.call(c,"bot_account_operation",{p_operation_id:this.state.operation.operation_id}));
           }
@@ -214,17 +256,87 @@
         return this.adopt(c,await this.call(c,"bot_account_stop",{p_idempotency_key:this.key("stop:"+(a.policy?a.policy.version:a.version))}));
       });
     }
-    async prepare(kind, amount) {
+    async prepare(kind, amount, source = kind === "FUNDING" ? "POLYMARKET" : undefined) {
       return this.run(async c => {
         if (!["FUNDING","WITHDRAW"].includes(kind)) fail("INVALID_OPERATION");
-        const a = accountCheck(this.state.account), units = parseUnits(amount);
-        if (this.state.operation && !TERMINAL.has(this.state.operation.state)) fail("OPERATION_IN_PROGRESS");
+        const a = accountCheck(this.state.account), units = parseUnits(amount), o = this.state.operation;
+        if (o && (kind === "WITHDRAW" ? !TERMINAL.has(o.state) : INTERACTIVE.has(o.state))) fail("OPERATION_IN_PROGRESS");
         if (kind === "WITHDRAW" && (!a.balance || integer(units) > integer(a.balance.available_units))) fail("INSUFFICIENT_AVAILABLE");
-        const action=kind+":"+units+":"+a.version;
-        const r = this.adopt(c,await this.call(c,"bot_account_prepare_transfer",{p_kind:kind,p_amount:amount,p_idempotency_key:this.key(action)}));
-        if (!r.operation || r.operation.kind !== kind || r.operation.amount_units !== units) fail("OPERATION_MISMATCH");
+        const params = {p_kind:kind,p_amount:amount};
+        if (kind === "FUNDING") {
+          if (!SOURCES.includes(source)) fail("SOURCE_REQUIRED");
+          const snap = sourceOf(a, source), check = snap && fundingCheck(snap, units, this.now());
+          if (check) { this.paint(c,{fundingCheck:check}); fail(check.status); }     // refused before any request or wallet
+          params.p_source = source;
+        }
+        const action=kind+":"+(source||"")+":"+units+":"+a.version;
+        const raw = await this.call(c,"bot_account_prepare_transfer",{...params,p_idempotency_key:this.key(action)},true);
+        if (raw && raw.account) { accountCheck(raw.account); this.paint(c,{account:raw.account,fundingCheck:raw.funding_check||null}); }
+        const r = this.adopt(c,envelope(raw));
+        if (!r.operation || r.operation.kind !== kind || r.operation.amount_units !== units || (kind === "FUNDING" && (r.operation.source_kind || "POLYMARKET") !== source)) fail("OPERATION_MISMATCH");
         this.idempotency.delete(action); // The server now owns this operation; a later completed transfer may be followed by another of the same amount.
-        this.paint(c,{reviewed:false}); return r;
+        this.paint(c,{reviewed:false,fundingCheck:null}); return r;
+      });
+    }
+    async cancelTransfer() {
+      return this.run(async c => {
+        const o = this.state.operation;
+        if (!o || o.state !== "AWAITING_SIGNATURE" || o.source_kind !== "METAMASK") fail("NOT_CANCELLABLE");
+        return this.adopt(c,await this.call(c,"bot_account_cancel_unsent",{p_operation_id:o.operation_id,p_reason:"CANCELLED"}));
+      });
+    }
+    async sendFromWallet(accepted) {
+      return this.run(async c => {
+        if (accepted !== true) fail("TRANSFER_ACCEPT_REQUIRED");
+        const a = accountCheck(this.state.account), reviewed = this.state.operation, id = reviewed && reviewed.operation_id;
+        if (!reviewed || reviewed.state !== "AWAITING_SIGNATURE" || reviewed.source_kind !== "METAMASK") fail("NOT_READY_TO_SIGN");
+        const r = await this.call(c,"bot_account_operation",{p_operation_id:id});
+        const o = r.operation, tx = validateWalletTransfer(o,a,this.now());
+        if (o.operation_id !== id || JSON.stringify(o.intent) !== JSON.stringify(reviewed.intent) || JSON.stringify(o.challenge) !== JSON.stringify(reviewed.challenge)) fail("OPERATION_MISMATCH");
+        this.adopt(c,r);
+        const provider = await this.wallet(); this.assert(c);
+        const selected = await provider.request({method:"eth_requestAccounts"}); this.assert(c);
+        // Another address is never substituted silently; the user selects the verified one and retries.
+        if (!Array.isArray(selected) || !selected.length || String(selected[0]).toLowerCase() !== tx.from) fail("WALLET_CHANGED");
+        const refuse = async reason => { this.adopt(c,await this.call(c,"bot_account_cancel_unsent",{p_operation_id:id,p_reason:reason})); fail("NOT_SENT_"+reason); };
+        if (BigInt(await provider.request({method:"eth_chainId"})) !== 137n) await refuse("CHAIN_MISMATCH");
+        const held = BigInt(await provider.request({method:"eth_call",params:[{to:PUSD,data:"0x70a08231"+tx.from.slice(2).padStart(64,"0")},"latest"]})); this.assert(c);
+        if (held < integer(o.amount_units)) await refuse("BALANCE_LOW");
+        const gas = BigInt(await provider.request({method:"eth_estimateGas",params:[{from:tx.from,to:tx.to,data:tx.data,value:tx.value}]}));
+        const price = BigInt(await provider.request({method:"eth_gasPrice"}));
+        const pol = BigInt(await provider.request({method:"eth_getBalance",params:[tx.from,"latest"]})); this.assert(c);
+        if (pol < gas * price * 12n / 10n) await refuse("GAS_LOW");
+        validateWalletTransfer(o,a,this.now());
+        // begin = the wallet may open now. Not a send; from here the operation only ends by chain reconciliation.
+        let begun;
+        try { begun = this.adopt(c,await this.call(c,"bot_account_begin_wallet_tx",{p_operation_id:id})); }
+        catch (e) {
+          if (!this.alive(c)) throw e;
+          begun = this.adopt(c,await this.call(c,"bot_account_operation",{p_operation_id:id}));
+          if (!begun.operation || begun.operation.state !== "WALLET_PENDING") throw e;
+        }
+        if (!begun.operation || begun.operation.state !== "WALLET_PENDING") fail("WALLET_NOT_STARTED");
+        // Records an unknown wallet outcome. If even that write fails, the screen says so explicitly: the
+        // operation stays uncertain (server: WALLET_PENDING, reconciled by the service), never REJECTED, never re-sent.
+        const unknownOutcome = async (outcome, code) => {
+          try { this.adopt(c,await this.call(c,"bot_account_wallet_outcome",{p_operation_id:id,p_outcome:outcome})); }
+          catch (e) {
+            if (!this.alive(c)) throw e;
+            this.paint(c,{operation:{...this.state.operation,state:"UNKNOWN",reason:"WALLET_OUTCOME_UNRECORDED",challenge:null}});
+            fail("WALLET_OUTCOME_UNRECORDED");
+          }
+          fail(code);
+        };
+        let hash;
+        try { hash = await provider.request({method:"eth_sendTransaction",params:[{...tx,chainId:"0x89"}]}); }
+        catch (e) {
+          const declined = !!e && (e.code === 4001 || e.code === "ACTION_REJECTED");
+          // A decline reported by the wallet is not proof that nothing was broadcast: outcome stays unknown.
+          await unknownOutcome(declined ? "DECLINED" : "LOST", declined ? "WALLET_DECLINE_REPORTED" : "WALLET_RESPONSE_LOST");
+        }
+        if (typeof hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(hash)) await unknownOutcome("LOST", "WALLET_RESPONSE_LOST");
+        this.assert(c);
+        return this.adopt(c,await this.call(c,"bot_account_attach_tx",{p_operation_id:id,p_tx_hash:hash.toLowerCase()}));
       });
     }
     async openOperation(id) {
@@ -316,7 +428,7 @@
     title:["Торговый счёт AISports","AISports trading account","AISports 交易账户"],
     custody:["Это отдельный счёт для автоматической торговли. Его полный ключ хранит сервис: он может ставить и переводить деньги этого счёта. Основной ключ вашего кошелька не передаётся. При компрометации сервера средства этого отдельного счёта могут быть потеряны.","This separate account is controlled by a key held by the service, including trading and transfers. Your main wallet key is never shared. A compromised server could put this account’s funds at risk.","这是独立的自动交易账户。服务保管其完整密钥，可交易及转账。不会获取您的主钱包密钥。服务器被攻破可能导致该账户资金损失。"],
     custodyAccept:["Понимаю, кто хранит ключ отдельного счёта","I understand who controls this account’s key","我了解此账户密钥的保管方式"],
-    custodyShort:["Ключ счёта AISports хранит сервис. Основной ключ вашего кошелька не передаётся.","The service holds the AISports account key. Your main wallet key is never shared.","AISports 账户密钥由服务保管，不会获取您的主钱包密钥。"],
+    custodyShort:["Ключ счёта AISports хранит сервис; ваш MetaMask сам по себе этот отдельный счёт не восстановит. Не держите здесь сумму, потерю которой не можете позволить.","The service holds the AISports account key; your MetaMask alone cannot restore this separate account. Do not keep more here than you can afford to lose.","AISports 账户密钥由服务保管；仅凭您的 MetaMask 无法恢复此独立账户。请勿存放您无法承受损失的金额。"],
     create:["Создать торговый счёт","Create trading account","创建交易账户"], retryCreate:["Повторить создание","Retry account creation","重试创建账户"], connect:["Подключить MetaMask","Connect MetaMask","连接 MetaMask"],
     connectHint:["В браузере подключится расширение MetaMask. В Telegram на компьютере используйте QR для MetaMask на телефоне; расширение Chrome внутри Telegram недоступно. На телефоне подтвердите подключение в приложении MetaMask и вернитесь сюда.","A browser can connect to the MetaMask extension. In desktop Telegram, use the QR code with MetaMask on your phone; Chrome extensions are unavailable inside Telegram. On mobile, approve in MetaMask and return here.","浏览器可连接 MetaMask 扩展。桌面 Telegram 请用手机 MetaMask 扫描二维码，Telegram 内不能使用 Chrome 扩展。手机上请在 MetaMask 确认后返回。"],
     refresh:["Обновить","Refresh","刷新"], fund:["Пополнить","Add funds","充值"], withdraw:["Вывести","Withdraw","提现"],
@@ -341,7 +453,26 @@
     policy:["MLB. Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Максимум открытых позиций:","MLB. The lower of the strategy allocation and your maximum; fees count toward risk. Maximum open positions:","MLB。采用策略比例和您上限中的较低值，费用计入风险。最大未平仓数量："],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
-    checked:["Последняя сверка","Last checked","上次核对"], details:["Подробности","Details","详情"], waiting:["Проверяем состояние…","Checking status…","正在检查状态…"]
+    checked:["Последняя сверка","Last checked","上次核对"], details:["Подробности","Details","详情"], waiting:["Проверяем состояние…","Checking status…","正在检查状态…"],
+    srcPolymarket:["Со счёта Polymarket","From Polymarket account","从 Polymarket 账户"], srcMetaMask:["Из MetaMask","From MetaMask","从 MetaMask"],
+    srcChoose:["Откуда пополнить","Fund from","充值来源"], balanceSrc:["Баланс","Balance","余额"], heldSrc:["Удержано","Held","已冻结"],
+    availableSrc:["Доступно","Available","可用"], gasSrc:["Газ, POL","Gas, POL","Gas (POL)"], blockSrc:["блок","block","区块"],
+    srcUnchecked:["Остаток ещё не проверен сервисом — перевод недоступен","Not yet checked by the service — transfer unavailable","服务尚未核对余额，暂不可转账"],
+    srcStale:["Проверка устарела — дождитесь новой","Check is out of date — wait for a new one","核对已过期，请等待更新"],
+    srcNoPusd:["На MetaMask нет pUSD в Polygon. Выберите счёт Polymarket или пополните MetaMask именно pUSD.","No pUSD on Polygon in MetaMask. Choose the Polymarket account or add pUSD to MetaMask.","MetaMask 在 Polygon 上没有 pUSD。请选择 Polymarket 账户或向 MetaMask 充入 pUSD。"],
+    srcNoGas:["Нет POL на оплату сетевой комиссии","No POL to pay the network fee","没有支付网络费用的 POL"],
+    srcOwner:["Счёт Polymarket не подтверждён в сети","Polymarket account not confirmed on-chain","Polymarket 账户未在链上确认"],
+    maxAmount:["Максимум сейчас","Maximum now","当前上限"],
+    actionType:["Действие","Action","操作"], actionSign:["Подпись сообщения для Polymarket","Message signature for Polymarket","为 Polymarket 签署消息"],
+    actionTx:["Сетевая транзакция из MetaMask","Network transaction from MetaMask","从 MetaMask 发起链上交易"],
+    gasFee:["Газ в POL с вашего адреса — точную сумму покажет MetaMask","Gas in POL from your address — MetaMask shows the exact amount","由您的地址支付 POL gas，具体金额由 MetaMask 显示"],
+    txSending:["Вы отправляете перевод pUSD со своего адреса MetaMask. Разрешение approve не запрашивается.","You send a pUSD transfer from your MetaMask address. No approve is requested.","您从 MetaMask 地址发送 pUSD 转账，不请求 approve。"],
+    sendTx:["Отправить из MetaMask","Send from MetaMask","从 MetaMask 发送"], cancel:["Отменить перевод","Cancel transfer","取消转账"],
+    failedFunding:["Пополнение {a} pUSD не выполнено.","Funding of {a} pUSD was not completed.","{a} pUSD 充值未完成。"],
+    srcAtCheck:["На исходном кошельке {b} pUSD на момент проверки {t}.","The source wallet held {b} pUSD at the check {t}.","核对时（{t}）来源钱包余额为 {b} pUSD。"],
+    srcAtCheckNone:["Остаток исходного кошелька сейчас не подтверждён.","The source wallet balance is not confirmed right now.","来源钱包余额暂未确认。"],
+    notDebited:["Деньги не списаны. Выберите меньшую сумму или пополните исходный кошелёк.","No funds were debited. Choose a smaller amount or top up the source wallet.","未扣款。请选择较小金额或为来源钱包充值。"],
+    shortfall:["Недостаточно pUSD на исходном кошельке: доступно {v}, нужно {n}. Перевод не отправлен, деньги не списаны.","Not enough pUSD in the source wallet: {v} available, {n} needed. Nothing was sent; no funds moved.","来源钱包 pUSD 不足：可用 {v}，需要 {n}。未发送，未扣款。"]
   };
   const states = {
     SIGNED_OUT:["Откройте приложение из Telegram","Open the app from Telegram","请从 Telegram 打开应用"],
@@ -356,6 +487,10 @@
     STOPPED:["Новые ставки остановлены","New bets stopped","新投注已停止"], AWAITING_SIGNATURE:["Перевод готов к подтверждению","Transfer ready for your confirmation","转账已准备，请确认"],
     PENDING:["Операция обрабатывается","Processing transaction","正在处理交易"], UNKNOWN:["Исход уточняется — повторный перевод не отправляется","Outcome unknown — no duplicate transfer will be sent","结果待核对，不会重复转账"],
     SUBMITTED:["Отправлено — ожидаем подтверждения","Submitted — awaiting confirmation","已提交，等待确认"], CONFIRMED:["Подтверждено","Confirmed","已确认"],
+    CHECKING:["Проверяем баланс источника","Checking the source balance","正在核对来源余额"],
+    AWAITING_WALLET_TX:["Перевод готов — подтвердите в MetaMask","Transfer ready — confirm in MetaMask","转账已准备，请在 MetaMask 中确认"],
+    WALLET_PENDING:["Ждём подтверждения в кошельке","Waiting for confirmation in the wallet","等待钱包确认"],
+    REJECTED_NO_DEBIT:["Не выполнено — деньги не списаны","Not completed — no funds were debited","未完成，未扣款"],
     EXPIRED_UNSENT:["Отклонено до отправки","Rejected before sending","发送前被拒绝"],
     FAILED:["Операция не выполнена","Transaction failed","交易失败"], REJECTED:["Операция отклонена","Transaction rejected","交易被拒绝"], CANCELLED:["Операция отменена","Transaction cancelled","交易已取消"], EXPIRED:["Срок подтверждения истёк","Confirmation expired","确认已过期"]
   };
@@ -377,7 +512,20 @@
     INVALID_POLICY:["Максимум ставки должен быть больше 0 и не выше 10%.","Stake maximum must be above 0 and no more than 10%.","单注上限必须大于0且不超过10%。"],
     WALLET_UNAVAILABLE:["Откройте приложение в поддерживаемом кошельке или подключите MetaMask. Данные Telegram в ссылку не передаются.","Connect MetaMask in a supported browser. Telegram data is never copied into a link.","请在支持的浏览器连接 MetaMask，Telegram 数据不会传入链接。"],
     OPERATION_IN_PROGRESS:["Сначала уточните исход текущей операции.","Resolve the current transaction before starting another.","请先核对当前交易结果。"],
-    FEES_UNVERIFIED:["Комиссия пока не подтверждена. Подпись недоступна.","The fee is not confirmed yet. Signing is unavailable.","费用尚未确认，暂不能签名。"]
+    FEES_UNVERIFIED:["Комиссия пока не подтверждена. Подпись недоступна.","The fee is not confirmed yet. Signing is unavailable.","费用尚未确认，暂不能签名。"],
+    SOURCE_TIMEOUT:["Сервер не ответил вовремя. Обновите состояние — повторно ничего не отправлялось.","The server did not answer in time. Refresh the status — nothing was re-sent.","服务器未及时响应。请刷新状态，未重复发送任何内容。"],
+    SOURCE_REQUIRED:["Выберите, откуда пополнить: Polymarket или MetaMask.","Choose where to fund from: Polymarket or MetaMask.","请选择充值来源：Polymarket 或 MetaMask。"],
+    BALANCE_UNAVAILABLE:["Нет свежей проверки остатка источника. Перевод не создан; обновите через минуту.","No fresh check of the source balance. Nothing was created; refresh in a minute.","来源余额缺少最新核对，未创建转账，请一分钟后刷新。"],
+    GAS_UNAVAILABLE:["На адресе MetaMask нет POL для сетевой комиссии. Перевод не создан.","No POL for the network fee on the MetaMask address. Nothing was created.","MetaMask 地址没有支付网络费用的 POL，未创建转账。"],
+    SOURCE_OWNER_MISMATCH:["Счёт Polymarket не подтверждён в сети для вашего адреса. Перевод не создан.","The Polymarket account is not confirmed on-chain for your address. Nothing was created.","您的 Polymarket 账户未在链上确认，未创建转账。"],
+    NOT_SENT_CHAIN_MISMATCH:["В MetaMask выбрана не сеть Polygon. Перевод не отправлен, деньги не списаны.","MetaMask is not on Polygon. Nothing was sent; no funds moved.","MetaMask 未选择 Polygon 网络。未发送，未扣款。"],
+    NOT_SENT_BALANCE_LOW:["В MetaMask не хватает pUSD. Перевод не отправлен, деньги не списаны.","Not enough pUSD in MetaMask. Nothing was sent; no funds moved.","MetaMask 中 pUSD 不足。未发送，未扣款。"],
+    NOT_SENT_GAS_LOW:["Не хватает POL на сетевую комиссию. Перевод не отправлен, деньги не списаны.","Not enough POL for the network fee. Nothing was sent; no funds moved.","POL 不足以支付网络费用。未发送，未扣款。"],
+    WALLET_DECLINE_REPORTED:["Кошелёк сообщил об отказе. Сверяем сеть; повторный перевод не отправляется, сумма удержана до сверки.","The wallet reported a decline. Checking the chain; nothing will be re-sent and the amount stays held until then.","钱包报告已拒绝。正在核对链上记录，不会重复发送，金额在核对前保持冻结。"],
+    WALLET_OUTCOME_UNRECORDED:["Исход перевода не удалось записать на сервер. Операция остаётся в сверке: повторный перевод не отправляется, сумма удержана до ответа сети.","The transfer outcome could not be recorded on the server. The operation stays under reconciliation: nothing will be re-sent and the amount stays held until the network answers.","无法将转账结果记录到服务器。该操作仍在核对中：不会重复发送，金额在网络确认前保持冻结。"],
+    WALLET_RESPONSE_LOST:["Ответ кошелька не получен. Сверяем сеть; повторный перевод не отправляется.","No reply from the wallet. Checking the chain; nothing will be re-sent.","未收到钱包回复。正在核对链上记录，不会重复发送。"],
+    UNSAFE_TRANSACTION:["Параметры перевода не совпали с проверенными. Кошелёк не открывался.","Transfer details did not match the verified ones. The wallet was not opened.","转账参数与已核对内容不符，未打开钱包。"],
+    WALLET_NOT_STARTED:["Сервер не подтвердил начало перевода. Кошелёк не открывался.","The server did not confirm the start. The wallet was not opened.","服务器未确认开始，未打开钱包。"]
   };
   const kinds={FUNDING:["Пополнение","Funding","充值"],WITHDRAW:["Вывод","Withdrawal","提现"],PROVISION:["Создание счёта","Account creation","创建账户"],APPROVE:["Подготовка торговли","Trading preparation","交易准备"],TRADE:["Ставка","Bet","投注"],CLAIM:["Получение выплаты","Payout","领取收益"]};
   const reasons={
@@ -398,9 +546,34 @@
     MATCH_STARTED:["Матч уже начался","Match already started","比赛已开始"],
     CHECK_FAILED:["Источник недоступен — проверка не завершена","Source unavailable — check incomplete","来源不可用，检查未完成"],
     ACCOUNT_BALANCE_UNPROVEN:["Баланс ещё не подтверждён","Balance not yet confirmed","余额尚未确认"],
-    PROVIDER_ACCESS_DENIED:["Polymarket не разрешил приложению создать торговый счёт. Деньги не переводились.","Polymarket did not allow the app to create the trading account. No funds were moved.","Polymarket 未允许应用创建交易账户，资金未转移。"]
+    PROVIDER_ACCESS_DENIED:["Polymarket не разрешил приложению создать торговый счёт. Деньги не переводились.","Polymarket did not allow the app to create the trading account. No funds were moved.","Polymarket 未允许应用创建交易账户，资金未转移。"],
+    INSUFFICIENT_BALANCE:["Недостаточно pUSD на исходном кошельке","Not enough pUSD in the source wallet","来源钱包 pUSD 不足"],
+    BALANCE_UNAVAILABLE:["Остаток источника не удалось проверить","The source balance could not be checked","无法核对来源余额"],
+    GAS_UNAVAILABLE:["Нет POL на сетевую комиссию","No POL for the network fee","没有网络费用 POL"],
+    EXPIRED_UNSENT:["Срок подтверждения истёк до отправки","Expired before it was sent","发送前已过期"],
+    WALLET_PENDING:["Ждём подтверждения в кошельке","Waiting for the wallet","等待钱包确认"],
+    SENT_AWAITING_CHAIN:["Отправлено — ждём сеть","Sent — waiting for the network","已发送，等待网络确认"],
+    WALLET_OUTCOME_UNRECORDED:["Исход не записан на сервер — сверка продолжается, повтор не отправляем","Outcome not recorded on the server — reconciliation continues, nothing re-sent","结果未记录到服务器，核对继续，不重复发送"],
+    WALLET_RESPONSE_LOST:["Ответ кошелька не получен — сверяем сеть, повтор не отправляем","No wallet reply — checking the chain, nothing re-sent","未收到钱包回复，正在核对链上记录，不重复发送"],
+    WALLET_DECLINE_REPORTED:["Кошелёк сообщил об отказе — сверяем сеть, повтор не отправляем","Wallet reported a decline — checking the chain, nothing re-sent","钱包报告拒绝，正在核对链上记录，不重复发送"],
+    NOT_SENT_CANCELLED:["Отменено до отправки","Cancelled before sending","发送前已取消"],
+    NOT_SENT_CHAIN_MISMATCH:["Не та сеть в MetaMask — не отправлено","Wrong network in MetaMask — not sent","MetaMask 网络错误，未发送"],
+    NOT_SENT_BALANCE_LOW:["Не хватило pUSD в MetaMask — не отправлено","Not enough pUSD in MetaMask — not sent","MetaMask pUSD 不足，未发送"],
+    NOT_SENT_GAS_LOW:["Не хватило POL на газ — не отправлено","Not enough POL for gas — not sent","POL 不足，未发送"]
   };
   function textFor(table,key,lang) { const x=table[key]; return x ? x[{ru:0,en:1,zh:2}[lang] || 0] : key; }
+  function opStateKey(o) {
+    if (o && o.kind === "FUNDING") {
+      if (o.state === "PENDING" || o.state === "CLAIMED") return "CHECKING";
+      if (o.state === "AWAITING_SIGNATURE" && o.source_kind === "METAMASK") return "AWAITING_WALLET_TX";
+      if (o.state === "REJECTED") return "REJECTED_NO_DEBIT";   // SQL releases a funding only with proof of no debit
+    }
+    return o ? o.state : null;
+  }
+  function formatPol(wei) {
+    if (!/^[0-9]+$/.test(String(wei))) return "—";
+    const t = BigInt(wei) / 10n ** 14n; return (t / 10000n).toString() + "." + (t % 10000n).toString().padStart(4, "0");
+  }
   function stateLabel(s,now=Date.now()) {
     const a=s.account;
     if (!a) return s.status;
@@ -414,7 +587,8 @@
   }
   function mount({root,controller,lang="ru"}) {
     const doc=root.ownerDocument, tr=k=>textFor(copy,k,lang), stateText=k=>textFor(states,k,lang),reasonText=k=>textFor(reasons,k,lang),kindText=k=>textFor(kinds,k,lang);
-    let transferKind=null, inputAmount="", settingsOpen=false, percent="", enableOpen=false, lastAccount=null, lastAvailable=null;
+    let transferKind=null, inputAmount="", settingsOpen=false, percent="", enableOpen=false, lastAccount=null, lastAvailable=null, fundingSource="POLYMARKET", pollTimer=null;
+    const fill=(text,vars)=>text.replace(/\{(\w)\}/g,(_,k)=>vars[k]??"—");
     function ensureStyles() {
       // Оформление блока живёт здесь, чтобы модуль оставался самодостаточным. Только токены витрины:
       // Inter с табличными цифрами, шаг отступов 4, радиусы --r-*, поверхности --card-*, волосяные --line.
@@ -477,6 +651,13 @@
 .ba-bar::after{content:"";position:absolute;inset:0;width:40%;border-radius:999px;
   background:linear-gradient(90deg,transparent,var(--accent,#38bdf8),transparent);animation:ba-slide 1.1s ease-in-out infinite}
 @keyframes ba-slide{from{transform:translateX(-100%)}to{transform:translateX(320%)}}
+.ba-src{display:block;margin-top:8px;padding:12px 14px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);
+  background:var(--card-2,#1a2231);cursor:pointer;transition:border-color .2s,background .2s}
+.ba-src.on{border-color:color-mix(in srgb,var(--accent,#38bdf8) 55%,transparent);background:var(--tint1,rgba(56,189,248,.12))}
+.ba-src .t{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;font-weight:700;letter-spacing:-.01em}
+.ba-src .v{font-size:22px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums;margin-top:4px}
+.ba-src .m{font-size:11.5px;color:var(--mut,#7d8eaa);margin-top:2px}
+.ba-src .w{font-size:12px;color:var(--amber,#f59e0b);margin-top:6px}
 @media (prefers-reduced-motion:reduce){.ba-pill.live i,.ba-amount.up,.ba-note.bad,.ba-note.ok,.ba-bar::after{animation:none}}
 `;
       doc.head.appendChild(st);
@@ -551,7 +732,9 @@
       root.append(head);
       if (s.status === "SIGNED_OUT") {root.append(el("p",stateText("SIGNED_OUT"),"me-sub"));return;}
       if(s.busy)root.append(el("div",null,"ba-bar"));
-      if(s.error)root.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"bad"));
+      const fc=s.fundingCheck;
+      if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)root.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" pUSD",n:formatUnits(fc.needed_units)+" pUSD"}),"bad"));
+      else if(s.error)root.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"bad"));
       const a=s.account;
       if(!a) {
         if(s.status==="NOT_CONNECTED")root.append(el("p",tr("connectHint"),"me-sub"),button(tr("connect"),()=>controller.connect(),s.busy,true));
@@ -573,17 +756,17 @@
       if(a.policy&&a.policy.enabled)root.append(line(lang==="ru"?"Проверка торговли":lang==="zh"?"交易检查":"Trading check",a.last_checked_at?new Date(a.last_checked_at).toLocaleString(lang):"—"));
       if(a.reason&&a.reason!=="NO_SIGNAL")root.append(line(lang==="ru"?"Причина":"Reason",reasonText(a.reason)));
       const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral, o=s.operation;
-      const unfinished=o&&!TERMINAL.has(o.state), hasFunds=!!(a.balance&&/^[1-9][0-9]*$/.test(a.balance.available_units));
+      const unfinished=o&&!TERMINAL.has(o.state), interactive=o&&INTERACTIVE.has(o.state), hasFunds=!!(a.balance&&/^[1-9][0-9]*$/.test(a.balance.available_units));
       const openTransfer=kind=>{transferKind=kind;settingsOpen=false;paint(s);};
       const actions=compactRow();compactButton(actions,tr("refresh"),()=>controller.refresh(),s.busy);
       if(a.state==="ERROR"&&a.reason==="PROVIDER_ACCESS_DENIED")compactButton(actions,tr("retryCreate"),()=>controller.retryProvision(),s.busy);
       if(ready){
-        if(hasFunds||unfinished||transferKind||settingsOpen)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!unfinished);
+        if(hasFunds||unfinished||transferKind||settingsOpen)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!interactive);
         compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
-        if(a.policy)compactButton(actions,tr("settings"),()=>{settingsOpen=!settingsOpen;transferKind=null;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy||!!unfinished);
+        if(a.policy)compactButton(actions,tr("settings"),()=>{settingsOpen=!settingsOpen;transferKind=null;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy||!!interactive);
       }
       const tail=()=>{                                          // вспомогательные кнопки уходят под главный элемент управления
-        if(ready&&!hasFunds&&!unfinished&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
+        if(ready&&!hasFunds&&!interactive&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
         root.append(actions);
       };
       if(a.policy) {
@@ -594,7 +777,7 @@
         }
         const on=!!a.policy.enabled;
         // Выключение доступно ВСЕГДА (запрет новых ставок не должен ждать операций): причины блокируют только включение.
-        const blocked=on?null:(s.busy?null:!ready?tr("autoNeedReady"):unfinished?tr("autoBusyOp"):!hasFunds?tr("autoNeedFunds"):null);
+        const blocked=on?null:(s.busy?null:!ready?tr("autoNeedReady"):interactive?tr("autoBusyOp"):!hasFunds?tr("autoNeedFunds"):null);
         const switchIsPrimary=!on&&!blocked&&!s.busy&&!enableOpen&&!transferKind&&!settingsOpen;
         root.append(switchRow(on,s.busy||!!blocked,checked=>{
           if(!checked){enableOpen=false;controller.stop();return;}      // выключение — сразу, без подтверждения
@@ -607,13 +790,44 @@
         tail();
         if(on||a.reason==="USER_STOP")root.append(el("p",tr("stopInfo"),"ba-foot"));
       } else tail();
-      if(transferKind&&(!o||TERMINAL.has(o.state))) {
+      if(transferKind&&(!o||(transferKind==="WITHDRAW"?TERMINAL.has(o.state):!INTERACTIVE.has(o.state)))) {
+        if(transferKind==="FUNDING"){
+          // Две карточки источника: у каждой свой баланс, удержания, доступно, время и блок проверки сервисом.
+          root.append(el("div",tr("srcChoose"),"ba-cap"));
+          for(const kind of SOURCES){
+            const snap=sourceOf(a,kind), card=el("div",null,"ba-src"+(fundingSource===kind?" on":""));
+            card.setAttribute("role","radio");card.setAttribute("aria-checked",String(fundingSource===kind));card.tabIndex=0;
+            card.onclick=()=>{fundingSource=kind;paint(s);};card.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fundingSource=kind;paint(s);}};
+            const addr=kind==="POLYMARKET"?a.funding_wallet:a.verified_user_signer, head=el("div",null,"t");
+            head.append(el("span",tr(kind==="POLYMARKET"?"srcPolymarket":"srcMetaMask")));
+            const cp=copyBtn(String(addr),tr(kind==="POLYMARKET"?"srcPolymarket":"srcMetaMask"));cp.onclick=(orig=>e=>{e.stopPropagation();orig();})(cp.onclick);head.append(cp);
+            card.append(head, el("div",String(addr).slice(0,6)+"…"+String(addr).slice(-4)+" · Polygon · pUSD","m"));
+            if(!snap)card.append(el("div",tr("srcUnchecked"),"w"));
+            else {
+              card.append(el("div",formatUnits(snap.available_units)+" pUSD","v"), el("div",tr("availableSrc"),"m"));
+              const rows=el("div",null,"ba-rows"), add=(l,v)=>{const r=el("div",null,"ba-row");r.append(el("div",l,"l"),el("div",v,"r"));rows.append(r);};
+              add(tr("balanceSrc"),formatUnits(snap.balance_units)+" pUSD"); add(tr("heldSrc"),formatUnits(snap.held_units)+" pUSD");
+              if(kind==="METAMASK")add(tr("gasSrc"),formatPol(snap.pol_wei));
+              add(tr("checked"),(snap.checked_at?new Date(snap.checked_at).toLocaleTimeString(lang):"—")+" · "+tr("blockSrc")+" "+snap.block);
+              card.append(rows);
+              const fresh=snap.fresh===true&&Date.parse(snap.checked_at)>Date.now()-SNAPSHOT_MAX_AGE;
+              if(!fresh)card.append(el("div",tr("srcStale"),"w"));
+              else if(kind==="METAMASK"&&snap.balance_units==="0")card.append(el("div",tr("srcNoPusd"),"w"));
+              else if(kind==="METAMASK"&&!(/^[0-9]+$/.test(String(snap.pol_wei))&&BigInt(snap.pol_wei)>=MIN_GAS_WEI))card.append(el("div",tr("srcNoGas"),"w"));
+              else if(kind==="POLYMARKET"&&snap.owner_ok===false)card.append(el("div",tr("srcOwner"),"w"));
+            }
+            root.append(card);
+          }
+          const chosen=sourceOf(a,fundingSource);
+          if(chosen)root.append(line(tr("maxAmount"),formatUnits(chosen.available_units)+" pUSD"));
+        }
         const label=el("label",tr("amount"),"me-sub"),input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);root.append(label);
-        root.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount);if(result){transferKind=null;inputAmount="";}},s.busy,true));
+        root.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount,transferKind==="FUNDING"?fundingSource:undefined);if(result){transferKind=null;inputAmount="";}},s.busy,true));
       }
       if(o) {
-        root.append(el("p",kindText(o.kind)+" · "+stateText(o.state),"me-sub"));
-        if(o.intent) {
+        const viaWallet=o.kind==="FUNDING"&&o.source_kind==="METAMASK";
+        root.append(el("p",kindText(o.kind)+" · "+stateText(opStateKey(o)),"me-sub"));
+        if(o.intent&&!TERMINAL.has(o.state)) {
           // Карточка сверки перед подписью: сумма крупно, откуда/куда полными копируемыми адресами, сеть и комиссия (задание §P1.5).
           const rev=el("div"); const amt=el("div",null,"ba-amount");
           amt.append(doc.createTextNode(formatUnits(o.amount_units)), el("span"," pUSD"));
@@ -625,14 +839,22 @@
           addr(tr("source"),o.intent.source); addr(tr("recipient"),o.intent.recipient);
           const pair=(l,v)=>{const r=el("div",null,"ba-row");r.append(el("div",l,"l"),el("div",v,"r"));rows.append(r);};
           pair(lang==="ru"?"Сеть":lang==="zh"?"网络":"Network","Polygon · pUSD");
-          pair(tr("fees"),o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
+          if(o.kind==="FUNDING")pair(tr("actionType"),tr(viaWallet?"actionTx":"actionSign"));
+          pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
           rev.append(rows); root.append(rev);
-          root.append(el("div",tr("transferSigning")+" "+tr("custodyShort"),"ba-foot"));
+          root.append(el("div",tr(viaWallet?"txSending":"transferSigning")+" "+tr("custodyShort"),"ba-foot"));
         }
-        if(o.state==="AWAITING_SIGNATURE") {
+        if(o.state==="AWAITING_SIGNATURE"&&viaWallet) {
+          const c=consent(tr("transferAccept"));root.append(c.wrap,button(tr("sendTx"),()=>controller.sendFromWallet(c.check.checked),s.busy,true),button(tr("cancel"),()=>controller.cancelTransfer(),s.busy));
+        } else if(o.state==="AWAITING_SIGNATURE") {
           const c=consent(tr("transferAccept"));root.append(c.wrap,button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy || o.fee_units==null,true));
         }
-        if(o.reason){
+        if(o.kind==="FUNDING"&&o.state==="REJECTED"){
+          // Честный итог отказа: сумма, свежий остаток выбранного источника (не зашит в интерфейс), деньги не списаны.
+          const snap=sourceOf(a,o.source_kind||"POLYMARKET");
+          const at=snap?fill(tr("srcAtCheck"),{b:formatUnits(snap.balance_units),t:snap.checked_at?new Date(snap.checked_at).toLocaleString(lang):"—"}):tr("srcAtCheckNone");
+          root.append(note((o.reason?reasonText(o.reason)+". ":"")+fill(tr("failedFunding"),{a:formatUnits(o.amount_units)})+" "+at+" "+tr("notDebited"),"bad"));
+        } else if(o.reason){
           const bad=o.state==="REJECTED"||o.state==="FAILED"||o.state==="EXPIRED_UNSENT";
           root.append(note(reasonText(o.reason)+(bad?" · "+tr("noMoneyMoved"):""),bad?"bad":"wait"));
         }
@@ -644,7 +866,7 @@
       if(shown.length){
       root.append(el("h4",tr("history")));
       for(const h of shown.slice(0,100)) {
-        const d=el("details"), title=[h.match||h.match_name||kindText(h.kind),stateText(h.state),h.amount_units!=null?formatUnits(h.amount_units)+" pUSD":null].filter(Boolean).join(" · ");d.append(el("summary",title));
+        const d=el("details"), title=[h.match||h.match_name||kindText(h.kind),stateText(opStateKey(h)),h.amount_units!=null?formatUnits(h.amount_units)+" pUSD":null].filter(Boolean).join(" · ");d.append(el("summary",title));
         for(const [key,label] of [["side",lang==="ru"?"Сторона":"Side"],["market_family",lang==="ru"?"Рынок":"Market"],["average_price",lang==="ru"?"Средняя цена исполнения, pUSD за долю":"Average fill price, pUSD/share"],["fee_units",tr("fees")],["realized_pnl_units",tr("pnl")],["created_at",lang==="ru"?"Время":"Time"],["reason",lang==="ru"?"Причина":"Reason"]]) if(h[key]!=null)d.append(line(label,key==="fee_units"?formatUnits(h[key])+" pUSD":key==="realized_pnl_units"?signedUnits(h[key])+" pUSD":String(h[key])));
         if(h.result)d.append(line(lang==="ru"?"Исполнение":"Execution",h.result==="FILLED"?(lang==="ru"?"Ставка исполнена":"Order filled"):h.result==="SETTLED"?(lang==="ru"?"Выплата подтверждена":"Payout confirmed"):h.result));
         if(h.order_id)d.append(addressLine(lang==="ru"?"Ордер":"Order",h.order_id));if(h.tx_hash)d.append(addressLine(lang==="ru"?"Транзакция":"Transaction",h.tx_hash));
@@ -655,9 +877,16 @@
         root.append(el("h4",lang==="ru"?"Последние проверки ставок":lang==="zh"?"最近投注检查":"Recent bet checks"));
         for(const decision of a.latest_decisions.slice(0,20))root.append(line(decision.at?new Date(decision.at).toLocaleString(lang):"—",reasonText(decision.reason)));
       }
+      schedulePoll(s);
+    }
+    // Незакрытая операция перечитывается сама каждые 5 с — только чтение; кнопка «Обновить» тоже ничего не создаёт.
+    function schedulePoll(s) {
+      const win=doc.defaultView; if(pollTimer){win.clearTimeout(pollTimer);pollTimer=null;}
+      const o=s.operation;
+      if(!s.busy&&s.account&&o&&!TERMINAL.has(o.state)&&o.state!=="AWAITING_SIGNATURE")pollTimer=win.setTimeout(()=>{pollTimer=null;controller.refresh();},5000);
     }
     controller.render=paint;controller.reset();
     return {refresh:()=>controller.refresh(),reset:()=>{transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
-  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,checkEligibility,stateLabel,mount};
+  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,stateLabel,mount};
 });
