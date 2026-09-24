@@ -832,7 +832,6 @@ body.splash-on{overflow:hidden}
         <button class="btn small" id="saveApiKey" aria-label="Сохранить ключ" style="display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg></button>
       </div>
       <div class="me-sub" id="apiState" style="margin-top:8px;font-weight:700"></div>
-      <a class="btn ghost" id="exchLink" href="#" style="margin-top:10px;display:block;text-align:center" data-i18n="exchOpen">↗️ Открыть Polymarket</a>
       <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Основной приватный ключ и сид-фраза не передаются. Отдельный счёт AISports управляется ниже.</div>
       <button class="btn" id="verifyWalletOwner" style="display:none;margin-top:10px" data-i18n="wvVerifyOwner">Подтвердить владение</button>
@@ -983,10 +982,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v131"></script>
-<script src="wallet-connect.js?v=v131"></script>
+<script src="bot-account.js?v=v132"></script>
+<script src="wallet-connect.js?v=v132"></script>
 <script>
-const BUILD = "v131";
+const BUILD = "v132";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2537,16 +2536,7 @@ async function initWallet(me, boundSession){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   const bound = boundSession || sessionKey();     // сессия, для которой строится этот кабинет
 
-  // ссылка на биржу пользователя (CEO 17.08)
-  const EXCH_URL = "https://polymarket.com";   // v88: биржа одна
-  const linkEl = document.getElementById("exchLink");
-  linkEl.href = EXCH_URL;
-  if (linkEl.__p0Open) linkEl.removeEventListener("click", linkEl.__p0Open);   // v105: один обработчик
-  linkEl.__p0Open = e => {
-    e.preventDefault();
-    if (tg && tg.openLink) tg.openLink(EXCH_URL); else window.open(EXCH_URL, "_blank");
-  };
-  linkEl.addEventListener("click", linkEl.__p0Open);
+  // v132 (владелец 24.09): ссылка «Открыть Polymarket» убрана из профиля вместе с её обработчиком
 
   if(me && me.tracking_since) window.__trackSince = String(me.tracking_since).slice(0,10);
   // v98 (владелец 07.09): поля суммы, кнопки «Сохранить» и быстрых сумм больше

@@ -336,6 +336,8 @@
     autoNeedReady:["Счёт ещё готовится","The account is still being prepared","账户仍在准备中"],
     autoBusyOp:["Дождитесь завершения операции","Wait until the operation finishes","请等待操作完成"],
     autoConfirm:["Включить автоставки","Enable auto-bets","启用自动投注"],
+    fundedOk:["Счёт пополнен","Account funded","账户已充值"],
+    noMoneyMoved:["деньги не списаны","no funds were moved","未扣款"],
     policy:["MLB. Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Максимум открытых позиций:","MLB. The lower of the strategy allocation and your maximum; fees count toward risk. Maximum open positions:","MLB。采用策略比例和您上限中的较低值，费用计入风险。最大未平仓数量："],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
@@ -354,6 +356,7 @@
     STOPPED:["Новые ставки остановлены","New bets stopped","新投注已停止"], AWAITING_SIGNATURE:["Перевод готов к подтверждению","Transfer ready for your confirmation","转账已准备，请确认"],
     PENDING:["Операция обрабатывается","Processing transaction","正在处理交易"], UNKNOWN:["Исход уточняется — повторный перевод не отправляется","Outcome unknown — no duplicate transfer will be sent","结果待核对，不会重复转账"],
     SUBMITTED:["Отправлено — ожидаем подтверждения","Submitted — awaiting confirmation","已提交，等待确认"], CONFIRMED:["Подтверждено","Confirmed","已确认"],
+    EXPIRED_UNSENT:["Отклонено до отправки","Rejected before sending","发送前被拒绝"],
     FAILED:["Операция не выполнена","Transaction failed","交易失败"], REJECTED:["Операция отклонена","Transaction rejected","交易被拒绝"], CANCELLED:["Операция отменена","Transaction cancelled","交易已取消"], EXPIRED:["Срок подтверждения истёк","Confirmation expired","确认已过期"]
   };
   const errors = {
@@ -369,6 +372,7 @@
     WALLET_REJECTED:["Кошелёк отменил действие. Перевод не отправлен этим запросом.","Wallet confirmation cancelled. This request did not submit a transfer.","钱包确认已取消，此请求未提交转账。"],
     WALLET_CHANGED:["В кошельке выбран другой аккаунт. Верните подтверждённый адрес.","A different wallet account is selected. Select the verified address.","当前钱包账户不一致，请选择已验证地址。"],
     INVALID_AMOUNT:["Укажите положительную сумму, не более 6 знаков после точки.","Enter a positive amount with at most 6 decimal places.","请输入正数金额，小数不超过6位。"],
+    INSUFFICIENT_BALANCE:["Недостаточно pUSD на исходном счёте: перевод не отправлен, деньги не списаны. Выберите сумму не больше доступной.","Not enough pUSD on the source account: the transfer was not sent and no funds moved. Choose an amount within the available balance.","源账户 pUSD 不足：未发送转账，未扣款。请选择不超过可用余额的金额。"],
     INSUFFICIENT_AVAILABLE:["Недостаточно подтверждённых свободных средств.","Insufficient confirmed available funds.","已确认可用资金不足。"],
     INVALID_POLICY:["Максимум ставки должен быть больше 0 и не выше 10%.","Stake maximum must be above 0 and no more than 10%.","单注上限必须大于0且不超过10%。"],
     WALLET_UNAVAILABLE:["Откройте приложение в поддерживаемом кошельке или подключите MetaMask. Данные Telegram в ссылку не передаются.","Connect MetaMask in a supported browser. Telegram data is never copied into a link.","请在支持的浏览器连接 MetaMask，Telegram 数据不会传入链接。"],
@@ -410,47 +414,111 @@
   }
   function mount({root,controller,lang="ru"}) {
     const doc=root.ownerDocument, tr=k=>textFor(copy,k,lang), stateText=k=>textFor(states,k,lang),reasonText=k=>textFor(reasons,k,lang),kindText=k=>textFor(kinds,k,lang);
-    let transferKind=null, inputAmount="", settingsOpen=false, percent="", enableOpen=false, lastAccount=null;
+    let transferKind=null, inputAmount="", settingsOpen=false, percent="", enableOpen=false, lastAccount=null, lastAvailable=null;
+    function ensureStyles() {
+      // Оформление блока живёт здесь, чтобы модуль оставался самодостаточным. Только токены витрины:
+      // Inter с табличными цифрами, шаг отступов 4, радиусы --r-*, поверхности --card-*, волосяные --line.
+      if (doc.getElementById("ba-style")) return;
+      const st=doc.createElement("style"); st.id="ba-style";
+      st.textContent=`
+.ba-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s2,8px)}
+.ba-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--card-3,#212b3d);color:var(--txt-2,#b8c4d6);white-space:nowrap}
+.ba-pill.on{background:color-mix(in srgb,var(--green,#22c55e) 18%,transparent);color:var(--green,#22c55e)}
+.ba-pill.warn{background:color-mix(in srgb,var(--amber,#f59e0b) 18%,transparent);color:var(--amber,#f59e0b)}
+.ba-pill.bad{background:color-mix(in srgb,var(--red,#f43f5e) 18%,transparent);color:var(--red,#f43f5e)}
+.ba-pill i{width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block}
+.ba-pill.live i{animation:ba-pulse 1.4s ease-in-out infinite}
+@keyframes ba-pulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.25)}}
+.ba-amount{font-size:34px;font-weight:750;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1.05;
+  margin:var(--s3,12px) 0 2px}
+.ba-amount span{font-size:16px;font-weight:650;letter-spacing:-.01em;color:var(--mut,#7d8eaa);margin-left:2px}
+.ba-amount.up{animation:ba-up .6s cubic-bezier(.2,.9,.2,1)}
+@keyframes ba-up{0%{transform:translateY(6px) scale(.98);opacity:.4;color:var(--green,#22c55e)}60%{color:var(--green,#22c55e)}100%{transform:none;opacity:1}}
+.ba-cap{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut,#7d8eaa)}
+.ba-rows{margin-top:var(--s3,12px);border-top:1px solid var(--line,rgba(255,255,255,.07))}
+.ba-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3,12px);
+  padding:9px 0;border-bottom:1px solid var(--line,rgba(255,255,255,.07))}
+.ba-row .l{font-size:12px;color:var(--mut,#7d8eaa)}
+.ba-row .r{font-size:13.5px;font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ba-wal{display:flex;align-items:center;justify-content:space-between;gap:var(--s3,12px);padding:10px 0;
+  border-bottom:1px solid var(--line,rgba(255,255,255,.07))}
+.ba-wal .n{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut,#7d8eaa)}
+.ba-wal .a{font-size:16px;font-weight:650;letter-spacing:.005em;font-variant-numeric:tabular-nums}
+.ba-copy{border:0;background:transparent;color:var(--accent,#38bdf8);font:inherit;font-size:12px;font-weight:650;
+  padding:4px 6px;border-radius:var(--r-s,10px);cursor:pointer;transition:background .15s,color .15s}
+.ba-copy:hover{background:color-mix(in srgb,var(--accent,#38bdf8) 12%,transparent)}
+.ba-copy.done{color:var(--green,#22c55e)}
+.ba-sw{display:flex;align-items:center;justify-content:space-between;gap:var(--s3,12px);margin-top:var(--s4,16px);
+  padding:12px 14px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);
+  background:var(--card-2,#1a2231);transition:border-color .2s,background .2s}
+.ba-sw.on{border-color:color-mix(in srgb,var(--accent,#38bdf8) 45%,transparent);background:var(--tint1,rgba(56,189,248,.12))}
+.ba-sw .t{font-size:15px;font-weight:700;letter-spacing:-.015em}
+.ba-sw .s{font-size:12px;color:var(--mut,#7d8eaa);margin-top:1px}
+.ba-sw.on .s{color:var(--accent,#38bdf8)}
+.ba-track{position:relative;flex:0 0 auto;width:52px;height:30px;border-radius:999px;cursor:pointer;
+  background:var(--card-3,#212b3d);transition:background .2s}
+.ba-track.on{background:var(--accent,#38bdf8)}
+.ba-track.off{cursor:not-allowed;opacity:.45}
+.ba-track input{position:absolute;inset:0;opacity:0;margin:0;width:100%;height:100%;cursor:inherit}
+.ba-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.35);transition:left .22s cubic-bezier(.2,.9,.2,1)}
+.ba-track.on .ba-knob{left:25px}
+.ba-foot{margin-top:10px;font-size:11px;line-height:1.4;color:var(--mut,#7d8eaa);opacity:.75}
+.ba-note{margin-top:var(--s3,12px);padding:10px 12px;border-radius:var(--r-m,14px);font-size:12.5px;line-height:1.45}
+.ba-note.bad{background:color-mix(in srgb,var(--red,#f43f5e) 12%,transparent);color:var(--red,#f43f5e);
+  animation:ba-shake .4s cubic-bezier(.36,.07,.19,.97)}
+.ba-note.ok{background:color-mix(in srgb,var(--green,#22c55e) 12%,transparent);color:var(--green,#22c55e);animation:ba-in .35s ease-out}
+.ba-note.wait{background:var(--card-2,#1a2231);color:var(--txt-2,#b8c4d6)}
+.ba-note b{font-variant-numeric:tabular-nums}
+@keyframes ba-shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+@keyframes ba-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ba-bar{position:relative;height:3px;border-radius:999px;background:var(--card-3,#212b3d);overflow:hidden;margin-top:10px}
+.ba-bar::after{content:"";position:absolute;inset:0;width:40%;border-radius:999px;
+  background:linear-gradient(90deg,transparent,var(--accent,#38bdf8),transparent);animation:ba-slide 1.1s ease-in-out infinite}
+@keyframes ba-slide{from{transform:translateX(-100%)}to{transform:translateX(320%)}}
+@media (prefers-reduced-motion:reduce){.ba-pill.live i,.ba-amount.up,.ba-note.bad,.ba-note.ok,.ba-bar::after{animation:none}}
+`;
+      doc.head.appendChild(st);
+    }
     function el(tag,text,cls) { const n=doc.createElement(tag); if(text!=null)n.textContent=text;if(cls)n.className=cls;return n; }
     function button(text,fn,disabled=false,primary=false) { const b=el("button",text,primary?"btn":"btn ghost"); b.type="button";b.disabled=disabled;b.style.marginTop="8px";b.onclick=fn;if(primary)b.dataset.primary="true";return b; }
     function line(label,value) { const n=el("div",label+": "+value,"me-sub"); n.style.overflowWrap="anywhere";return n; }
+    function copyBtn(text,label) {
+      const b=el("button",lang==="ru"?"Копировать":lang==="zh"?"复制":"Copy","ba-copy"); b.type="button"; b.title=text;
+      b.setAttribute("aria-label",(lang==="ru"?"Копировать адрес ":"Copy address ")+label);
+      b.onclick=async()=>{try{await doc.defaultView.navigator.clipboard.writeText(text);b.textContent=lang==="ru"?"Скопировано":lang==="zh"?"已复制":"Copied";b.classList.add("done");}
+        catch(_){b.textContent=lang==="ru"?"Не удалось":lang==="zh"?"失败":"Unavailable";}};
+      return b;
+    }
     function walletCard(items) {
-      // Владелец 24.09: адреса — крупно и аккуратно, без пояснительных абзацев вокруг.
-      const box = el("div"); Object.assign(box.style,{marginTop:"10px",padding:"10px 12px",border:"1px solid var(--line, rgba(125,142,170,.25))",
-                                                      borderRadius:"12px",display:"grid",gap:"8px"});
+      const box=el("div");
       for (const [label,value] of items) {
-        const row = el("div"); Object.assign(row.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px"});
-        const name = el("span",label); Object.assign(name.style,{color:"var(--mut)",fontSize:"12px",flex:"0 0 auto"});
-        const text = String(value||""), short = text.length>16 ? text.slice(0,6)+"…"+text.slice(-4) : (text||"—");
-        const addr = el("span",short); Object.assign(addr.style,{fontSize:"16px",fontWeight:"700",letterSpacing:".01em",fontVariantNumeric:"tabular-nums"});
-        addr.title = text;
-        const right = el("div"); Object.assign(right.style,{display:"flex",alignItems:"center",gap:"6px",minWidth:"0"});
-        right.append(addr);
-        if (text) {
-          const b = el("button",lang==="ru"?"Копировать":lang==="zh"?"复制":"Copy"); b.type="button"; b.title=text;
-          b.setAttribute("aria-label",(lang==="ru"?"Копировать адрес ":"Copy address ")+label);
-          Object.assign(b.style,{padding:"2px 6px",border:"0",background:"transparent",color:"var(--accent)",fontSize:"12px",cursor:"pointer"});
-          b.onclick=async()=>{try{await doc.defaultView.navigator.clipboard.writeText(text);b.textContent=lang==="ru"?"Скопировано":lang==="zh"?"已复制":"Copied";}catch(_){b.textContent=lang==="ru"?"Не удалось":lang==="zh"?"失败":"Unavailable";}};
-          right.append(b);
-        }
-        row.append(name,right); box.append(row);
+        const row=el("div",null,"ba-wal"), left=el("div");
+        left.append(el("div",label,"n"), el("div",value?String(value).slice(0,6)+"…"+String(value).slice(-4):"—","a"));
+        row.append(left); if(value)row.append(copyBtn(String(value),label)); box.append(row);
       }
       return box;
     }
-    function balanceCard(a) {
-      // Свободные средства — крупно; остальное компактной строкой. Время сверки — подсказкой, не отдельной строкой.
-      const bal = a.balance || {}, box = el("div"); Object.assign(box.style,{marginTop:"10px"});
-      const big = el("div"); Object.assign(big.style,{display:"flex",alignItems:"baseline",gap:"8px"});
-      const v = el("span",formatUnits(bal.available_units)+" pUSD"); Object.assign(v.style,{fontSize:"22px",fontWeight:"800",fontVariantNumeric:"tabular-nums"});
-      const c = el("span",tr("available")); Object.assign(c.style,{color:"var(--mut)",fontSize:"12px"});
-      big.append(v,c); box.append(big);
-      const parts=[tr("reserved")+" "+formatUnits(bal.reserved_units)+" pUSD",
-                   tr("positions")+" "+formatUnits(bal.position_value_units)+" pUSD",
-                   tr("pnl")+" "+signedUnits(bal.realized_pnl_units)+" pUSD"];
-      const sub = el("div",parts.join(" · "),"me-sub");
-      if (bal.checked_at) sub.title = tr("checked")+": "+new Date(bal.checked_at).toLocaleString(lang);
-      box.append(sub); return box;
+    function balanceCard(a,grew) {
+      const bal=a.balance||{}, box=el("div");
+      const amount=el("div",null,"ba-amount"+(grew?" up":""));
+      amount.append(doc.createTextNode(formatUnits(bal.available_units)), el("span"," pUSD"));
+      box.append(amount, el("div",tr("available"),"ba-cap"));
+      const rows=el("div",null,"ba-rows");
+      const add=(l,v)=>{const r=el("div",null,"ba-row");r.append(el("div",l,"l"),el("div",v,"r"));rows.append(r);};
+      add(tr("reserved"),formatUnits(bal.reserved_units)+" pUSD");
+      add(tr("positions"),formatUnits(bal.position_value_units)+" pUSD");
+      add(tr("pnl"),signedUnits(bal.realized_pnl_units)+" pUSD");
+      if(bal.checked_at)rows.title=tr("checked")+": "+new Date(bal.checked_at).toLocaleString(lang);
+      box.append(rows); return box;
     }
+    function statePill(text,tone,live) {
+      const pill=el("span",null,"ba-pill"+(tone?" "+tone:"")+(live?" live":""));
+      if(tone||live)pill.append(el("i"));
+      pill.append(doc.createTextNode(text)); return pill;
+    }
+    function note(text,tone) { const n=el("div",null,"ba-note"+(tone?" "+tone:"")); n.innerHTML=text; return n; }
     function addressLine(label,value) {
       if(!value)return line(label,"—");
       const text=String(value),n=line(label,text.length>16?text.slice(0,6)+"…"+text.slice(-4):text);
@@ -461,34 +529,29 @@
     function compactRow(){const n=el("div");Object.assign(n.style,{display:"flex",flexWrap:"wrap",gap:"6px",marginTop:"10px"});return n;}
     function compactButton(row,label,fn,disabled){const b=button(label,fn,disabled);Object.assign(b.style,{width:"auto",flex:"1 1 auto",padding:"7px 10px",marginTop:"0",fontSize:"12px"});row.append(b);}
     function switchRow(checked,disabled,onChange,hint,primary) {
-      // Владелец 24.09: видимый включатель режима автоставок. Включение — в два осознанных шага (переключатель → подтверждение правила),
+      // Включатель режима автоставок. Включение — в два осознанных шага (переключатель → подтверждение правила),
       // выключение — сразу: запрет новых ставок безопасен и подтверждения не требует.
-      const wrap=el("div"); Object.assign(wrap.style,{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",
-                                                      marginTop:"12px",padding:"10px 12px",borderRadius:"12px",
-                                                      border:"1px solid var(--line, rgba(125,142,170,.25))"});
-      const left=el("div"); const name=el("div",tr("autoSwitch")); Object.assign(name.style,{fontSize:"15px",fontWeight:"700"});
-      const state=el("div",checked?tr("autoOn"):tr("autoOff"),"me-sub"); state.style.marginTop="2px";
-      if(checked)state.style.color="var(--accent)";
-      left.append(name,state); if(hint){const h=el("div",hint,"me-sub");h.style.fontSize="11px";left.append(h);}
-      const label=el("label"); Object.assign(label.style,{position:"relative",flex:"0 0 auto",width:"52px",height:"30px",
-                                                          cursor:disabled?"not-allowed":"pointer",opacity:disabled?".45":"1"});
+      const wrap=el("div",null,"ba-sw"+(checked?" on":"")), left=el("div");
+      left.append(el("div",tr("autoSwitch"),"t"), el("div",checked?tr("autoOn"):tr("autoOff"),"s"));
+      if(hint){const h=el("div",hint,"s");h.style.color="var(--amber,#f59e0b)";left.append(h);}
+      const track=el("label",null,"ba-track"+(checked?" on":"")+(disabled?" off":""));
       const input=el("input"); input.type="checkbox"; input.checked=!!checked; input.disabled=!!disabled;
-      input.setAttribute("aria-label",tr("autoSwitch"));
-      Object.assign(input.style,{position:"absolute",opacity:"0",width:"100%",height:"100%",margin:"0",cursor:"inherit"});
-      const track=el("span"); Object.assign(track.style,{position:"absolute",inset:"0",borderRadius:"999px",transition:"background .15s",
-                                                         background:checked?"var(--accent)":"rgba(125,142,170,.35)"});
-      const knob=el("span"); Object.assign(knob.style,{position:"absolute",top:"3px",left:checked?"25px":"3px",width:"24px",height:"24px",
-                                                       borderRadius:"50%",background:"#fff",transition:"left .15s",boxShadow:"0 1px 3px rgba(0,0,0,.35)"});
-      input.onchange=()=>onChange(input.checked);
-      if(primary)wrap.dataset.primary="true";                      // главное действие экрана — переключатель (инвариант «одно главное действие»)
-      label.append(input,track,knob); wrap.append(left,label); return wrap;
+      input.setAttribute("aria-label",tr("autoSwitch")); input.onchange=()=>onChange(input.checked);
+      track.append(input, el("span",null,"ba-knob"));
+      if(primary)wrap.dataset.primary="true";                      // главное действие экрана — переключатель
+      wrap.append(left,track); return wrap;
     }
     function consent(label) {const wrap=el("label",null,"me-sub"), check=el("input");check.type="checkbox";wrap.append(check,doc.createTextNode(" "+label));return {wrap,check};}
     function paint(s) {
-      root.style.display="block"; root.replaceChildren();root.append(el("div",tr("title"),"k"));
+      ensureStyles();
+      root.style.display="block"; root.replaceChildren();
+      const head=el("div",null,"ba-head"); head.append(el("div",tr("title"),"k"));
+      const lab=stateLabel(s), tone=s.busy?null:(lab==="ACTIVE"||lab==="ACTIVE_NO_SIGNAL")?"on":(lab==="STOPPED"||lab==="ERROR")?"bad":(lab==="NEEDS_FUNDING"||lab==="STALE")?"warn":null;
+      head.append(statePill(s.busy?tr("waiting"):stateText(lab),s.busy?"warn":tone,s.busy||lab==="ACTIVE"||lab==="ACTIVE_NO_SIGNAL"));
+      root.append(head);
       if (s.status === "SIGNED_OUT") {root.append(el("p",stateText("SIGNED_OUT"),"me-sub"));return;}
-      root.append(el("p",s.busy ? tr("waiting") : stateText(stateLabel(s)),"me-sub"));
-      if(s.error)root.append(el("p",textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"me-sub"));
+      if(s.busy)root.append(el("div",null,"ba-bar"));
+      if(s.error)root.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"bad"));
       const a=s.account;
       if(!a) {
         if(s.status==="NOT_CONNECTED")root.append(el("p",tr("connectHint"),"me-sub"),button(tr("connect"),()=>controller.connect(),s.busy,true));
@@ -498,10 +561,15 @@
         }
         root.append(button(tr("refresh"),()=>controller.refresh(),s.busy));return;
       }
-      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;}
+      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;lastAvailable=null;}
+      const av=(a.balance&&a.balance.available_units)||"0";
+      const units=x=>/^(0|[1-9][0-9]*)$/.test(String(x||""))?BigInt(x):null;   // отрисовка не должна падать на пустом балансе
+      const nowU=units(av), prevU=units(lastAvailable);
+      const grew=nowU!=null&&prevU!=null&&nowU>prevU; lastAvailable=av;
+      root.append(balanceCard(a,grew));
+      if(grew)root.append(note(tr("fundedOk"),"ok"));
       root.append(walletCard([["Polymarket",a.funding_wallet],["AISports",a.bot_deposit_wallet]]));
-      root.append(balanceCard(a));
-      const custody=el("p",tr("custodyShort"),"me-sub"); custody.style.fontSize="11px"; root.append(custody);
+      root.append(el("div",tr("custodyShort"),"ba-foot"));
       if(a.policy&&a.policy.enabled)root.append(line(lang==="ru"?"Проверка торговли":lang==="zh"?"交易检查":"Trading check",a.last_checked_at?new Date(a.last_checked_at).toLocaleString(lang):"—"));
       if(a.reason&&a.reason!=="NO_SIGNAL")root.append(line(lang==="ru"?"Причина":"Reason",reasonText(a.reason)));
       const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral, o=s.operation;
@@ -514,8 +582,10 @@
         compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
         if(a.policy)compactButton(actions,tr("settings"),()=>{settingsOpen=!settingsOpen;transferKind=null;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy||!!unfinished);
       }
-      root.append(actions);
-      if(ready&&!hasFunds&&!unfinished&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
+      const tail=()=>{                                          // вспомогательные кнопки уходят под главный элемент управления
+        if(ready&&!hasFunds&&!unfinished&&!transferKind&&!settingsOpen)root.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
+        root.append(actions);
+      };
       if(a.policy) {
         if(settingsOpen)root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
         if(settingsOpen) {
@@ -534,8 +604,9 @@
           root.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
           root.append(button(tr("autoConfirm"),()=>{enableOpen=false;controller.enable(true);},s.busy,true));
         }
-        if(on||a.reason==="USER_STOP")root.append(el("p",tr("stopInfo"),"me-sub"));
-      }
+        tail();
+        if(on||a.reason==="USER_STOP")root.append(el("p",tr("stopInfo"),"ba-foot"));
+      } else tail();
       if(transferKind&&(!o||TERMINAL.has(o.state))) {
         const label=el("label",tr("amount"),"me-sub"),input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);root.append(label);
         root.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount);if(result){transferKind=null;inputAmount="";}},s.busy,true));
@@ -543,14 +614,28 @@
       if(o) {
         root.append(el("p",kindText(o.kind)+" · "+stateText(o.state),"me-sub"));
         if(o.intent) {
-          root.append(line(tr("amount"),formatUnits(o.amount_units)+" pUSD · Polygon"),addressLine(tr("source"),o.intent.source),addressLine(tr("recipient"),o.intent.recipient));
-          root.append(line(tr("fees"),o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD"));
-          root.append(el("p",tr("transferSigning"),"me-sub"));
+          // Карточка сверки перед подписью: сумма крупно, откуда/куда полными копируемыми адресами, сеть и комиссия (задание §P1.5).
+          const rev=el("div"); const amt=el("div",null,"ba-amount");
+          amt.append(doc.createTextNode(formatUnits(o.amount_units)), el("span"," pUSD"));
+          rev.append(amt, el("div",tr("amount").replace(/\s*pUSD\s*$/i,""),"ba-cap"));
+          const rows=el("div",null,"ba-rows");
+          const addr=(label,value)=>{const r=el("div",null,"ba-wal"),left=el("div");
+            left.append(el("div",label,"n"), el("div",String(value||"").slice(0,6)+"…"+String(value||"").slice(-4),"a"));
+            r.append(left); if(value)r.append(copyBtn(String(value),label)); rows.append(r);};
+          addr(tr("source"),o.intent.source); addr(tr("recipient"),o.intent.recipient);
+          const pair=(l,v)=>{const r=el("div",null,"ba-row");r.append(el("div",l,"l"),el("div",v,"r"));rows.append(r);};
+          pair(lang==="ru"?"Сеть":lang==="zh"?"网络":"Network","Polygon · pUSD");
+          pair(tr("fees"),o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
+          rev.append(rows); root.append(rev);
+          root.append(el("div",tr("transferSigning")+" "+tr("custodyShort"),"ba-foot"));
         }
         if(o.state==="AWAITING_SIGNATURE") {
           const c=consent(tr("transferAccept"));root.append(c.wrap,button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy || o.fee_units==null,true));
         }
-        if(o.reason)root.append(line(lang==="ru"?"Причина":"Reason",reasonText(o.reason)));
+        if(o.reason){
+          const bad=o.state==="REJECTED"||o.state==="FAILED"||o.state==="EXPIRED_UNSENT";
+          root.append(note(reasonText(o.reason)+(bad?" · "+tr("noMoneyMoved"):""),bad?"bad":"wait"));
+        }
       }
       // Владелец 24.09: в списке — только деньги и ставки. Технические шаги счёта (создание, подготовка разрешений)
       // пользователю не нужны: их исход и так виден состоянием счёта и причиной наверху.
