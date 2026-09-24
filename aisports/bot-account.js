@@ -522,7 +522,8 @@
           root.append(button(tr("save"),()=>controller.settings(percent),s.busy,true));
         }
         const on=!!a.policy.enabled;
-        const blocked=s.busy?null:!ready?tr("autoNeedReady"):unfinished?tr("autoBusyOp"):(!on&&!hasFunds)?tr("autoNeedFunds"):null;
+        // Выключение доступно ВСЕГДА (запрет новых ставок не должен ждать операций): причины блокируют только включение.
+        const blocked=on?null:(s.busy?null:!ready?tr("autoNeedReady"):unfinished?tr("autoBusyOp"):!hasFunds?tr("autoNeedFunds"):null);
         root.append(switchRow(on,s.busy||!!blocked,checked=>{
           if(!checked){enableOpen=false;controller.stop();return;}      // выключение — сразу, без подтверждения
           enableOpen=true;paint(s);                                     // включение — показать правило и подтвердить
