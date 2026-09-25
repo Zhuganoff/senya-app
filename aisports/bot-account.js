@@ -570,6 +570,7 @@
     INSUFFICIENT_BALANCE:["Недостаточно pUSD на исходном кошельке","Not enough pUSD in the source wallet","来源钱包 pUSD 不足"],
     BALANCE_UNAVAILABLE:["Остаток источника не удалось проверить","The source balance could not be checked","无法核对来源余额"],
     GAS_UNAVAILABLE:["Нет POL на сетевую комиссию","No POL for the network fee","没有网络费用 POL"],
+    BATCH_EXPIRED:["Подпись не была готова до истечения срока; перевод не отправлен","The signing window expired before the transfer was sent","签名准备超时，转账未发送"],
     EXPIRED_UNSENT:["Срок подтверждения истёк до отправки","Expired before it was sent","发送前已过期"],
     WALLET_PENDING:["Ждём подтверждения в кошельке","Waiting for the wallet","等待钱包确认"],
     SENT_AWAITING_CHAIN:["Отправлено — ждём сеть","Sent — waiting for the network","已发送，等待网络确认"],

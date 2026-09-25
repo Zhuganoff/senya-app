@@ -151,6 +151,14 @@ function mmOp(state,extra={}){
    assert.equal(await head.evaluate(el=>el.isConnected),true,'unchanged poll must not replace the profile card');}
   await page.close();
  }
+ current=mmOp('PENDING');operations=[current];
+ ({page,box}=await open());
+ await box.getByText(/Проверяем баланс источника/).first().waitFor();
+ current=mmOp('REJECTED',{reason:'BATCH_EXPIRED'});operations=[current];
+ await box.getByRole('button',{name:'Обновить',exact:true}).first().click();
+ await box.getByRole('button',{name:'Открыть',exact:true}).click();
+ await page.getByRole('dialog',{name:'Пополнить'}).getByText(/Подпись не была готова до истечения срока; перевод не отправлен/).waitFor();
+ await page.close();
  // A saved public wallet adds one bounded pUSD read, without repeating the private account refresh.
  current=null;operations=[];
  const beforeGet=calls.filter(c=>c.name==='bot_account_get').length,beforeChain=chainCalls.length;
