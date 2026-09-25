@@ -449,6 +449,10 @@ body.light .daycard::after{background:linear-gradient(115deg,transparent 30%,
 .qrbox canvas{width:200px;height:200px;border-radius:var(--r-m);background:#fff;padding:8px;
   box-shadow:0 10px 28px -10px rgba(0,0,0,.5)}
 body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
+/* v141: карточка подключения MetaMask — модальный <dialog> (верхний слой): окно перевода само модальное, обычный overlay в body
+   оказывался ПОД ним и был некликабельным (подпись «висела на готов к подтверждению»). */
+.mm-pair-dialog{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:min(100%,340px);margin:auto;overflow:visible}
+.mm-pair-dialog::backdrop{background:rgba(2,8,20,.78);backdrop-filter:blur(9px)}
 .mm-pair-backdrop{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
   padding:20px;background:rgba(5,10,19,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .mm-pair-card{width:min(100%,340px);max-height:calc(100dvh - 40px);overflow:auto;padding:20px;border:1px solid var(--line-2);
@@ -998,10 +1002,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v140"></script>
-<script src="wallet-connect.js?v=v140"></script>
+<script src="bot-account.js?v=v141"></script>
+<script src="wallet-connect.js?v=v141"></script>
 <script>
-const BUILD = "v140";
+const BUILD = "v141";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2818,7 +2822,7 @@ function wvRenderEmpty(msg){
 // Telegram initData и данные операции в ссылку не добавляются.
 let walletPairingDialog=null,walletPairingFocus=null,walletPairingOverflow=null;
 function closeWalletPairing(){
-  if(walletPairingDialog){walletPairingDialog.remove();walletPairingDialog=null;document.body.style.overflow=walletPairingOverflow||"";walletPairingOverflow=null;walletPairingFocus?.focus?.();walletPairingFocus=null;}
+  if(walletPairingDialog){const d=walletPairingDialog;walletPairingDialog=null;try{d.close();}catch(_){}d.remove();document.body.style.overflow=walletPairingOverflow||"";walletPairingOverflow=null;walletPairingFocus?.focus?.();walletPairingFocus=null;}
 }
 function showWalletPairing(uri){
   if(uri==null){closeWalletPairing();return;}
@@ -2827,9 +2831,10 @@ function showWalletPairing(uri){
   if(!((link.protocol==="metamask:"&&link.hostname==="connect"&&link.pathname==="/mwp")||
        (link.protocol==="https:"&&link.hostname==="metamask.app.link"&&link.pathname==="/connect/mwp")))return;
   closeWalletPairing();walletPairingFocus=document.activeElement;
-  const overlay=document.createElement("div");overlay.className="mm-pair-backdrop";overlay.setAttribute("role","presentation");
-  const card=document.createElement("div");card.className="mm-pair-card";card.setAttribute("role","dialog");card.setAttribute("aria-modal","true");
-  card.setAttribute("aria-label",LANG==="ru"?"Подключение MetaMask":LANG==="zh"?"连接 MetaMask":"Connect MetaMask");
+  // <dialog>.showModal(): в верхнем слое ПОВЕРХ модального окна перевода (открытого позже = выше)
+  const overlay=document.createElement("dialog");overlay.className="mm-pair-dialog";
+  const card=document.createElement("div");card.className="mm-pair-card";
+  overlay.setAttribute("aria-label",LANG==="ru"?"Подключение MetaMask":LANG==="zh"?"连接 MetaMask":"Connect MetaMask");
   const title=document.createElement("div");title.className="mm-pair-title";title.textContent="MetaMask";
   const hint=document.createElement("p");hint.className="mm-pair-hint";
   hint.textContent=LANG==="ru"?"Отсканируйте QR телефоном или откройте MetaMask на этом устройстве. Подтверждение — только в кошельке.":
@@ -2849,10 +2854,12 @@ function showWalletPairing(uri){
   open.onclick=()=>window.location.assign(uri);actions.append(open);card.append(actions);
   const close=document.createElement("button");close.type="button";close.className="mm-pair-close";
   close.textContent=LANG==="ru"?"Закрыть окно":LANG==="zh"?"关闭":"Close";close.onclick=closeWalletPairing;card.append(close);
-  overlay.onclick=e=>{if(e.target===overlay)closeWalletPairing();};
-  overlay.onkeydown=e=>{if(e.key==="Escape")closeWalletPairing();};overlay.append(card);
-  walletPairingOverflow=document.body.style.overflow;document.body.style.overflow="hidden";document.body.append(overlay);
-  walletPairingDialog=overlay;open.focus();
+  overlay.onclick=e=>{if(e.target===overlay)closeWalletPairing();};          // клик по подложке
+  overlay.oncancel=e=>{e.preventDefault();closeWalletPairing();};              // Escape
+  overlay.append(card);document.body.append(overlay);
+  walletPairingDialog=overlay;
+  try{overlay.showModal();}catch(_){overlay.setAttribute("open","");}
+  open.focus();
 }
 // Основной контур счёта остаётся на этой странице; Telegram initData никогда не копируется в URL.
 const botConnector = AISportsWallet.createConnector({window,polygonRPC:POLYGON_RPC,onPairingUri:showWalletPairing});

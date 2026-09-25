@@ -74,7 +74,7 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
  await transfer.getByRole('button',{name:'Подтвердить в кошельке',exact:true}).waitFor();await transfer.getByText('Перевод готов к подтверждению',{exact:false}).waitFor();
  assert.equal(await transfer.locator('[data-primary=true]').count(),1);assert.match(await transfer.innerText(),new RegExp(bot,'i'));assert.match(await transfer.innerText(),new RegExp(funding,'i'));
  await page.screenshot({path:path.join(out,'05-review-funding.png'),fullPage:true});
- await transfer.locator('input[type=checkbox]').last().check();await transfer.getByRole('button',{name:'Подтвердить в кошельке',exact:true}).click();
+ await transfer.getByRole('button',{name:'Подтвердить в кошельке',exact:true}).click();
  await transfer.getByText('Отправлено — ожидаем подтверждения',{exact:false}).first().waitFor();
  assert.equal(calls.filter(c=>c.name==='bot_account_submit_transfer').length,1);assert.equal((await page.evaluate(()=>window.__walletMethods)).filter(m=>m==='eth_signTypedData_v4').length,1);
  await transfer.locator('.ba-transfer-close').click();

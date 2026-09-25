@@ -859,13 +859,14 @@
           pair(lang==="ru"?"Сеть":lang==="zh"?"网络":"Network","Polygon · pUSD");
           if(o.kind==="FUNDING")pair(tr("actionType"),tr(viaWallet?"actionTx":"actionSign"));
           pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
-          body.append(rows,el("div",tr(viaWallet?"txSending":"transferSigning")+" "+tr("custodyShort"),"ba-foot"));
+          body.append(rows);
         }
         if(o.state==="AWAITING_SIGNATURE"){
-          const c=consent(tr("transferAccept")),actions=el("div",null,"ba-transfer-actions");body.append(c.wrap);
+          // Владелец 25.09: без галочки и без сноски — подтверждение = нажатие единственной кнопки (сумма и адреса показаны выше).
+          const actions=el("div",null,"ba-transfer-actions");
           if(viaWallet){actions.append(button(tr("cancel"),()=>controller.cancelTransfer(),s.busy));
-            actions.append(button(tr("sendTx"),()=>controller.sendFromWallet(c.check.checked),s.busy,true));}
-          else actions.append(button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy||o.fee_units==null,true));
+            actions.append(button(tr("sendTx"),()=>controller.sendFromWallet(true),s.busy,true));}
+          else actions.append(button(tr("sign"),()=>controller.signTransfer(true),s.busy||o.fee_units==null,true));
           body.append(actions);
         }
         if(o.kind==="FUNDING"&&o.state==="REJECTED")body.append(note(reasonText(o.reason||"REJECTED")+" · "+tr("noMoneyMoved"),"bad"));

@@ -128,7 +128,7 @@ function mmOp(state,extra={}){
  const review=await transfer.innerText();assert.match(review,/Сетевая транзакция из MetaMask/);assert.match(review,/Газ в POL/);
  assert.equal(await transfer.locator('[data-primary=true]').count(),1);
  await page.screenshot({path:path.join(out,'03-metamask-review.png'),fullPage:true});
- await transfer.locator('input[type=checkbox]').last().check();await transfer.getByRole('button',{name:'Отправить из MetaMask',exact:true}).click();
+ await transfer.getByRole('button',{name:'Отправить из MetaMask',exact:true}).click();
  await transfer.getByText('Ждём подтверждения в кошельке',{exact:false}).first().waitFor();
  const sent=await page.evaluate(()=>window.__sent);assert.equal(sent.length,1);
  assert.deepEqual(sent[0],{from:owner,to:PUSD,data:'0xa9059cbb'+bot.slice(2).padStart(64,'0')+(10000000).toString(16).padStart(64,'0'),value:'0x0',chainId:'0x89'});
