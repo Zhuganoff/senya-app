@@ -134,6 +134,24 @@ test('refresh on PENDING / WALLET_PENDING / UNKNOWN / REJECTED only reads and ne
   assert.equal(s.c.state.operation?.state||null,state==='REJECTED'?null:state);
  }
 });
+test('late operation poll cannot overwrite settings changed while it was in flight',async()=>{
+ let hold=false,release;
+ const original=account(),pending=mmOperation('10000000','PENDING');
+ const s=setup({acct:original,op:pending,server:{
+  bot_account_operation:()=>hold?new Promise(resolve=>{release=resolve;}):undefined,
+  bot_account_settings:()=>({api_version:1,status:'OK',account:{...original,policy:{...original.policy,version:3,max_stake_bps:600}}})
+ }});
+ await s.c.refresh();hold=true;
+ const poll=s.c.pollOperation(opId);await Promise.resolve();
+ assert.equal(typeof release,'function');
+ await s.c.settings('6');
+ release({api_version:1,status:'OK',account:original,operation:{...pending,state:'UNKNOWN'}});
+ await poll;
+ assert.equal(s.c.state.account.policy.version,3);
+ assert.equal(s.c.state.account.policy.max_stake_bps,600);
+ assert.equal(s.c.state.operation.state,'PENDING');
+ assert.deepEqual(s.walletCalls,[]);
+});
 test('status keys: checking, MetaMask awaiting, wallet pending, refused funding',()=>{
  assert.equal(opStateKey({kind:'FUNDING',state:'PENDING'}),'CHECKING');assert.equal(opStateKey({kind:'FUNDING',state:'AWAITING_SIGNATURE',source_kind:'METAMASK'}),'AWAITING_WALLET_TX');
  assert.equal(opStateKey({kind:'FUNDING',state:'AWAITING_SIGNATURE',source_kind:'POLYMARKET'}),'AWAITING_SIGNATURE');assert.equal(opStateKey({kind:'FUNDING',state:'WALLET_PENDING'}),'WALLET_PENDING');

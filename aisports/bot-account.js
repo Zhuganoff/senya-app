@@ -189,6 +189,7 @@
       try {
         c = this.context();
         if (this.state.busy) return null;
+        this._actionRevision=(this._actionRevision||0)+1;
         this._runningContext=c;
         this.paint(c,{busy:true,error:null});
         return await fn(c);
@@ -219,20 +220,21 @@
       });
     }
     async pollOperation(id) {
-      let c;
+      let c,revision;
       try {
         c=this.context();
-        if(this.state.busy||this._runningContext||this.state.operation?.operation_id!==id)return false;
-        this._runningContext=c;
+        if(this.state.busy||this._runningContext||this._polling||this.state.operation?.operation_id!==id)return false;
+        revision=this._actionRevision||0;
+        this._polling=true;
         const r=await this.call(c,"bot_account_operation",{p_operation_id:id});
         if(!r.operation||r.operation.operation_id!==id)fail("OPERATION_MISMATCH");
-        if(this.state.operation?.operation_id!==id)return false;
-        if(JSON.stringify(r.operation)!==JSON.stringify(this.state.operation))this.adopt(c,r);
+        if(this.state.busy||this._runningContext||this._actionRevision!==revision||this.state.operation?.operation_id!==id)return false;
+        if(JSON.stringify(r.operation)!==JSON.stringify(this.state.operation))this.paint(c,{operation:r.operation,error:null});
         return TERMINAL.has(r.operation.state);
       }catch(e){
-        if(c&&this.alive(c)&&this.state.error!==errorCode(e))this.paint(c,{error:errorCode(e)});
+        if(c&&this.alive(c)&&this._actionRevision===revision&&!this.state.busy&&!this._runningContext&&this.state.error!==errorCode(e))this.paint(c,{error:errorCode(e)});
         return false;
-      }finally{if(c&&this._runningContext===c)this._runningContext=null;}
+      }finally{this._polling=false;}
     }
     async create(accepted) {
       return this.run(async c => {
