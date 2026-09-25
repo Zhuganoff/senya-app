@@ -14,7 +14,7 @@
   // SUBMITTED and UNKNOWN only wait for the chain; their amounts are held and the rest stays usable.
   const INTERACTIVE = new Set(["PENDING", "CLAIMED", "AWAITING_SIGNATURE"]);
   const SOURCES = ["POLYMARKET", "METAMASK"], MIN_GAS_WEI = 10n ** 16n, SNAPSHOT_MAX_AGE = 120000;
-  class ClientError extends Error { constructor(code) { super(code); this.code = code; } }
+  class ClientError extends Error { constructor(code, detail) { super(code); this.code = code; if (detail) this.detail = String(detail).slice(0, 160); } }
   const fail = code => { throw new ClientError(code); };
   const address = x => typeof x === "string" && ADDRESS.test(x) ? x.toLowerCase() : fail("INVALID_ADDRESS");
   const integer = x => (typeof x === "string" && /^(0|[1-9][0-9]*)$/.test(x)) ? BigInt(x) : fail("INVALID_AMOUNT");
@@ -38,7 +38,16 @@
   }
   function errorCode(e) {
     if (e && (e.code === 4001 || e.code === "ACTION_REJECTED")) return "WALLET_REJECTED";
-    return e instanceof ClientError ? e.code : "SOURCE_UNAVAILABLE";
+    if (e instanceof ClientError) return e.code;
+    const m = String(e && e.message || e || "");
+    if (m === "WALLET_UNAVAILABLE") return "WALLET_UNAVAILABLE";            // модуль MetaMask не загрузился / не создался
+    if (/^rpc \d{3}$/.test(m)) return "SOURCE_HTTP";                         // база ответила ошибкой HTTP (номер — в подробностях)
+    return "SOURCE_UNAVAILABLE";
+  }
+  // Владелец 25.09: «Источник недоступен» ничего не объясняет — к каждой ошибке добавляется шаг и текст причины.
+  function errorDetail(e, step) {
+    const m = e && (e.detail || e.message) ? String(e.detail || e.message) : String(e || "");
+    return (step ? step + ": " : "") + m.slice(0, 160);
   }
   function envelope(r) {
     if (!r || r.api_version !== API_VERSION) fail("VERSION_MISMATCH");
@@ -165,7 +174,7 @@
     assert(c) { if (!this.alive(c)) {if(this.session()!==this.auth)this.reset();fail("SESSION_CHANGED");} }
     paint(c, update) { this.assert(c); this.state = {...this.state,...update}; this.render(this.state); }
     async call(c, name, params = {}, legacy = false) {
-      this.assert(c);
+      this.assert(c); this._step = name;
       // A hung request must not keep the screen busy: bounded wait, then a named error. A lost reply to a
       // mutation is resolved by reading the operation again, never by repeating it blindly.
       let timer;
@@ -179,7 +188,7 @@
     adopt(c, r) {
       if (r.account) accountCheck(r.account);
       if (r.account && this.state.account && r.account.account_id !== this.state.account.account_id) fail("ACCOUNT_CHANGED");
-      const update = {status:r.status,error:null};
+      const update = {status:r.status,error:null,errorDetail:null};
       if (Object.hasOwn(r,"account")) update.account = r.account;
       if (Object.hasOwn(r,"operation")) update.operation = r.operation;
       this.paint(c,update); return r;
@@ -194,9 +203,9 @@
         this.paint(c,{busy:true,error:null});
         return await fn(c);
       } catch(e) {
-        if (c && this.alive(c)) this.paint(c,{error:errorCode(e)});
+        if (c && this.alive(c)) this.paint(c,{error:errorCode(e),errorDetail:errorDetail(e,this._step)});
         return null;
-      } finally { if (c && this.alive(c) && this._runningContext===c) {this._runningContext=null;this.paint(c,{busy:false});} }
+      } finally { this._step=null; if (c && this.alive(c) && this._runningContext===c) {this._runningContext=null;this.paint(c,{busy:false});} }
     }
     async refresh() {
       return this.run(async c => {
@@ -312,7 +321,7 @@
         const o = r.operation, tx = validateWalletTransfer(o,a,this.now());
         if (o.operation_id !== id || JSON.stringify(o.intent) !== JSON.stringify(reviewed.intent) || JSON.stringify(o.challenge) !== JSON.stringify(reviewed.challenge)) fail("OPERATION_MISMATCH");
         this.adopt(c,r);
-        const provider = await this.wallet(); this.assert(c);
+        const provider = await this.openWallet(); this.assert(c);
         const selected = await provider.request({method:"eth_requestAccounts"}); this.assert(c);
         // Another address is never substituted silently; the user selects the verified one and retries.
         if (!Array.isArray(selected) || !selected.length || String(selected[0]).toLowerCase() !== tx.from) fail("WALLET_CHANGED");
@@ -360,8 +369,14 @@
     async openOperation(id) {
       return this.run(async c => { if (!UUID.test(id)) fail("INVALID_OPERATION"); return this.adopt(c,await this.call(c,"bot_account_operation",{p_operation_id:id})); });
     }
+    async openWallet() {
+      // Сбой загрузки/создания модуля MetaMask — отдельная причина с подробностью, а не «источник недоступен».
+      this._step = "wallet";
+      try { return await this.wallet(); }
+      catch (e) { if (e && (e.code === 4001 || e.code === "ACTION_REJECTED")) throw e; throw new ClientError("WALLET_UNAVAILABLE", e && e.message); }
+    }
     async checkedWallet(c, expected) {
-      const provider = await this.wallet(); this.assert(c);
+      const provider = await this.openWallet(); this.assert(c);
       const accounts = await provider.request({method:"eth_requestAccounts"}); this.assert(c);
       if (!Array.isArray(accounts) || address(accounts[0]) !== address(expected)) fail("WALLET_CHANGED");
       let chain = await provider.request({method:"eth_chainId"}); this.assert(c);
@@ -402,7 +417,7 @@
     }
     async connect() {
       return this.run(async c => {
-        const provider = await this.wallet(); this.assert(c);
+        const provider = await this.openWallet(); this.assert(c);
         const selected = await provider.request({method:"eth_requestAccounts"}); this.assert(c);
         const signer = address(selected && selected[0]);
         const owned = await this.call(c,"wallet_link_status",{},true);
@@ -534,6 +549,7 @@
     WALLET_UNAVAILABLE:["Откройте приложение в поддерживаемом кошельке или подключите MetaMask. Данные Telegram в ссылку не передаются.","Connect MetaMask in a supported browser. Telegram data is never copied into a link.","请在支持的浏览器连接 MetaMask，Telegram 数据不会传入链接。"],
     OPERATION_IN_PROGRESS:["Сначала уточните исход текущей операции.","Resolve the current transaction before starting another.","请先核对当前交易结果。"],
     FEES_UNVERIFIED:["Комиссия пока не подтверждена. Подпись недоступна.","The fee is not confirmed yet. Signing is unavailable.","费用尚未确认，暂不能签名。"],
+    SOURCE_HTTP:["База ответила ошибкой — у поставщика базы (Supabase) сбой. Ничего не отправлялось; повторите через минуту.","The database answered with an error — the database provider (Supabase) is having an incident. Nothing was sent; retry in a minute.","数据库返回错误——数据库服务商 (Supabase) 出现故障。未发送任何内容，请一分钟后重试。"],
     SOURCE_TIMEOUT:["Сервер не ответил вовремя. Обновите состояние — повторно ничего не отправлялось.","The server did not answer in time. Refresh the status — nothing was re-sent.","服务器未及时响应。请刷新状态，未重复发送任何内容。"],
     SOURCE_REQUIRED:["Выберите, откуда пополнить: Polymarket или MetaMask.","Choose where to fund from: Polymarket or MetaMask.","请选择充值来源：Polymarket 或 MetaMask。"],
     BALANCE_UNAVAILABLE:["Нет свежей проверки остатка источника. Перевод не создан; обновите через минуту.","No fresh check of the source balance. Nothing was created; refresh in a minute.","来源余额缺少最新核对，未创建转账，请一分钟后刷新。"],
@@ -762,6 +778,7 @@
       if(tone||live)pill.append(el("i"));
       pill.append(doc.createTextNode(text)); return pill;
     }
+    function escapeHtml(t){return String(t).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
     function note(text,tone) { const n=el("div",null,"ba-note"+(tone?" "+tone:"")); n.innerHTML=text; return n; }
     function addressLine(label,value) {
       if(!value)return line(label,"—");
@@ -807,7 +824,7 @@
       transferDialog.setAttribute("aria-label",kind?tr(kind==="FUNDING"?"fund":"withdraw"):tr("details"));
       const fc=s.fundingCheck;
       if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)body.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" pUSD",n:formatUnits(fc.needed_units)+" pUSD"}),"bad"));
-      else if(s.error)body.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"bad"));
+      else if(s.error)body.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped"))+(s.errorDetail?"<br><small>"+escapeHtml(s.errorDetail)+"</small>":""),"bad"));
       if(draft){
         if(transferKind==="FUNDING"){
           body.append(el("div",tr("srcChoose"),"ba-cap"));
@@ -898,7 +915,7 @@
       const progress=el("div",null,"ba-progress");if(s.busy)progress.append(el("div",null,"ba-bar"));view.append(progress);
       const fc=s.fundingCheck;
       if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)view.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" pUSD",n:formatUnits(fc.needed_units)+" pUSD"}),"bad"));
-      else if(s.error)view.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"bad"));
+      else if(s.error)view.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped"))+(s.errorDetail?"<br><small>"+escapeHtml(s.errorDetail)+"</small>":""),"bad"));
       const a=s.account;
       if(!a) {
         if(s.status==="NOT_CONNECTED")view.append(el("p",tr("connectHint"),"me-sub"),button(tr("connect"),()=>controller.connect(),s.busy,true));
@@ -928,7 +945,8 @@
       const actions=compactRow();compactButton(actions,tr("refresh"),()=>controller.refresh(),s.busy);
       if(a.state==="ERROR"&&a.reason==="PROVIDER_ACCESS_DENIED")compactButton(actions,tr("retryCreate"),()=>controller.retryProvision(),s.busy);
       if(ready){
-        if(hasFunds||unfinished||transferKind)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!interactive);
+        // Владелец 25.09 (телефон: «Пополнить» не реагирует): при незакрытой операции кнопка открывает ЕЁ, а не молчит.
+        if(hasFunds||unfinished||transferKind)compactButton(actions,tr("fund"),()=>interactive?openOperation():openTransfer("FUNDING"),s.busy);
         compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
         if(a.policy)compactButton(actions,tr("settings"),()=>openSettings(a),s.busy);
       }

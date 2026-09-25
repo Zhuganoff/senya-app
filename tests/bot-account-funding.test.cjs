@@ -173,3 +173,14 @@ test('wallet outcome cannot be recorded (both branches): explicit UNKNOWN, recon
   assert.equal(s.c.state.busy,false);assert.notEqual(s.c.state.operation.state,'REJECTED');
  }
 });
+
+test('errors name the failing step: wallet module failure and database HTTP error are not a generic "source unavailable"',async()=>{
+ const s=setup();await ready(s,mmOperation());
+ s.c.wallet=async()=>{throw Error('WALLET_UNAVAILABLE');};
+ await s.c.sendFromWallet(true);
+ assert.equal(s.c.state.error,'WALLET_UNAVAILABLE');assert.match(String(s.c.state.errorDetail),/wallet/);
+ const t=setup({op:null,server:{bot_account_prepare_transfer:()=>{throw Error('rpc 502');}}});await ready(t);
+ await t.c.prepare('FUNDING','5','POLYMARKET');
+ assert.equal(t.c.state.error,'SOURCE_HTTP');assert.match(String(t.c.state.errorDetail),/prepare_transfer: rpc 502/);
+ await t.c.refresh();assert.equal(t.c.state.error,null);assert.equal(t.c.state.errorDetail,null);
+});
