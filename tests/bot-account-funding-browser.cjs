@@ -66,10 +66,14 @@ function mmOp(state,extra={}){
   const box=page.locator('#botAccountBox');await box.getByRole('button',{name:'Обновить',exact:true}).first().waitFor();return {page,box};};
  const mutations=()=>calls.filter(c=>/prepare_transfer|begin_wallet|attach_tx|wallet_outcome|cancel_unsent|submit_transfer/.test(c.name)).length;
 
- // 1. The production operation 65ce28bd: explained with the FRESH source balance, no spinner.
+ // 1. Past refusals stay in private history and are not reintroduced on the main account screen.
  operations=[expired];current=null;
  let {page,box}=await open();
- await box.getByText('Пополнение 75 pUSD не выполнено.',{exact:false}).waitFor();
+ assert.doesNotMatch(await box.innerText(),/Мои операции и ставки|Пополнение 75 pUSD|На исходном кошельке/);
+ await box.getByRole('button',{name:'Настройки',exact:true}).click();
+ const settings=page.getByRole('dialog',{name:'Настройки'});
+ await settings.waitFor();assert.equal(await settings.locator('input').inputValue(),'10');
+ await settings.getByRole('button',{name:'Закрыть'}).click();assert.equal(await settings.count(),0);
  await page.evaluate(()=>showWalletPairing('metamask://connect/mwp?p='+'A'.repeat(700)));
  const pair=page.getByRole('dialog',{name:'Подключение MetaMask'});
  await pair.waitFor();assert.ok((await pair.locator('canvas').evaluate(c=>c.width))>0);
@@ -78,12 +82,10 @@ function mmOp(state,extra={}){
  await page.evaluate(()=>showWalletPairing(null));assert.equal(await pair.count(),0);
  await page.evaluate(()=>showWalletPairing('https://untrusted.example/connect/mwp?p=AAA'));
  assert.equal(await page.getByRole('dialog',{name:'Подключение MetaMask'}).count(),0);
- const text=await box.innerText();
- assert.match(text,/На исходном кошельке 72\.554481 pUSD на момент проверки/);assert.match(text,/Деньги не списаны\. Выберите меньшую сумму или пополните исходный кошелёк/);
  await box.locator('.ba-bar').waitFor({state:'detached',timeout:5000});           // the read finishes…
  await page.waitForTimeout(6000);assert.equal(await box.locator('.ba-bar').count(),0,'screen must not spin after REJECTED'); // …and no poll restarts it
  assert.equal(calls.filter(c=>c.name==='bot_account_operation').length,0,'a terminal operation is not polled');
- await page.screenshot({path:path.join(out,'01-rejected-75-explained.png'),fullPage:true});
+ await page.screenshot({path:path.join(out,'01-old-refusal-hidden.png'),fullPage:true});
 
  // 2. Compact source menu: 75 from Polymarket is refused before any request or wallet.
  await box.getByRole('button',{name:'Пополнить',exact:true}).first().click();
@@ -126,20 +128,22 @@ function mmOp(state,extra={}){
 
  // 4. Reloads in every waiting state: right status, only reads, wallet untouched, "Обновить" creates nothing.
  const cases=[['WALLET_PENDING',{reason:'WALLET_PENDING'},/Ждём подтверждения в кошельке/],['UNKNOWN',{reason:'WALLET_RESPONSE_LOST'},/Исход уточняется — повторный перевод не отправляется/],
-  ['REJECTED',{reason:'NOT_SENT_GAS_LOW'},/Пополнение 10 pUSD не выполнено\..*Деньги не списаны/s],['AWAITING_SIGNATURE',{},/Перевод готов — подтвердите в MetaMask/],['PENDING',{},/Проверяем баланс источника/]];
+  ['REJECTED',{reason:'NOT_SENT_GAS_LOW'},null],['AWAITING_SIGNATURE',{},/Перевод готов — подтвердите в MetaMask/],['PENDING',{},/Проверяем баланс источника/]];
  for(const [state,extra,expected] of cases){
   current=mmOp(state,extra);operations=[current];const before=mutations();
-  ({page,box}=await open());await box.getByText(expected).first().waitFor();
+  ({page,box}=await open());if(expected)await box.getByText(expected).first().waitFor();
+  else assert.doesNotMatch(await box.innerText(),/Пополнение 10 pUSD не выполнено|Мои операции и ставки/);
   await box.getByRole('button',{name:'Обновить',exact:true}).first().click();await page.waitForTimeout(300);
   assert.equal(mutations(),before,state+': refresh must not create or send');assert.deepEqual(await page.evaluate(()=>window.__walletMethods),[],state);
   await page.screenshot({path:path.join(out,'04-reload-'+state.toLowerCase()+'.png'),fullPage:true});
-  if(state==='UNKNOWN'){const reads=calls.filter(c=>c.name==='bot_account_operation').length;await page.waitForTimeout(5600);
-   assert.ok(calls.filter(c=>c.name==='bot_account_operation').length>reads,'unfinished operation is re-read automatically');assert.equal(mutations(),before);}
+  if(state==='UNKNOWN'){const reads=calls.filter(c=>c.name==='bot_account_operation').length,head=await box.locator('.ba-head').elementHandle();await page.waitForTimeout(5600);
+   assert.ok(calls.filter(c=>c.name==='bot_account_operation').length>reads,'unfinished operation is re-read automatically');assert.equal(mutations(),before);
+   assert.equal(await head.evaluate(el=>el.isConnected),true,'unchanged poll must not replace the profile card');}
   await page.close();
  }
  assert.deepEqual(errors,[]);
  assert.ok(calls.filter(x=>x.name.startsWith('bot_account_')).every(x=>x.body.p_init_data==='FIXTURE_A_NOT_REAL_AUTH'));
- fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({offline:true,errors,rpcCalls:calls.length,scenarios:['rejected-75-explained-with-fresh-balance','compact-source-menu','75-over-72.554481-refused-before-request','metamask-0-pusd-refused','metamask-review-network-transaction','wallet-never-answers-wallet-pending','exact-erc20-transfer','reload-wallet-pending','reload-unknown-auto-reread','reload-rejected','reload-awaiting','reload-checking','refresh-read-only'],physicalWallet:'NOT_OBSERVED'},null,2)+'\n');
+ fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({offline:true,errors,rpcCalls:calls.length,scenarios:['old-refusal-hidden','settings-modal','unchanged-poll-keeps-profile-dom','compact-source-menu','75-over-72.554481-refused-before-request','metamask-0-pusd-refused','metamask-review-network-transaction','wallet-never-answers-wallet-pending','exact-erc20-transfer','reload-wallet-pending','reload-unknown-auto-reread','reload-rejected-hidden','reload-awaiting','reload-checking','refresh-read-only'],physicalWallet:'NOT_OBSERVED'},null,2)+'\n');
  console.log(JSON.stringify({ok:true,artifacts:out,errors}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -130,7 +130,8 @@ test('refresh on PENDING / WALLET_PENDING / UNKNOWN / REJECTED only reads and ne
   const o={...mmOperation('10000000',state),...(state==='AWAITING_SIGNATURE'?{}:{challenge:null})};
   const s=setup({op:o});await s.c.refresh();await s.c.refresh();
   assert.ok(s.names().every(n=>['bot_account_get','bot_account_history','bot_account_operation'].includes(n)),state);
-  assert.deepEqual(s.walletCalls,[]);assert.equal(s.c.state.operation.state,state);
+  assert.deepEqual(s.walletCalls,[]);
+  assert.equal(s.c.state.operation?.state||null,state==='REJECTED'?null:state);
  }
 });
 test('status keys: checking, MetaMask awaiting, wallet pending, refused funding',()=>{

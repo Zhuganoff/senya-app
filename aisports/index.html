@@ -998,10 +998,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v134"></script>
-<script src="wallet-connect.js?v=v134"></script>
+<script src="bot-account.js?v=v135"></script>
+<script src="wallet-connect.js?v=v135"></script>
 <script>
-const BUILD = "v134";
+const BUILD = "v135";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2885,11 +2885,10 @@ let botLastPoll = 0;
 function botAccountPoll(){
   ensurePrivateSession();
   if (document.hidden || !wvInit() || Date.now()-botLastPoll < 5000 || botAccountController.state.busy) return;
-  botLastPoll = Date.now(); window.__botAccountUI.refresh();
+  botLastPoll = Date.now(); window.__botAccountUI.backgroundRefresh();
 }
 document.addEventListener("visibilitychange", botAccountPoll);
 window.addEventListener("pageshow", botAccountPoll);
-setInterval(botAccountPoll,10000);
 async function initWalletView(bound){
   const inp = document.getElementById("apiKeyInput"), btn = document.getElementById("saveApiKey"), apiState = document.getElementById("apiState");
   window.__wv = {session: bound, view: null, server: null, gen: 0};

@@ -208,15 +208,31 @@
           const h = await this.call(c,"bot_account_history");
           if (!Array.isArray(h.operations)) fail("INVALID_HISTORY");
           const unfinished=h.operations.find(o=>!TERMINAL.has(o.state));
-          // After a refused funding the screen explains it (amount, fresh source balance, no debit) instead of spinning.
-          const lastFunding=h.operations.find(o=>o.kind==="FUNDING"), shown=unfinished||(lastFunding&&lastFunding.state==="REJECTED"?lastFunding:null);
-          this.paint(c,{history:h.operations,...(!this.state.operation&&shown?{operation:shown}:{})});
+          // Resume only unfinished work. Old refusals belong in the future history screen, not the wallet card.
+          const current=this.state.operation;
+          this.paint(c,{history:h.operations,operation:unfinished||current||null});
           if (this.state.operation && !TERMINAL.has(this.state.operation.state)) {
             this.adopt(c,await this.call(c,"bot_account_operation",{p_operation_id:this.state.operation.operation_id}));
           }
         }
         return r;
       });
+    }
+    async pollOperation(id) {
+      let c;
+      try {
+        c=this.context();
+        if(this.state.busy||this._runningContext||this.state.operation?.operation_id!==id)return false;
+        this._runningContext=c;
+        const r=await this.call(c,"bot_account_operation",{p_operation_id:id});
+        if(!r.operation||r.operation.operation_id!==id)fail("OPERATION_MISMATCH");
+        if(this.state.operation?.operation_id!==id)return false;
+        if(JSON.stringify(r.operation)!==JSON.stringify(this.state.operation))this.adopt(c,r);
+        return TERMINAL.has(r.operation.state);
+      }catch(e){
+        if(c&&this.alive(c)&&this.state.error!==errorCode(e))this.paint(c,{error:errorCode(e)});
+        return false;
+      }finally{if(c&&this._runningContext===c)this._runningContext=null;}
     }
     async create(accepted) {
       return this.run(async c => {
@@ -432,7 +448,7 @@
     create:["Создать торговый счёт","Create trading account","创建交易账户"], retryCreate:["Повторить создание","Retry account creation","重试创建账户"], connect:["Подключить MetaMask","Connect MetaMask","连接 MetaMask"],
     connectHint:["В браузере подключится расширение MetaMask. В Telegram на компьютере используйте QR для MetaMask на телефоне; расширение Chrome внутри Telegram недоступно. На телефоне подтвердите подключение в приложении MetaMask и вернитесь сюда.","A browser can connect to the MetaMask extension. In desktop Telegram, use the QR code with MetaMask on your phone; Chrome extensions are unavailable inside Telegram. On mobile, approve in MetaMask and return here.","浏览器可连接 MetaMask 扩展。桌面 Telegram 请用手机 MetaMask 扫描二维码，Telegram 内不能使用 Chrome 扩展。手机上请在 MetaMask 确认后返回。"],
     refresh:["Обновить","Refresh","刷新"], fund:["Пополнить","Add funds","充值"], withdraw:["Вывести","Withdraw","提现"],
-    settings:["Настройки","Settings","设置"], stop:["Остановить новые ставки","Stop new bets","停止新投注"], enable:["Включить автоставки","Enable auto-bets","启用自动投注"],
+    settings:["Настройки","Settings","设置"], close:["Закрыть","Close","关闭"], stop:["Остановить новые ставки","Stop new bets","停止新投注"], enable:["Включить автоставки","Enable auto-bets","启用自动投注"],
     amount:["Сумма pUSD","Amount in pUSD","pUSD 金额"], prepare:["Проверить перевод","Review transfer","检查转账"], sign:["Подтвердить в кошельке","Confirm in wallet","在钱包中确认"],
     transferAccept:["Проверил сумму и оба счёта. Подпись разрешает движение денег.","I checked the amount and both accounts. This signature authorizes moving funds.","我已核对金额与两个账户，此签名授权资金转移。"],
     transferSigning:["Вы подписываете сообщение. Сетевую транзакцию отправляет сервис.","You sign a message. The service submits the network transaction.","您签署消息，由服务提交链上交易。"],
@@ -587,7 +603,7 @@
   }
   function mount({root,controller,lang="ru"}) {
     const doc=root.ownerDocument, tr=k=>textFor(copy,k,lang), stateText=k=>textFor(states,k,lang),reasonText=k=>textFor(reasons,k,lang),kindText=k=>textFor(kinds,k,lang);
-    let transferKind=null, inputAmount="", settingsOpen=false, percent="", enableOpen=false, lastAccount=null, lastAvailable=null, fundingSource="POLYMARKET", sourceMenuOpen=false, walletsOpen=false, historyOpen=false, checksOpen=false, pollTimer=null;
+    let transferKind=null, inputAmount="", settingsDialog=null, enableOpen=false, lastAccount=null, lastAvailable=null, fundingSource="POLYMARKET", sourceMenuOpen=false, walletsOpen=false, checksOpen=false, pollTimer=null;
     const fill=(text,vars)=>text.replace(/\{(\w)\}/g,(_,k)=>vars[k]??"—");
     function ensureStyles() {
       // Оформление блока живёт здесь, чтобы модуль оставался самодостаточным. Только токены витрины:
@@ -662,6 +678,9 @@
 .ba-picker-option{display:block;width:100%;border:0;border-radius:10px;padding:10px;text-align:left;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .ba-picker-option[aria-selected=true],.ba-picker-option:hover{background:var(--tint1,rgba(56,189,248,.12))}
 .ba-picker-option small{display:block;margin-top:2px;color:var(--mut,#7d8eaa)}
+.ba-settings-dialog{width:min(360px,calc(100vw - 32px));max-width:none;padding:20px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);background:var(--card-2,#1a2231);color:var(--txt,#fff);box-shadow:0 18px 70px rgba(0,0,0,.45)}
+.ba-settings-dialog::backdrop{background:rgba(2,8,20,.7);backdrop-filter:blur(6px)}
+.ba-settings-dialog h3{margin:0 0 12px;font-size:18px}.ba-settings-dialog .ba-settings-actions{display:flex;gap:8px;margin-top:16px}.ba-settings-dialog .ba-settings-actions button{flex:1}
 @media (prefers-reduced-motion:reduce){.ba-pill.live i,.ba-amount.up,.ba-note.ok,.ba-bar::after{animation:none}}
 `;
       doc.head.appendChild(st);
@@ -727,6 +746,17 @@
       wrap.append(left,track); return wrap;
     }
     function consent(label) {const wrap=el("label",null,"me-sub"), check=el("input");check.type="checkbox";wrap.append(check,doc.createTextNode(" "+label));return {wrap,check};}
+    function closeSettings(){if(settingsDialog){settingsDialog.close();settingsDialog.remove();settingsDialog=null;}}
+    function openSettings(a){
+      closeSettings();
+      const dialog=el("dialog",null,"ba-settings-dialog"), label=el("label",tr("maxStake"),"me-sub"),input=el("input",null,"binput"),actions=el("div",null,"ba-settings-actions");
+      input.type="text";input.inputMode="decimal";input.value=String(a.policy.max_stake_bps/100);label.append(input);
+      dialog.setAttribute("aria-label",tr("settings"));
+      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const r=await controller.settings(input.value);if(r)closeSettings();},false,true);
+      actions.append(cancel,save);dialog.append(el("h3",tr("settings")),label,actions);
+      dialog.onclose=()=>{dialog.remove();if(settingsDialog===dialog)settingsDialog=null;};
+      doc.body.append(dialog);settingsDialog=dialog;dialog.showModal();input.focus();
+    }
     function paint(s) {
       ensureStyles();
       root.style.display="block"; const view=doc.createDocumentFragment();
@@ -750,7 +780,7 @@
         }
         view.append(button(tr("refresh"),()=>controller.refresh(),s.busy));return;
       }
-      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;lastAvailable=null;sourceMenuOpen=false;walletsOpen=false;historyOpen=false;checksOpen=false;}
+      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";closeSettings();enableOpen=false;lastAvailable=null;sourceMenuOpen=false;walletsOpen=false;checksOpen=false;}
       const av=(a.balance&&a.balance.available_units)||"0";
       const units=x=>/^(0|[1-9][0-9]*)$/.test(String(x||""))?BigInt(x):null;   // отрисовка не должна падать на пустом балансе
       const nowU=units(av), prevU=units(lastAvailable);
@@ -765,28 +795,23 @@
       if(a.reason&&a.reason!=="NO_SIGNAL")view.append(line(lang==="ru"?"Причина":"Reason",reasonText(a.reason)));
       const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral, o=s.operation;
       const unfinished=o&&!TERMINAL.has(o.state), interactive=o&&INTERACTIVE.has(o.state), hasFunds=!!(a.balance&&/^[1-9][0-9]*$/.test(a.balance.available_units));
-      const openTransfer=kind=>{transferKind=kind;settingsOpen=false;sourceMenuOpen=false;paint(s);};
+      const openTransfer=kind=>{transferKind=kind;closeSettings();sourceMenuOpen=false;paint(s);};
       const actions=compactRow();compactButton(actions,tr("refresh"),()=>controller.refresh(),s.busy);
       if(a.state==="ERROR"&&a.reason==="PROVIDER_ACCESS_DENIED")compactButton(actions,tr("retryCreate"),()=>controller.retryProvision(),s.busy);
       if(ready){
-        if(hasFunds||unfinished||transferKind||settingsOpen)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!interactive);
+        if(hasFunds||unfinished||transferKind)compactButton(actions,tr("fund"),()=>openTransfer("FUNDING"),s.busy||!!interactive);
         compactButton(actions,tr("withdraw"),()=>openTransfer("WITHDRAW"),s.busy||!!unfinished||!hasFunds);
-        if(a.policy)compactButton(actions,tr("settings"),()=>{settingsOpen=!settingsOpen;transferKind=null;percent=String(a.policy.max_stake_bps/100);paint(s);},s.busy||!!interactive);
+        if(a.policy)compactButton(actions,tr("settings"),()=>openSettings(a),s.busy);
       }
       const tail=()=>{                                          // вспомогательные кнопки уходят под главный элемент управления
-        if(ready&&!hasFunds&&!interactive&&!transferKind&&!settingsOpen)view.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
+        if(ready&&!hasFunds&&!interactive&&!transferKind)view.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
         view.append(actions);
       };
       if(a.policy) {
-        if(settingsOpen)view.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
-        if(settingsOpen) {
-          const label=el("label",tr("maxStake"),"me-sub"), input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.value=percent;input.oninput=()=>{percent=input.value;};label.append(input);view.append(label);
-          view.append(button(tr("save"),()=>controller.settings(percent),s.busy,true));
-        }
         const on=!!a.policy.enabled;
         // Выключение доступно ВСЕГДА (запрет новых ставок не должен ждать операций): причины блокируют только включение.
         const blocked=on?null:(s.busy?null:!ready?tr("autoNeedReady"):interactive?tr("autoBusyOp"):!hasFunds?tr("autoNeedFunds"):null);
-        const switchIsPrimary=!on&&!blocked&&!s.busy&&!enableOpen&&!transferKind&&!settingsOpen;
+        const switchIsPrimary=!on&&!blocked&&!s.busy&&!enableOpen&&!transferKind;
         view.append(switchRow(on,s.busy||!!blocked,checked=>{
           if(!checked){enableOpen=false;controller.stop();return;}      // выключение — сразу, без подтверждения
           enableOpen=true;paint(s);                                     // включение — показать правило и подтвердить
@@ -827,7 +852,7 @@
           }
         }
         const label=el("label",tr("amount"),"me-sub"),input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);view.append(label);
-        view.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount,transferKind==="FUNDING"?fundingSource:undefined);if(result){transferKind=null;inputAmount="";}},s.busy,true));
+        view.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount,transferKind==="FUNDING"?fundingSource:undefined);if(result){transferKind=null;inputAmount="";paint(controller.state);}},s.busy,true));
       }
       if(o&&!transferKind) {
         const viaWallet=o.kind==="FUNDING"&&o.source_kind==="METAMASK";
@@ -855,31 +880,13 @@
           const c=consent(tr("transferAccept"));view.append(c.wrap,button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy || o.fee_units==null,true));
         }
         if(o.kind==="FUNDING"&&o.state==="REJECTED"){
-          // Честный итог отказа: сумма, свежий остаток выбранного источника (не зашит в интерфейс), деньги не списаны.
-          const snap=sourceOf(a,o.source_kind||"POLYMARKET");
-          const at=snap?fill(tr("srcAtCheck"),{b:formatUnits(snap.balance_units),t:snap.checked_at?new Date(snap.checked_at).toLocaleString(lang):"—"}):tr("srcAtCheckNone");
-          view.append(note((o.reason?reasonText(o.reason)+". ":"")+fill(tr("failedFunding"),{a:formatUnits(o.amount_units)})+" "+at+" "+tr("notDebited"),"bad"));
+          view.append(note(reasonText(o.reason||"REJECTED")+" · "+tr("noMoneyMoved"),"bad"));
         } else if(o.reason){
           const bad=o.state==="REJECTED"||o.state==="FAILED"||o.state==="EXPIRED_UNSENT";
           view.append(note(reasonText(o.reason)+(bad?" · "+tr("noMoneyMoved"):""),bad?"bad":"wait"));
         }
       }
-      // Владелец 24.09: в списке — только деньги и ставки. Технические шаги счёта (создание, подготовка разрешений)
-      // пользователю не нужны: их исход и так виден состоянием счёта и причиной наверху.
-      const TECH=new Set(["PROVISION","APPROVE"]);
-      const shown=s.history.filter(h=>h.operation_id!==o?.operation_id&&(!TECH.has(h.kind)||h.amount_units!=null&&h.amount_units!=="0"));
-      if(shown.length){
-      const history=el("details",null,"ba-fold");history.open=historyOpen;history.ontoggle=()=>{historyOpen=history.open;};
-      history.append(el("summary",tr("history")));
-      for(const h of shown.slice(0,100)) {
-        const d=el("details"), title=[h.match||h.match_name||kindText(h.kind),stateText(opStateKey(h)),h.amount_units!=null?formatUnits(h.amount_units)+" pUSD":null].filter(Boolean).join(" · ");d.append(el("summary",title));
-        for(const [key,label] of [["side",lang==="ru"?"Сторона":"Side"],["market_family",lang==="ru"?"Рынок":"Market"],["average_price",lang==="ru"?"Средняя цена исполнения, pUSD за долю":"Average fill price, pUSD/share"],["fee_units",tr("fees")],["realized_pnl_units",tr("pnl")],["created_at",lang==="ru"?"Время":"Time"],["reason",lang==="ru"?"Причина":"Reason"]]) if(h[key]!=null)d.append(line(label,key==="fee_units"?formatUnits(h[key])+" pUSD":key==="realized_pnl_units"?signedUnits(h[key])+" pUSD":String(h[key])));
-        if(h.result)d.append(line(lang==="ru"?"Исполнение":"Execution",h.result==="FILLED"?(lang==="ru"?"Ставка исполнена":"Order filled"):h.result==="SETTLED"?(lang==="ru"?"Выплата подтверждена":"Payout confirmed"):h.result));
-        if(h.order_id)d.append(addressLine(lang==="ru"?"Ордер":"Order",h.order_id));if(h.tx_hash)d.append(addressLine(lang==="ru"?"Транзакция":"Transaction",h.tx_hash));
-        if(UUID.test(h.operation_id))d.append(button(tr("details"),()=>controller.openOperation(h.operation_id),s.busy));history.append(d);
-      }
-      view.append(history);
-      }
+      // Past deposits, withdrawals and bets will have their own history screen.
       if(Array.isArray(a.latest_decisions)&&a.latest_decisions.length){
         const checks=el("details",null,"ba-fold");checks.open=checksOpen;checks.ontoggle=()=>{checksOpen=checks.open;};
         checks.append(el("summary",lang==="ru"?"Последние проверки ставок":lang==="zh"?"最近投注检查":"Recent bet checks"));
@@ -896,10 +903,14 @@
     function schedulePoll(s) {
       const win=doc.defaultView; if(pollTimer){win.clearTimeout(pollTimer);pollTimer=null;}
       const o=s.operation;
-      if(!s.busy&&s.account&&o&&!TERMINAL.has(o.state)&&o.state!=="AWAITING_SIGNATURE")pollTimer=win.setTimeout(()=>{pollTimer=null;controller.refresh();},5000);
+      if(!s.busy&&s.account&&o&&!TERMINAL.has(o.state)&&o.state!=="AWAITING_SIGNATURE")pollTimer=win.setTimeout(async()=>{
+        pollTimer=null;const terminal=await controller.pollOperation(o.operation_id);
+        if(terminal)await controller.refresh();
+        else schedulePoll(controller.state);
+      },5000);
     }
     controller.render=paint;controller.reset();
-    return {refresh:()=>controller.refresh(),reset:()=>{transferKind=null;inputAmount="";settingsOpen=false;percent="";enableOpen=false;lastAccount=null;controller.reset();},controller};
+    return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferKind||settingsDialog?null:controller.refresh(),reset:()=>{transferKind=null;inputAmount="";closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
   return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,stateLabel,mount};
 });
