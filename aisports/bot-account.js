@@ -451,6 +451,8 @@
     connectHint:["В браузере подключится расширение MetaMask. В Telegram на компьютере используйте QR для MetaMask на телефоне; расширение Chrome внутри Telegram недоступно. На телефоне подтвердите подключение в приложении MetaMask и вернитесь сюда.","A browser can connect to the MetaMask extension. In desktop Telegram, use the QR code with MetaMask on your phone; Chrome extensions are unavailable inside Telegram. On mobile, approve in MetaMask and return here.","浏览器可连接 MetaMask 扩展。桌面 Telegram 请用手机 MetaMask 扫描二维码，Telegram 内不能使用 Chrome 扩展。手机上请在 MetaMask 确认后返回。"],
     refresh:["Обновить","Refresh","刷新"], fund:["Пополнить","Add funds","充值"], withdraw:["Вывести","Withdraw","提现"],
     settings:["Настройки","Settings","设置"], close:["Закрыть","Close","关闭"], stop:["Остановить новые ставки","Stop new bets","停止新投注"], enable:["Включить автоставки","Enable auto-bets","启用自动投注"],
+    transferStepAmount:["Шаг 1 · Сумма","Step 1 · Amount","第 1 步 · 金额"], transferStepReview:["Шаг 2 · Проверка","Step 2 · Review","第 2 步 · 核对"],
+    transferStepStatus:["Статус перевода","Transfer status","转账状态"], transferOpen:["Открыть","Open","打开"],
     amount:["Сумма pUSD","Amount in pUSD","pUSD 金额"], prepare:["Проверить перевод","Review transfer","检查转账"], sign:["Подтвердить в кошельке","Confirm in wallet","在钱包中确认"],
     transferAccept:["Проверил сумму и оба счёта. Подпись разрешает движение денег.","I checked the amount and both accounts. This signature authorizes moving funds.","我已核对金额与两个账户，此签名授权资金转移。"],
     transferSigning:["Вы подписываете сообщение. Сетевую транзакцию отправляет сервис.","You sign a message. The service submits the network transaction.","您签署消息，由服务提交链上交易。"],
@@ -605,7 +607,7 @@
   }
   function mount({root,controller,lang="ru"}) {
     const doc=root.ownerDocument, tr=k=>textFor(copy,k,lang), stateText=k=>textFor(states,k,lang),reasonText=k=>textFor(reasons,k,lang),kindText=k=>textFor(kinds,k,lang);
-    let transferKind=null, inputAmount="", settingsDialog=null, enableOpen=false, lastAccount=null, lastAvailable=null, fundingSource="POLYMARKET", sourceMenuOpen=false, walletsOpen=false, checksOpen=false, pollTimer=null;
+    let transferKind=null, transferDialog=null, inputAmount="", settingsDialog=null, enableOpen=false, lastAccount=null, lastAvailable=null, fundingSource="POLYMARKET", sourceMenuOpen=false, walletsOpen=false, checksOpen=false, pollTimer=null;
     const fill=(text,vars)=>text.replace(/\{(\w)\}/g,(_,k)=>vars[k]??"—");
     function ensureStyles() {
       // Оформление блока живёт здесь, чтобы модуль оставался самодостаточным. Только токены витрины:
@@ -680,6 +682,34 @@
 .ba-picker-option{display:block;width:100%;border:0;border-radius:10px;padding:10px;text-align:left;background:transparent;color:inherit;font:inherit;cursor:pointer}
 .ba-picker-option[aria-selected=true],.ba-picker-option:hover{background:var(--tint1,rgba(56,189,248,.12))}
 .ba-picker-option small{display:block;margin-top:2px;color:var(--mut,#7d8eaa)}
+.ba-transfer-dialog{box-sizing:border-box;width:min(420px,calc(100vw - 24px));max-width:none;max-height:min(640px,calc(100dvh - 24px));
+  margin:auto;overflow:auto;padding:18px;border:1px solid var(--line,rgba(255,255,255,.1));
+  border-radius:var(--r-l,20px);background:var(--card-2,#1a2231);color:var(--txt,#fff);
+  box-shadow:0 24px 80px rgba(0,0,0,.55);font-family:inherit}
+.ba-transfer-dialog::backdrop{background:rgba(2,8,20,.78);backdrop-filter:blur(9px)}
+.ba-transfer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+.ba-transfer-head h3{font-size:21px;line-height:1.15;letter-spacing:-.02em;margin:2px 0 0}
+.ba-transfer-step{font-size:11px;color:var(--mut,#7d8eaa);font-weight:650;letter-spacing:.05em;text-transform:uppercase}
+.ba-transfer-close{border:1px solid var(--line,rgba(255,255,255,.1));border-radius:50%;background:var(--card-3,#212b3d);
+  color:inherit;font:inherit;font-size:19px;line-height:1;width:32px;height:32px;cursor:pointer;flex:0 0 auto}
+.ba-transfer-dialog .ba-picker{margin-top:6px}
+.ba-transfer-dialog .ba-picker-toggle{padding:12px}
+.ba-transfer-input{display:block;margin-top:14px}
+.ba-transfer-input .binput{width:100%;box-sizing:border-box;font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;
+  margin-top:7px;padding:10px 12px;letter-spacing:-.025em}
+.ba-transfer-actions{position:sticky;bottom:-18px;display:flex;gap:8px;background:var(--card-2,#1a2231);
+  margin:16px -18px -18px;padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid var(--line,rgba(255,255,255,.07))}
+.ba-transfer-actions button{margin:0;flex:1}
+.ba-transfer-dialog .ba-amount{font-size:32px}
+.ba-transfer-dialog .ba-rows{margin-top:12px}
+.ba-review-address{font-size:11px;line-height:1.35;overflow-wrap:anywhere;color:var(--txt-2,#b8c4d6);font-variant-numeric:tabular-nums}
+.ba-transfer-status{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;
+  padding:10px 12px;background:var(--card-2,#1a2231);border-radius:var(--r-m,14px);
+  border:1px solid var(--line,rgba(255,255,255,.07));font-size:12px}
+.ba-transfer-status button{border:0;background:transparent;color:var(--accent,#38bdf8);font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+@media(max-width:600px){.ba-transfer-dialog{width:100vw;max-height:calc(100dvh - 16px);margin:auto auto 0;
+  border-radius:22px 22px 0 0;border-bottom:0;padding:20px}}
 .ba-settings-dialog{width:min(360px,calc(100vw - 32px));max-width:none;padding:20px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);background:var(--card-2,#1a2231);color:var(--txt,#fff);box-shadow:0 18px 70px rgba(0,0,0,.45)}
 .ba-settings-dialog::backdrop{background:rgba(2,8,20,.7);backdrop-filter:blur(6px)}
 .ba-settings-dialog h3{margin:0 0 12px;font-size:18px}.ba-settings-dialog .ba-settings-actions{display:flex;gap:8px;margin-top:16px}.ba-settings-dialog .ba-settings-actions button{flex:1}
@@ -749,6 +779,92 @@
     }
     function consent(label) {const wrap=el("label",null,"me-sub"), check=el("input");check.type="checkbox";wrap.append(check,doc.createTextNode(" "+label));return {wrap,check};}
     function closeSettings(){if(settingsDialog){settingsDialog.close();settingsDialog.remove();settingsDialog=null;}}
+    function closeTransfer(){if(transferDialog){transferDialog.close();transferDialog.remove();transferDialog=null;}transferKind=null;inputAmount="";sourceMenuOpen=false;}
+    function openTransferDialog(){
+      if(transferDialog)return;
+      const dialog=el("dialog",null,"ba-transfer-dialog");
+      dialog.onclose=()=>{dialog.remove();if(transferDialog===dialog){transferDialog=null;transferKind=null;inputAmount="";sourceMenuOpen=false;}};
+      doc.body.append(dialog);transferDialog=dialog;dialog.showModal();
+    }
+    function paintTransfer(s){
+      if(!transferDialog||!s.account)return;
+      const a=s.account,o=s.operation;
+      const draft=!!transferKind&&(!o||(transferKind==="WITHDRAW"?TERMINAL.has(o.state):!INTERACTIVE.has(o.state)));
+      const kind=draft?transferKind:o&&o.kind;
+      const body=el("div"),header=el("div",null,"ba-transfer-head"),heading=el("div");
+      heading.append(el("div",tr(draft?"transferStepAmount":o&&o.state==="AWAITING_SIGNATURE"?"transferStepReview":"transferStepStatus"),"ba-transfer-step"),
+        el("h3",kind?tr(kind==="FUNDING"?"fund":"withdraw"):tr("details")));
+      const close=el("button","×","ba-transfer-close");close.type="button";close.setAttribute("aria-label",tr("close"));close.onclick=closeTransfer;
+      header.append(heading,close);body.append(header);
+      transferDialog.setAttribute("aria-label",kind?tr(kind==="FUNDING"?"fund":"withdraw"):tr("details"));
+      const fc=s.fundingCheck;
+      if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)body.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" pUSD",n:formatUnits(fc.needed_units)+" pUSD"}),"bad"));
+      else if(s.error)body.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped")),"bad"));
+      if(draft){
+        if(transferKind==="FUNDING"){
+          body.append(el("div",tr("srcChoose"),"ba-cap"));
+          const picker=el("div",null,"ba-picker"),chosen=sourceOf(a,fundingSource);
+          const selectedName=tr(fundingSource==="POLYMARKET"?"srcPolymarket":"srcMetaMask");
+          const toggle=el("button",null,"ba-picker-toggle");toggle.type="button";toggle.setAttribute("aria-expanded",String(sourceMenuOpen));
+          toggle.setAttribute("aria-label",tr("srcChoose"));
+          toggle.append(el("strong",selectedName+"  ⌄"),el("span",chosen?tr("availableSrc")+": "+formatUnits(chosen.available_units)+" pUSD":tr("srcUnchecked")));
+          toggle.onclick=()=>{sourceMenuOpen=!sourceMenuOpen;paintTransfer(s);};picker.append(toggle);
+          if(sourceMenuOpen){
+            const menu=el("div",null,"ba-picker-menu");menu.setAttribute("role","listbox");menu.setAttribute("aria-label",tr("srcChoose"));
+            for(const source of SOURCES){
+              const snap=sourceOf(a,source),option=el("button",null,"ba-picker-option");option.type="button";option.setAttribute("role","option");
+              option.setAttribute("aria-selected",String(fundingSource===source));
+              option.append(doc.createTextNode(tr(source==="POLYMARKET"?"srcPolymarket":"srcMetaMask")),el("small",snap?tr("availableSrc")+": "+formatUnits(snap.available_units)+" pUSD":tr("srcUnchecked")));
+              option.onclick=()=>{fundingSource=source;sourceMenuOpen=false;paintTransfer(s);};menu.append(option);
+            }
+            picker.append(menu);
+          }
+          body.append(picker);
+          if(chosen){
+            const fresh=chosen.fresh===true&&Date.parse(chosen.checked_at)>Date.now()-SNAPSHOT_MAX_AGE;
+            const warning=!fresh?tr("srcStale"):fundingSource==="METAMASK"&&chosen.balance_units==="0"?tr("srcNoPusd"):
+              fundingSource==="METAMASK"&&!(/^[0-9]+$/.test(String(chosen.pol_wei))&&BigInt(chosen.pol_wei)>=MIN_GAS_WEI)?tr("srcNoGas"):
+              fundingSource==="POLYMARKET"&&chosen.owner_ok===false?tr("srcOwner"):null;
+            if(warning)body.append(note(warning,"wait"));
+          }
+        }else body.append(el("div",tr("available")+": "+formatUnits(a.balance&&a.balance.available_units)+" pUSD","ba-cap"));
+        const label=el("label",tr("amount"),"ba-transfer-input ba-cap"),input=el("input",null,"binput");
+        input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);body.append(label);
+        const actions=el("div",null,"ba-transfer-actions");
+        actions.append(button(tr("close"),closeTransfer),button(tr("prepare"),async()=>{
+          const result=await controller.prepare(transferKind,inputAmount,transferKind==="FUNDING"?fundingSource:undefined);
+          if(result){transferKind=null;inputAmount="";paint(controller.state);}
+        },s.busy,true));body.append(actions);
+      }else if(o){
+        const viaWallet=o.kind==="FUNDING"&&o.source_kind==="METAMASK";
+        body.append(statePill(stateText(opStateKey(o)),o.state==="CONFIRMED"?"on":o.state==="REJECTED"?"bad":"warn",!TERMINAL.has(o.state)));
+        if(o.intent&&!TERMINAL.has(o.state)){
+          const amt=el("div",null,"ba-amount");amt.append(doc.createTextNode(formatUnits(o.amount_units)),el("span"," pUSD"));
+          body.append(amt,el("div",tr("amount").replace(/\s*pUSD\s*$/i,""),"ba-cap"));
+          const rows=el("div",null,"ba-rows");
+          const addr=(label,value)=>{const row=el("div",null,"ba-wal"),left=el("div");
+            left.append(el("div",label,"n"),el("div",value||"—","ba-review-address"));row.append(left);
+            if(value)row.append(copyBtn(String(value),label));rows.append(row);};
+          addr(tr("source"),o.intent.source);addr(tr("recipient"),o.intent.recipient);
+          const pair=(label,value)=>{const row=el("div",null,"ba-row");row.append(el("div",label,"l"),el("div",value,"r"));rows.append(row);};
+          pair(lang==="ru"?"Сеть":lang==="zh"?"网络":"Network","Polygon · pUSD");
+          if(o.kind==="FUNDING")pair(tr("actionType"),tr(viaWallet?"actionTx":"actionSign"));
+          pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
+          body.append(rows,el("div",tr(viaWallet?"txSending":"transferSigning")+" "+tr("custodyShort"),"ba-foot"));
+        }
+        if(o.state==="AWAITING_SIGNATURE"){
+          const c=consent(tr("transferAccept")),actions=el("div",null,"ba-transfer-actions");body.append(c.wrap);
+          if(viaWallet){actions.append(button(tr("cancel"),()=>controller.cancelTransfer(),s.busy));
+            actions.append(button(tr("sendTx"),()=>controller.sendFromWallet(c.check.checked),s.busy,true));}
+          else actions.append(button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy||o.fee_units==null,true));
+          body.append(actions);
+        }
+        if(o.kind==="FUNDING"&&o.state==="REJECTED")body.append(note(reasonText(o.reason||"REJECTED")+" · "+tr("noMoneyMoved"),"bad"));
+        else if(o.reason){const bad=o.state==="REJECTED"||o.state==="FAILED"||o.state==="EXPIRED_UNSENT";
+          body.append(note(reasonText(o.reason)+(bad?" · "+tr("noMoneyMoved"):""),bad?"bad":"wait"));}
+      }
+      transferDialog.replaceChildren(body);
+    }
     function openSettings(a){
       closeSettings();
       const dialog=el("dialog",null,"ba-settings-dialog"), label=el("label",tr("maxStake"),"me-sub"),input=el("input",null,"binput"),actions=el("div",null,"ba-settings-actions");
@@ -782,7 +898,7 @@
         }
         view.append(button(tr("refresh"),()=>controller.refresh(),s.busy));return;
       }
-      if(lastAccount!==a.account_id){lastAccount=a.account_id;transferKind=null;inputAmount="";closeSettings();enableOpen=false;lastAvailable=null;sourceMenuOpen=false;walletsOpen=false;checksOpen=false;}
+      if(lastAccount!==a.account_id){lastAccount=a.account_id;closeTransfer();closeSettings();enableOpen=false;lastAvailable=null;walletsOpen=false;checksOpen=false;}
       const av=(a.balance&&a.balance.available_units)||"0";
       const units=x=>/^(0|[1-9][0-9]*)$/.test(String(x||""))?BigInt(x):null;   // отрисовка не должна падать на пустом балансе
       const nowU=units(av), prevU=units(lastAvailable);
@@ -797,7 +913,8 @@
       if(a.reason&&a.reason!=="NO_SIGNAL")view.append(line(lang==="ru"?"Причина":"Reason",reasonText(a.reason)));
       const ready=a.state==="READY"&&!!a.bot_deposit_wallet&&!!a.collateral, o=s.operation;
       const unfinished=o&&!TERMINAL.has(o.state), interactive=o&&INTERACTIVE.has(o.state), hasFunds=!!(a.balance&&/^[1-9][0-9]*$/.test(a.balance.available_units));
-      const openTransfer=kind=>{transferKind=kind;closeSettings();sourceMenuOpen=false;paint(s);};
+      const openTransfer=kind=>{transferKind=kind;closeSettings();sourceMenuOpen=false;openTransferDialog();paintTransfer(s);};
+      const openOperation=()=>{transferKind=null;closeSettings();openTransferDialog();paintTransfer(s);};
       const actions=compactRow();compactButton(actions,tr("refresh"),()=>controller.refresh(),s.busy);
       if(a.state==="ERROR"&&a.reason==="PROVIDER_ACCESS_DENIED")compactButton(actions,tr("retryCreate"),()=>controller.retryProvision(),s.busy);
       if(ready){
@@ -806,14 +923,14 @@
         if(a.policy)compactButton(actions,tr("settings"),()=>openSettings(a),s.busy);
       }
       const tail=()=>{                                          // вспомогательные кнопки уходят под главный элемент управления
-        if(ready&&!hasFunds&&!interactive&&!transferKind)view.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
+        if(ready&&!hasFunds&&!interactive)view.append(button(tr("fund"),()=>openTransfer("FUNDING"),s.busy,true));
         view.append(actions);
       };
       if(a.policy) {
         const on=!!a.policy.enabled;
         // Выключение доступно ВСЕГДА (запрет новых ставок не должен ждать операций): причины блокируют только включение.
         const blocked=on?null:(s.busy?null:!ready?tr("autoNeedReady"):interactive?tr("autoBusyOp"):!hasFunds?tr("autoNeedFunds"):null);
-        const switchIsPrimary=!on&&!blocked&&!s.busy&&!enableOpen&&!transferKind;
+        const switchIsPrimary=!on&&!blocked&&!s.busy&&!enableOpen;
         view.append(switchRow(on,s.busy||!!blocked,checked=>{
           if(!checked){enableOpen=false;controller.stop();return;}      // выключение — сразу, без подтверждения
           enableOpen=true;paint(s);                                     // включение — показать правило и подтвердить
@@ -825,69 +942,13 @@
         tail();
         if(on||a.reason==="USER_STOP")view.append(el("p",tr("stopInfo"),"ba-foot"));
       } else tail();
-      if(transferKind&&(!o||(transferKind==="WITHDRAW"?TERMINAL.has(o.state):!INTERACTIVE.has(o.state)))) {
-        if(transferKind==="FUNDING"){
-          view.append(el("div",tr("srcChoose"),"ba-cap"));
-          const picker=el("div",null,"ba-picker"), chosen=sourceOf(a,fundingSource);
-          const selectedName=tr(fundingSource==="POLYMARKET"?"srcPolymarket":"srcMetaMask");
-          const toggle=el("button",null,"ba-picker-toggle");toggle.type="button";toggle.setAttribute("aria-expanded",String(sourceMenuOpen));
-          toggle.setAttribute("aria-label",tr("srcChoose"));
-          toggle.append(el("strong",selectedName+"  ⌄"),el("span",chosen?tr("availableSrc")+": "+formatUnits(chosen.available_units)+" pUSD":tr("srcUnchecked")));
-          toggle.onclick=()=>{sourceMenuOpen=!sourceMenuOpen;paint(s);};picker.append(toggle);
-          if(sourceMenuOpen){
-            const menu=el("div",null,"ba-picker-menu");menu.setAttribute("role","listbox");menu.setAttribute("aria-label",tr("srcChoose"));
-            for(const kind of SOURCES){
-              const snap=sourceOf(a,kind), option=el("button",null,"ba-picker-option");option.type="button";option.setAttribute("role","option");
-              option.setAttribute("aria-selected",String(fundingSource===kind));
-              option.append(doc.createTextNode(tr(kind==="POLYMARKET"?"srcPolymarket":"srcMetaMask")),el("small",snap?tr("availableSrc")+": "+formatUnits(snap.available_units)+" pUSD":tr("srcUnchecked")));
-              option.onclick=()=>{fundingSource=kind;sourceMenuOpen=false;paint(s);};menu.append(option);
-            }
-            picker.append(menu);
-          }
-          view.append(picker);
-          if(chosen){
-            const fresh=chosen.fresh===true&&Date.parse(chosen.checked_at)>Date.now()-SNAPSHOT_MAX_AGE;
-            const warning=!fresh?tr("srcStale"):fundingSource==="METAMASK"&&chosen.balance_units==="0"?tr("srcNoPusd"):
-              fundingSource==="METAMASK"&&!(/^[0-9]+$/.test(String(chosen.pol_wei))&&BigInt(chosen.pol_wei)>=MIN_GAS_WEI)?tr("srcNoGas"):
-              fundingSource==="POLYMARKET"&&chosen.owner_ok===false?tr("srcOwner"):null;
-            if(warning)view.append(note(warning,"wait"));
-          }
-        }
-        const label=el("label",tr("amount"),"me-sub"),input=el("input",null,"binput");input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);view.append(label);
-        view.append(button(tr("prepare"),async()=>{const result=await controller.prepare(transferKind,inputAmount,transferKind==="FUNDING"?fundingSource:undefined);if(result){transferKind=null;inputAmount="";paint(controller.state);}},s.busy,true));
+      if(o&&!transferKind){
+        const strip=el("div",null,"ba-transfer-status");
+        strip.append(el("span",kindText(o.kind)+" · "+stateText(opStateKey(o))));
+        const details=el("button",tr("transferOpen"));details.type="button";details.onclick=openOperation;
+        strip.append(details);view.append(strip);
       }
-      if(o&&!transferKind) {
-        const viaWallet=o.kind==="FUNDING"&&o.source_kind==="METAMASK";
-        view.append(el("p",kindText(o.kind)+" · "+stateText(opStateKey(o)),"me-sub"));
-        if(o.intent&&!TERMINAL.has(o.state)) {
-          // Карточка сверки перед подписью: сумма крупно, откуда/куда полными копируемыми адресами, сеть и комиссия (задание §P1.5).
-          const rev=el("div"); const amt=el("div",null,"ba-amount");
-          amt.append(doc.createTextNode(formatUnits(o.amount_units)), el("span"," pUSD"));
-          rev.append(amt, el("div",tr("amount").replace(/\s*pUSD\s*$/i,""),"ba-cap"));
-          const rows=el("div",null,"ba-rows");
-          const addr=(label,value)=>{const r=el("div",null,"ba-wal"),left=el("div");
-            left.append(el("div",label,"n"), el("div",String(value||"").slice(0,6)+"…"+String(value||"").slice(-4),"a"));
-            r.append(left); if(value)r.append(copyBtn(String(value),label)); rows.append(r);};
-          addr(tr("source"),o.intent.source); addr(tr("recipient"),o.intent.recipient);
-          const pair=(l,v)=>{const r=el("div",null,"ba-row");r.append(el("div",l,"l"),el("div",v,"r"));rows.append(r);};
-          pair(lang==="ru"?"Сеть":lang==="zh"?"网络":"Network","Polygon · pUSD");
-          if(o.kind==="FUNDING")pair(tr("actionType"),tr(viaWallet?"actionTx":"actionSign"));
-          pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
-          rev.append(rows); view.append(rev);
-          view.append(el("div",tr(viaWallet?"txSending":"transferSigning")+" "+tr("custodyShort"),"ba-foot"));
-        }
-        if(o.state==="AWAITING_SIGNATURE"&&viaWallet) {
-          const c=consent(tr("transferAccept"));view.append(c.wrap,button(tr("sendTx"),()=>controller.sendFromWallet(c.check.checked),s.busy,true),button(tr("cancel"),()=>controller.cancelTransfer(),s.busy));
-        } else if(o.state==="AWAITING_SIGNATURE") {
-          const c=consent(tr("transferAccept"));view.append(c.wrap,button(tr("sign"),()=>controller.signTransfer(c.check.checked),s.busy || o.fee_units==null,true));
-        }
-        if(o.kind==="FUNDING"&&o.state==="REJECTED"){
-          view.append(note(reasonText(o.reason||"REJECTED")+" · "+tr("noMoneyMoved"),"bad"));
-        } else if(o.reason){
-          const bad=o.state==="REJECTED"||o.state==="FAILED"||o.state==="EXPIRED_UNSENT";
-          view.append(note(reasonText(o.reason)+(bad?" · "+tr("noMoneyMoved"):""),bad?"bad":"wait"));
-        }
-      }
+      paintTransfer(s);
       // Past deposits, withdrawals and bets will have their own history screen.
       if(Array.isArray(a.latest_decisions)&&a.latest_decisions.length){
         const checks=el("details",null,"ba-fold");checks.open=checksOpen;checks.ontoggle=()=>{checksOpen=checks.open;};
@@ -912,7 +973,7 @@
       },5000);
     }
     controller.render=paint;controller.reset();
-    return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferKind||settingsDialog?null:controller.refresh(),reset:()=>{transferKind=null;inputAmount="";closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
+    return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferDialog||settingsDialog?null:controller.refresh(),reset:()=>{closeTransfer();closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
   return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,stateLabel,mount};
 });
