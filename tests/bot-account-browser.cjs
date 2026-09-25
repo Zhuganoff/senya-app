@@ -55,6 +55,7 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
  await box.getByRole('button',{name:'Пополнить',exact:true}).waitFor();await box.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'02-ready-mobile.png'),fullPage:true});
  await box.evaluate(el=>window.scrollTo(0,el.getBoundingClientRect().top+scrollY-24));await page.screenshot({path:path.join(out,'06-account-mobile-viewport.png')});
  assert.match(await box.innerText(),/80 pUSD/);assert.doesNotMatch(await page.locator('body').innerText(),/PUBLIC_LEAK/);
+ await box.getByText('Адреса кошельков',{exact:true}).click();
  assert.equal(await box.getByRole('button',{name:'Копировать адрес AISports',exact:true}).getAttribute('title'),bot);
  await box.getByRole('button',{name:'Копировать адрес AISports',exact:true}).click();assert.equal(await page.evaluate(()=>window.__clipboardValue),bot);
  assert.doesNotMatch(await box.innerText(),/0x[0-9a-f]{40}| · v2/);assert.match(await box.innerText(),/Ключ счёта AISports хранит сервис/);assert.equal(await box.locator('[data-primary=true]').count(),1);

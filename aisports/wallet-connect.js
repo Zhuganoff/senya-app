@@ -3,8 +3,8 @@
   'use strict';
   const BUNDLE='vendor/metamask-connect-2.1.1.js';
   const INTEGRITY='sha384-vb4b622MoP3ouiMpIrdo9BSwo87J7FgHMz8JMwc3gyfgUYgene5LNwYhjNmobO+W';
-  function createConnector({window:w,polygonRPC,loadSDK}) {
-    let client=null,pending=null,provider=null,scriptPromise=null;
+  function createConnector({window:w,polygonRPC,loadSDK,onPairingUri=()=>{}}) {
+    let client=null,pending=null,provider=null,scriptPromise=null,pairingUri=null;
     const discovered=[];
     w.addEventListener('eip6963:announceProvider',e=>{
       if(e.detail&&e.detail.info&&e.detail.info.rdns==='io.metamask'&&typeof e.detail.provider?.request==='function')discovered.push(e.detail.provider);
@@ -25,21 +25,22 @@
       if(provider)return provider;
       const injected=discovered[0]||(w.ethereum&&(w.ethereum.providers||[w.ethereum]).find(p=>p.isMetaMask&&typeof p.request==='function'));
       if(injected){provider=injected;return provider;}
-      if(pending)return pending;
+      if(pending){if(pairingUri)onPairingUri(pairingUri);return pending;}
       pending=(async()=>{
         const module=await sdk();
         if(!client)client=await module.createEVMClient({
           dapp:{name:'AI Sports',url:new URL(w.location.origin).origin},
           api:{supportedNetworks:{'0x89':polygonRPC}},
           analytics:{enabled:false},debug:false,skipAutoAnnounce:true,
-          ui:{headless:false,preferExtension:false},mobile:{useDeeplink:false}
+          ui:{headless:true,preferExtension:false},mobile:{useDeeplink:false},
+          eventHandlers:{displayUri:uri=>{pairingUri=uri;onPairingUri(uri);}}
         });
         await client.connect({chainIds:['0x89']});
         const result=client.getProvider();
         if(!result||typeof result.request!=='function')throw Error('WALLET_UNAVAILABLE');
         provider=result;return result;
       })();
-      try{return await pending;}finally{pending=null;}
+      try{return await pending;}finally{pending=null;pairingUri=null;onPairingUri(null);}
     }
     return {connect};
   }

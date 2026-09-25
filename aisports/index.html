@@ -9,6 +9,7 @@
 <title>AI Sports</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="../qr.js"></script>
+<script src="vendor/qrcode-generator-1.5.2.js"></script>
 <style>
 /* ── Inter Variable, вшит в страницу ──────────────────────────────────────────
    Ставим шрифт data-URI, а не ссылкой на CDN: Mini App должен рисоваться сразу
@@ -448,6 +449,19 @@ body.light .daycard::after{background:linear-gradient(115deg,transparent 30%,
 .qrbox canvas{width:200px;height:200px;border-radius:var(--r-m);background:#fff;padding:8px;
   box-shadow:0 10px 28px -10px rgba(0,0,0,.5)}
 body.light .qrbox canvas{box-shadow:0 8px 20px -8px rgba(20,40,70,.25)}
+.mm-pair-backdrop{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(5,10,19,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.mm-pair-card{width:min(100%,340px);max-height:calc(100dvh - 40px);overflow:auto;padding:20px;border:1px solid var(--line-2);
+  border-radius:var(--r-l);background:var(--card,#141d2a);box-shadow:0 24px 64px rgba(0,0,0,.45);text-align:center}
+.mm-pair-title{font-size:19px;font-weight:750;letter-spacing:-.02em}.mm-pair-hint{font-size:12px;line-height:1.45;color:var(--mut);margin:6px 0 14px}
+.mm-pair-qr{display:block;width:min(220px,100%);height:auto;margin:0 auto 14px;padding:8px;border-radius:12px;background:#fff;image-rendering:pixelated}
+.mm-pair-actions{display:flex;gap:8px}.mm-pair-actions .btn{flex:1;margin:0}
+.mm-pair-close{display:block;margin:12px auto 0;border:0;background:transparent;color:var(--mut);font:inherit;font-size:12px;cursor:pointer}
+.wallet-view-fold{margin:6px 0 12px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r-m);background:var(--card-2)}
+.wallet-view-fold>summary{list-style:none;cursor:pointer;padding:12px 0;font-size:13px;font-weight:650}
+.wallet-view-fold>summary::-webkit-details-marker{display:none}
+.wallet-view-fold>summary::after{content:'⌄';float:right;color:var(--mut)}
+.wallet-view-fold[open]>summary::after{transform:rotate(180deg)}
 
 /* ── сноски ── */
 .proof{background:var(--card-2);border:1px solid var(--line);border-left:3px solid var(--accent);
@@ -815,7 +829,8 @@ body.splash-on{overflow:hidden}
       </div>
       <div id="exchInner" style="display:none">
       <div class="me-sub" id="tariffInfo" style="margin:10px 0 8px"></div>
-      <div class="k" data-i18n="exchTitle">Кошелёк Polymarket</div>
+      <details class="wallet-view-fold">
+      <summary data-i18n="exchTitle">Кошелёк Polymarket</summary>
       <div class="themes" id="exchSel">
         <button data-e="poly"><img class="exch-ico" alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAF0AAAB0CAYAAADn0j49AAAACXBIWXMAACxLAAAsSwGlPZapAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAR1SURBVHgB7Z3PUdtAFMbfLjlwJLccNzeOTgU4FcSpIE4FoQPoIKECSAWBCuIOoIOog3DNAW/eWsDIsvQsyft/32/GI3swo8nP32ethHYDwDAM44ITAYwP5lLKM631HISYA+OEE3wsUfS1kPIvPvTWAxhbDE4zS5+OSfNiIxq3z68HwdLHYeW7maXTTE4zBUvfxflIg6U7SjNFqdKDjptLke49zRQ5Sw97Fqj1I+6388PNSXrYNKNk3O8Dbu/w1S1IuUS5F11vfQNps5NmDf7A/Va43ztYr2/BCAd4HPJ7qUnfSfNGsvBU2HaaASp8DmNJQXqSaaaIUXoWaaaIRXp2aaYIJT37NFP4lF5UmilcSi86zRS2pXOaB3CodE7zBKZI5zQfyBDpnGbL9EnnNDtkW/rR0UJofQ2cZqdsS9d6Bp4uieaeZgp/J0eFpZnCqfSS00xhVzqneRB2pUtp0vwTnp5WYIQzndhO+hzHO3OUb54/CCFW6/XapH4FzCsSXCHEDL9YzoWUvze3CwvxC4ekS/yJgsLxNXo5wQ/BnAMsuAUuk05ReAti+HNdcS0Ik3SKAlowPumYRDPyRhkzcE+WLRiddG3OMLX+oNfr9/j4imedt5v79nyQSQsO+Xqp8HGDwj+j+Lf4AXxEIVf4/AH88NICM4PtD34A93g5+juY84TIsXkgXeE1lpV5guIVmH+8EJ9EvXV/5bJuwQw/gHMw13i0Xmkp72I8O3Z1IK2AW9CLryEjt6BBiCFjBYW3IIaTo+JaENvJUQUFtCD2+9OzbEF8lwH6qSCTFqQ85yjZFqQ+0euFCuoW3Gz+ImtukpJygduzUNeIqDfnIr1N8BZQP07pO30qFYQ9FuyQa9IpwrYAykg6RQUBWlBi0im8tKD0pFNU4KgFnPTh7LQAh6NfpqywwdLHc/CSJix9P9an/7D0bpxO/2HpNdbTTFGy9GCT2UqSHnZqZoPcpQedmtlHbtLjmWgspcK9fut6Ww7SY51ofNn3OylKjyfNEyezpSI9q2nzsUpPPs0UMUkvZhGIkNKzTjOFb+m8pAm4l15smilcSOc078GGdE7zSKZK5zQfwGjpm4XYpbzgNE8n2jPS1NNMEY/0ghboCSo95zRT+JXOy01tcC691DRT2JfOad6LVem6vvfvCupEMz1YvYEUR+1LIeV9SosjhMDNXbu8aBqJj9ELL5rWwv/96dwCONp6VQ/vBG6PcfMO3HOM+zvFY8EC93cu6quVpzjM/Aepr2CKFwJFzzGNumKlIMAkqAZRL5SzFykv+/6XxjGXCX1PiN0mtWOBJelNFHALaBxIb8MtaONBehMF3ALv0tuU2YLA0psoKKUFEUlvk28LIpbeREFOLUhEepu0W5Co9CYKUmtBBtLbxN+CDKU3URBjCzKX3iaKFkB9T+ey6y05Sm+iIGwLOsldepuwLXimNOlNFARqQcnS23hrAUvvRoHDFrD0YVhtAUsfj4IDW8DSD2d0C1i6XRREeF5QGqYFP1D+vZBSvzz+A2tcgXhkZWVRAAAAAElFTkSuQmCC"> Polymarket</button>
       </div>
@@ -835,6 +850,7 @@ body.splash-on{overflow:hidden}
       <div class="me-sub" id="budgetHint" data-i18n="walletNote">Для просмотра нужен только публичный адрес (MetaMask или аккаунта Polymarket): остаток pUSD и стоимость позиций по публичным данным. Только просмотр — владение не проверяется, торговля не включается.</div>
       <div class="me-sub" id="apiHint" data-i18n="apiNote">Основной приватный ключ и сид-фраза не передаются. Отдельный счёт AISports управляется ниже.</div>
       <button class="btn" id="verifyWalletOwner" style="display:none;margin-top:10px" data-i18n="wvVerifyOwner">Подтвердить владение</button>
+      </details>
       <section id="botAccountBox" style="margin-top:18px" aria-label="Торговый счёт AISports" aria-live="polite"></section>
       </div><!-- /exchInner -->
     </div><!-- /megabox -->
@@ -982,10 +998,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v133"></script>
-<script src="wallet-connect.js?v=v133"></script>
+<script src="bot-account.js?v=v134"></script>
+<script src="wallet-connect.js?v=v134"></script>
 <script>
-const BUILD = "v133";
+const BUILD = "v134";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2783,8 +2799,48 @@ function wvRenderEmpty(msg){
 
 }
 
-// v129: ordinary account flow stays in this official page. Telegram data is never copied to a URL.
-const botConnector = AISportsWallet.createConnector({window,polygonRPC:POLYGON_RPC});
+// Подключение MetaMask: URI даёт SDK, наше окно только показывает его и открывает по нажатию.
+// Telegram initData и данные операции в ссылку не добавляются.
+let walletPairingDialog=null,walletPairingFocus=null,walletPairingOverflow=null;
+function closeWalletPairing(){
+  if(walletPairingDialog){walletPairingDialog.remove();walletPairingDialog=null;document.body.style.overflow=walletPairingOverflow||"";walletPairingOverflow=null;walletPairingFocus?.focus?.();walletPairingFocus=null;}
+}
+function showWalletPairing(uri){
+  if(uri==null){closeWalletPairing();return;}
+  let link;
+  try{link=new URL(uri);}catch(_){return;}
+  if(!((link.protocol==="metamask:"&&link.hostname==="connect"&&link.pathname==="/mwp")||
+       (link.protocol==="https:"&&link.hostname==="metamask.app.link"&&link.pathname==="/connect/mwp")))return;
+  closeWalletPairing();walletPairingFocus=document.activeElement;
+  const overlay=document.createElement("div");overlay.className="mm-pair-backdrop";overlay.setAttribute("role","presentation");
+  const card=document.createElement("div");card.className="mm-pair-card";card.setAttribute("role","dialog");card.setAttribute("aria-modal","true");
+  card.setAttribute("aria-label",LANG==="ru"?"Подключение MetaMask":LANG==="zh"?"连接 MetaMask":"Connect MetaMask");
+  const title=document.createElement("div");title.className="mm-pair-title";title.textContent="MetaMask";
+  const hint=document.createElement("p");hint.className="mm-pair-hint";
+  hint.textContent=LANG==="ru"?"Отсканируйте QR телефоном или откройте MetaMask на этом устройстве. Подтверждение — только в кошельке.":
+    LANG==="zh"?"用手机扫描二维码，或在本机打开 MetaMask。请在钱包中确认。":"Scan with your phone or open MetaMask on this device. Confirm in the wallet.";
+  card.append(title,hint);
+  try{
+    const code=window.qrcode(0,"M");code.addData(uri,"Byte");code.make();
+    const canvas=document.createElement("canvas"),size=code.getModuleCount(),quiet=4,scale=4;
+    canvas.width=canvas.height=(size+quiet*2)*scale;canvas.className="mm-pair-qr";
+    const ctx=canvas.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle="#111827";
+    for(let y=0;y<size;y++)for(let x=0;x<size;x++)if(code.isDark(y,x))ctx.fillRect((x+quiet)*scale,(y+quiet)*scale,scale,scale);
+    card.append(canvas);
+  }catch(_){hint.textContent=LANG==="ru"?"QR недоступен. Откройте MetaMask кнопкой ниже.":"QR unavailable. Open MetaMask below.";}
+  const actions=document.createElement("div");actions.className="mm-pair-actions";
+  const open=document.createElement("button");open.type="button";open.className="btn";
+  open.textContent=LANG==="ru"?"Подтвердить в MetaMask":LANG==="zh"?"在 MetaMask 中确认":"Continue in MetaMask";
+  open.onclick=()=>window.location.assign(uri);actions.append(open);card.append(actions);
+  const close=document.createElement("button");close.type="button";close.className="mm-pair-close";
+  close.textContent=LANG==="ru"?"Закрыть окно":LANG==="zh"?"关闭":"Close";close.onclick=closeWalletPairing;card.append(close);
+  overlay.onclick=e=>{if(e.target===overlay)closeWalletPairing();};
+  overlay.onkeydown=e=>{if(e.key==="Escape")closeWalletPairing();};overlay.append(card);
+  walletPairingOverflow=document.body.style.overflow;document.body.style.overflow="hidden";document.body.append(overlay);
+  walletPairingDialog=overlay;open.focus();
+}
+// Основной контур счёта остаётся на этой странице; Telegram initData никогда не копируется в URL.
+const botConnector = AISportsWallet.createConnector({window,polygonRPC:POLYGON_RPC,onPairingUri:showWalletPairing});
 const botWallet = () => botConnector.connect();
 const botAccountController = new AISportsBotAccount.Controller({
   session: wvInit,

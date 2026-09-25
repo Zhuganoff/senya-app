@@ -15,8 +15,19 @@ test('desktop without extension connects same-page SDK mobile transport with ori
  const client={connect:async options=>calls.push(options),getProvider:()=>provider};
  const c=createConnector({window:windowFake(),polygonRPC:'https://polygon.example',loadSDK:async()=>({createEVMClient:async options=>{calls.push(options);return client;}})});
  const [a,b]=await Promise.all([c.connect(),c.connect()]);assert.equal(a,provider);assert.equal(b,provider);
- assert.deepEqual(calls,[{dapp:{name:'AI Sports',url:'https://official.example'},api:{supportedNetworks:{'0x89':'https://polygon.example'}},analytics:{enabled:false},debug:false,skipAutoAnnounce:true,ui:{headless:false,preferExtension:false},mobile:{useDeeplink:false}},{chainIds:['0x89']}]);
+ const [{eventHandlers,...config},connectOptions]=calls;
+ assert.deepEqual(config,{dapp:{name:'AI Sports',url:'https://official.example'},api:{supportedNetworks:{'0x89':'https://polygon.example'}},analytics:{enabled:false},debug:false,skipAutoAnnounce:true,ui:{headless:true,preferExtension:false},mobile:{useDeeplink:false}});
+ assert.equal(typeof eventHandlers.displayUri,'function');assert.deepEqual(connectOptions,{chainIds:['0x89']});
  assert.doesNotMatch(JSON.stringify(calls),/SECRET|initData|tgWebAppData/);
+});
+test('headless pairing URI reaches the UI and closes on connection, with no extra connect',async()=>{
+ const seen=[],provider={request:async()=>[]};let options,finish;
+ const client={connect:async()=>new Promise(resolve=>{finish=resolve;options.eventHandlers.displayUri('metamask://connect/mwp?p=PAIRING');}),getProvider:()=>provider};
+ const c=createConnector({window:windowFake(),polygonRPC:'https://polygon.example',onPairingUri:uri=>seen.push(uri),loadSDK:async()=>({createEVMClient:async o=>{options=o;return client;}})});
+ const pending=c.connect();await new Promise(resolve=>setImmediate(resolve));
+ assert.deepEqual(seen,['metamask://connect/mwp?p=PAIRING']);
+ const same=c.connect();assert.deepEqual(seen,['metamask://connect/mwp?p=PAIRING','metamask://connect/mwp?p=PAIRING']);
+ finish();assert.equal(await pending,provider);assert.equal(await same,provider);assert.equal(seen.at(-1),null);
 });
 test('a rejected SDK connection can retry without replacing provider with fictitious success',async()=>{
  let attempt=0;const provider={request:async()=>[]};

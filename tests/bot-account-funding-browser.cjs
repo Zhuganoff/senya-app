@@ -70,6 +70,14 @@ function mmOp(state,extra={}){
  operations=[expired];current=null;
  let {page,box}=await open();
  await box.getByText('Пополнение 75 pUSD не выполнено.',{exact:false}).waitFor();
+ await page.evaluate(()=>showWalletPairing('metamask://connect/mwp?p='+'A'.repeat(700)));
+ const pair=page.getByRole('dialog',{name:'Подключение MetaMask'});
+ await pair.waitFor();assert.ok((await pair.locator('canvas').evaluate(c=>c.width))>0);
+ await pair.getByRole('button',{name:'Подтвердить в MetaMask'}).waitFor();
+ await pair.screenshot({path:path.join(out,'00-metamask-pairing.png')});
+ await page.evaluate(()=>showWalletPairing(null));assert.equal(await pair.count(),0);
+ await page.evaluate(()=>showWalletPairing('https://untrusted.example/connect/mwp?p=AAA'));
+ assert.equal(await page.getByRole('dialog',{name:'Подключение MetaMask'}).count(),0);
  const text=await box.innerText();
  assert.match(text,/На исходном кошельке 72\.554481 pUSD на момент проверки/);assert.match(text,/Деньги не списаны\. Выберите меньшую сумму или пополните исходный кошелёк/);
  await box.locator('.ba-bar').waitFor({state:'detached',timeout:5000});           // the read finishes…
@@ -77,18 +85,21 @@ function mmOp(state,extra={}){
  assert.equal(calls.filter(c=>c.name==='bot_account_operation').length,0,'a terminal operation is not polled');
  await page.screenshot({path:path.join(out,'01-rejected-75-explained.png'),fullPage:true});
 
- // 2. Two source cards, each with its own numbers; 75 from Polymarket refused before any request or wallet.
+ // 2. Compact source menu: 75 from Polymarket is refused before any request or wallet.
  await box.getByRole('button',{name:'Пополнить',exact:true}).first().click();
- assert.equal(await box.getByRole('radio').count(),2);
- await box.getByText('Со счёта Polymarket',{exact:true}).waitFor();await box.getByText('Из MetaMask',{exact:true}).waitFor();
+ const picker=box.getByRole('button',{name:'Откуда пополнить'});
+ assert.equal(await box.getByRole('option').count(),0,'source choices stay collapsed until opened');
+ await picker.click();assert.equal(await box.getByRole('option').count(),2);
+ await box.getByRole('option',{name:/Из MetaMask/}).click();
+ assert.equal(await box.getByRole('option').count(),0);
  assert.match(await box.innerText(),/На MetaMask нет pUSD в Polygon\. Выберите счёт Polymarket или пополните MetaMask именно pUSD/);
- assert.equal(await box.getByRole('radio',{checked:true}).count(),1);
+ await picker.click();await box.getByRole('option',{name:/Со счёта Polymarket/}).click();
  await box.getByLabel('Сумма pUSD',{exact:true}).fill('75');await box.getByRole('button',{name:'Проверить перевод',exact:true}).click();
  await box.getByText('доступно 72.554481 pUSD, нужно 75 pUSD',{exact:false}).waitFor();
  assert.equal(mutations(),0);assert.deepEqual(await page.evaluate(()=>window.__walletMethods),[]);
- await page.screenshot({path:path.join(out,'02-two-sources-75-refused.png'),fullPage:true});
+ await page.screenshot({path:path.join(out,'02-source-menu-75-refused.png'),fullPage:true});
  // MetaMask with 0 pUSD: refused, still 0 wallet calls.
- await box.getByRole('radio').filter({hasText:'Из MetaMask'}).click();
+ await picker.click();await box.getByRole('option',{name:/Из MetaMask/}).click();
  await box.getByLabel('Сумма pUSD',{exact:true}).fill('1');await box.getByRole('button',{name:'Проверить перевод',exact:true}).click();
  await box.getByText('доступно 0 pUSD, нужно 1 pUSD',{exact:false}).waitFor();
  assert.equal(mutations(),0);assert.deepEqual(await page.evaluate(()=>window.__walletMethods),[]);
@@ -99,7 +110,7 @@ function mmOp(state,extra={}){
  mm={balance:'20000000',pol:'1000000000000000000'};
  ({page,box}=await open());
  await box.getByRole('button',{name:'Пополнить',exact:true}).first().click();
- await box.getByRole('radio').filter({hasText:'Из MetaMask'}).click();
+ await box.getByRole('button',{name:'Откуда пополнить'}).click();await box.getByRole('option',{name:/Из MetaMask/}).click();
  await box.getByLabel('Сумма pUSD',{exact:true}).fill('10');await box.getByRole('button',{name:'Проверить перевод',exact:true}).click();
  await box.getByText('Перевод готов — подтвердите в MetaMask',{exact:false}).waitFor();
  const review=await box.innerText();assert.match(review,/Сетевая транзакция из MetaMask/);assert.match(review,/Газ в POL/);
@@ -128,7 +139,7 @@ function mmOp(state,extra={}){
  }
  assert.deepEqual(errors,[]);
  assert.ok(calls.filter(x=>x.name.startsWith('bot_account_')).every(x=>x.body.p_init_data==='FIXTURE_A_NOT_REAL_AUTH'));
- fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({offline:true,errors,rpcCalls:calls.length,scenarios:['rejected-75-explained-with-fresh-balance','two-source-cards','75-over-72.554481-refused-before-request','metamask-0-pusd-refused','metamask-review-network-transaction','wallet-never-answers-wallet-pending','exact-erc20-transfer','reload-wallet-pending','reload-unknown-auto-reread','reload-rejected','reload-awaiting','reload-checking','refresh-read-only'],physicalWallet:'NOT_OBSERVED'},null,2)+'\n');
+ fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({offline:true,errors,rpcCalls:calls.length,scenarios:['rejected-75-explained-with-fresh-balance','compact-source-menu','75-over-72.554481-refused-before-request','metamask-0-pusd-refused','metamask-review-network-transaction','wallet-never-answers-wallet-pending','exact-erc20-transfer','reload-wallet-pending','reload-unknown-auto-reread','reload-rejected','reload-awaiting','reload-checking','refresh-read-only'],physicalWallet:'NOT_OBSERVED'},null,2)+'\n');
  console.log(JSON.stringify({ok:true,artifacts:out,errors}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
