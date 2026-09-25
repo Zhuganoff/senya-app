@@ -490,6 +490,7 @@
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
     checked:["Последняя сверка","Last checked","上次核对"], details:["Подробности","Details","详情"], waiting:["Проверяем состояние…","Checking status…","正在检查状态…"],
     checkingHint:["Сервис читает остаток в сети Polygon и готовит перевод к подписи — обычно до 30 секунд. Экран обновится сам.","The service reads the on-chain balance and prepares the transfer for signing — usually within 30 seconds. This screen updates by itself.","服务正在读取链上余额并准备待签名的转账，通常不超过 30 秒。页面会自动更新。"],
+    signInWallet:["Запрос подписи отправлен в MetaMask. Подтвердите его в кошельке — на телефоне откройте приложение MetaMask и вернитесь сюда.","Signature request sent to MetaMask. Confirm it in the wallet — on a phone, open the MetaMask app and come back here.","签名请求已发送至 MetaMask。请在钱包中确认——手机上请打开 MetaMask 应用后返回。"],
     srcPolymarket:["Со счёта Polymarket","From Polymarket account","从 Polymarket 账户"], srcMetaMask:["Из MetaMask","From MetaMask","从 MetaMask"],
     srcChoose:["Откуда пополнить","Fund from","充值来源"], balanceSrc:["Баланс","Balance","余额"], heldSrc:["Удержано","Held","已冻结"],
     availableSrc:["Доступно","Available","可用"], gasSrc:["Газ, POL","Gas, POL","Gas (POL)"], blockSrc:["блок","block","区块"],
@@ -878,6 +879,7 @@
           pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
           body.append(rows);
         }
+        if(o.state==="AWAITING_SIGNATURE"&&s.busy)body.append(note(tr("signInWallet"),"wait"));   // подпись запрошена: подтвердить в кошельке (на телефоне — открыть MetaMask)
         if(o.state==="AWAITING_SIGNATURE"){
           // Владелец 25.09: без галочки и без сноски — подтверждение = нажатие единственной кнопки (сумма и адреса показаны выше).
           const actions=el("div",null,"ba-transfer-actions");

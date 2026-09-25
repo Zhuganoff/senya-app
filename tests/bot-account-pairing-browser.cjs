@@ -56,6 +56,23 @@ const op={operation_id:opId,kind:'FUNDING',state:'AWAITING_SIGNATURE',phase:'PRE
   await page.locator('.mm-pair-close').click();await page.waitForTimeout(300);
   assert.equal(await pair.count(),0);assert.equal(await dialog.evaluate(d=>d.open),true);
   assert.deepEqual(errors,[]);
-  fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({ok:true,...report},null,1));console.log(JSON.stringify({ok:true,artifacts:out}));
+  // Phone inside Telegram (platform ios): no QR, the button opens the universal link via Telegram.WebApp.openLink with the same p/c query.
+  const page2=await context.newPage();page2.on('pageerror',e=>errors.push(e.message));
+  await page2.addInitScript(()=>{window.__openLinks=[];const w=window;Object.defineProperty(w,'__tgPatch',{value:true});
+    const orig=w.Telegram;w.Telegram={WebApp:{...orig.WebApp,platform:'ios',openLink:(u,o)=>w.__openLinks.push([u,o])}};});
+  await page2.goto('https://aisports.test/aisports/index.html');await page2.locator('[data-tab="me"]').click();
+  const box2=page2.locator('#botAccountBox');const opener2=box2.locator('.ba-transfer-status button').first();await opener2.waitFor({timeout:15000});await opener2.click();
+  const dialog2=page2.locator('dialog.ba-transfer-dialog');await dialog2.waitFor();
+  await dialog2.getByRole('button',{name:'Подтвердить в кошельке',exact:true}).click();
+  const pair2=page2.locator('dialog.mm-pair-dialog');await pair2.waitFor({timeout:5000});
+  assert.equal(await pair2.locator('canvas.mm-pair-qr').count(),0,'no QR on a phone');
+  await pair2.getByRole('button',{name:'Открыть MetaMask',exact:true}).click();
+  const links=await page2.evaluate(()=>window.__openLinks),info=await page2.evaluate(()=>window.__mmPairing);
+  assert.equal(links.length,1,'openLink called once');
+  assert.equal(links[0][0],'https://metamask.app.link/connect/mwp?p=stub&c=stub','universal link keeps the SDK query');
+  assert.equal(info.mobile,true);assert.equal(page2.url().startsWith('https://aisports.test/'),true,'page itself did not navigate away');
+  await page2.screenshot({path:path.join(out,'pairing-phone.png')});
+  report.phone={openLink:links[0][0],qr:false};
+  fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({ok:true,...report},null,1));console.log(JSON.stringify({ok:true,phone:report.phone,artifacts:out}));
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1002,10 +1002,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v142"></script>
-<script src="wallet-connect.js?v=v142"></script>
+<script src="bot-account.js?v=v143"></script>
+<script src="wallet-connect.js?v=v143"></script>
 <script>
-const BUILD = "v142";
+const BUILD = "v143";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2835,12 +2835,19 @@ function showWalletPairing(uri){
   const overlay=document.createElement("dialog");overlay.className="mm-pair-dialog";
   const card=document.createElement("div");card.className="mm-pair-card";
   overlay.setAttribute("aria-label",LANG==="ru"?"Подключение MetaMask":LANG==="zh"?"连接 MetaMask":"Connect MetaMask");
+  // v143 (владелец 25.09, телефон: «QR появился, кнопка не открывает MetaMask»): встроенный браузер Telegram не пускает
+  // переход на metamask://…; на телефоне открываем универсальную ссылку https://metamask.app.link/connect/mwp?… через
+  // Telegram.WebApp.openLink (тот же запрос p/c, что и в deeplink SDK). QR на телефоне не нужен — свой экран не отсканировать.
+  const tg=window.Telegram&&window.Telegram.WebApp,platform=String((tg&&tg.platform)||""),mobile=/^(ios|android)$/.test(platform);
+  const universal=link.protocol==="metamask:"?"https://metamask.app.link/connect/mwp"+link.search:uri;
   const title=document.createElement("div");title.className="mm-pair-title";title.textContent="MetaMask";
   const hint=document.createElement("p");hint.className="mm-pair-hint";
-  hint.textContent=LANG==="ru"?"Отсканируйте QR телефоном или откройте MetaMask на этом устройстве. Подтверждение — только в кошельке.":
-    LANG==="zh"?"用手机扫描二维码，或在本机打开 MetaMask。请在钱包中确认。":"Scan with your phone or open MetaMask on this device. Confirm in the wallet.";
+  hint.textContent=mobile?(LANG==="ru"?"Нажмите «Открыть MetaMask», подтвердите подключение в приложении и вернитесь в Telegram. Затем MetaMask попросит подпись — подтвердите её и снова вернитесь сюда.":
+      LANG==="zh"?"点击“打开 MetaMask”，在应用中确认连接后返回 Telegram。随后 MetaMask 会请求签名，确认后再回到这里。":"Tap “Open MetaMask”, approve the connection in the app and return to Telegram. MetaMask will then ask for a signature — confirm it and come back here."):
+    (LANG==="ru"?"Отсканируйте QR телефоном или откройте MetaMask на этом устройстве. Подтверждение — только в кошельке.":
+    LANG==="zh"?"用手机扫描二维码，或在本机打开 MetaMask。请在钱包中确认。":"Scan with your phone or open MetaMask on this device. Confirm in the wallet.");
   card.append(title,hint);
-  try{
+  if(!mobile)try{
     const code=window.qrcode(0,"M");code.addData(uri,"Byte");code.make();
     const canvas=document.createElement("canvas"),size=code.getModuleCount(),quiet=4,scale=4;
     canvas.width=canvas.height=(size+quiet*2)*scale;canvas.className="mm-pair-qr";
@@ -2850,8 +2857,13 @@ function showWalletPairing(uri){
   }catch(_){hint.textContent=LANG==="ru"?"QR недоступен. Откройте MetaMask кнопкой ниже.":"QR unavailable. Open MetaMask below.";}
   const actions=document.createElement("div");actions.className="mm-pair-actions";
   const open=document.createElement("button");open.type="button";open.className="btn";
-  open.textContent=LANG==="ru"?"Подтвердить в MetaMask":LANG==="zh"?"在 MetaMask 中确认":"Continue in MetaMask";
-  open.onclick=()=>window.location.assign(uri);actions.append(open);card.append(actions);
+  open.textContent=mobile?(LANG==="ru"?"Открыть MetaMask":LANG==="zh"?"打开 MetaMask":"Open MetaMask"):(LANG==="ru"?"Подтвердить в MetaMask":LANG==="zh"?"在 MetaMask 中确认":"Continue in MetaMask");
+  open.onclick=()=>{
+    if(tg&&typeof tg.openLink==="function")tg.openLink(universal,{try_instant_view:false});   // Telegram: внешний переход → app link → MetaMask
+    else window.location.assign(mobile?universal:uri);
+  };
+  window.__mmPairing={uri,universal,mobile,platform};                                              // для стендов; секретов нет (одноразовый ключ сессии SDK)
+  actions.append(open);card.append(actions);
   const close=document.createElement("button");close.type="button";close.className="mm-pair-close";
   close.textContent=LANG==="ru"?"Закрыть окно":LANG==="zh"?"关闭":"Close";close.onclick=closeWalletPairing;card.append(close);
   overlay.onclick=e=>{if(e.target===overlay)closeWalletPairing();};          // клик по подложке
