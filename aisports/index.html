@@ -138,6 +138,11 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .d{font-size:12px;color:var(--mut);line-height:1.4}
 
 /* ── бенто: первая плитка во всю ширину, последняя тоже — размер = приоритет ── */
+/* v144 (владелец 25.09): кошелёк, к которому привязаны автоставки, — на дашборде зелёным */
+.auto-wallet{margin-top:8px;font-size:13.5px;font-weight:750;letter-spacing:.005em;color:var(--green);font-variant-numeric:tabular-nums;line-height:1.35}
+.auto-wallet:empty{display:none}
+.auto-wallet .aw-addr{cursor:pointer;border-bottom:1px dashed color-mix(in srgb,var(--green) 55%,transparent)}
+.auto-wallet .aw-sub{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--green) 80%,var(--mut));margin-bottom:2px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
 .grid .card:first-child{grid-column:1/-1;
   background:linear-gradient(150deg,var(--card-2),var(--card) 62%);
@@ -1002,10 +1007,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v143"></script>
-<script src="wallet-connect.js?v=v143"></script>
+<script src="bot-account.js?v=v144"></script>
+<script src="wallet-connect.js?v=v144"></script>
 <script>
-const BUILD = "v143";
+const BUILD = "v144";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1850,7 +1855,8 @@ async function main(){
     document.getElementById("topCards").innerHTML = `
     <div class="card glass-sheen"><div class="k">${t("myWallet")}</div>
       <div class="v">${wvVal}</div>
-      <div class="d" style="color:var(--mut)">${wvLine}</div></div>
+      <div class="d" style="color:var(--mut)">${wvLine}</div>
+      <div class="auto-wallet" id="autoWallet"></div></div>
     <div class="card"><div class="k">${t("wrAll")}</div>
       <div class="v ${N && W/N>=0.5?"pos":"neg"}">${N ? (100*W/N).toFixed(1)+"%" : "—"}</div>
       <div class="d" style="color:var(--mut)">${W}W · ${N-W}L · ${N} ${t("betsN")}</div></div>
@@ -1863,6 +1869,12 @@ async function main(){
   };
   window.__renderTop = {session: sessionKey(), fn: renderTop};
   renderTop(null);
+  paintAutoWallet(window.botAccountController ? botAccountController.state : null);
+  // счёт автоставок подгружается сам при первом заходе на дашборд (только чтение; своя сессия)
+  if (window.botAccountController && wvInit() && !botAccountController.state.account && !botAccountController.state.busy && window.__autoWalletInit !== sessionKey()) {
+    window.__autoWalletInit = sessionKey();
+    try { botAccountController.refresh(); } catch(e) {}
+  }
   if (wvView) {
     const st = wvStateFor(skW); const myGen = st.gen; const addr = st.addr;
     const [v, bal] = await wvPublicMoney(addr);
@@ -2883,8 +2895,24 @@ const botAccountController = new AISportsBotAccount.Controller({
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
 const botAccountPaint = botAccountController.render;
+// v144: строка кошелька автоставок на дашборде — из того же состояния счёта, что и профиль; секретов нет
+function paintAutoWallet(state){
+  const el = document.getElementById("autoWallet"); if (!el) return;
+  const a = state && state.account;
+  if (!a || !a.bot_deposit_wallet) { el.replaceChildren(); return; }
+  const on = !!(a.policy && a.policy.enabled);
+  const bal = a.balance && /^[0-9]+$/.test(String(a.balance.available_units)) ? AISportsBotAccount.formatUnits(a.balance.available_units) : "—";
+  const label = LANG==="ru" ? "Автоставки" : LANG==="zh" ? "自动投注" : "Auto-bets";
+  const st = on ? (LANG==="ru"?"включены":LANG==="zh"?"已开启":"on") : (LANG==="ru"?"выключены":LANG==="zh"?"已关闭":"off");
+  const sub = document.createElement("span"); sub.className = "aw-sub"; sub.textContent = `${label} · ${st}`;
+  const addr = document.createElement("span"); addr.className = "aw-addr"; addr.textContent = wvShortAddr(a.bot_deposit_wallet); addr.title = a.bot_deposit_wallet;
+  addr.setAttribute("role","button"); addr.setAttribute("aria-label", (LANG==="ru"?"Скопировать адрес счёта автоставок ":"Copy auto-bets account address ") + a.bot_deposit_wallet);
+  addr.onclick = async () => { try { await navigator.clipboard.writeText(a.bot_deposit_wallet); addr.textContent = LANG==="ru"?"скопировано":LANG==="zh"?"已复制":"copied"; setTimeout(()=>{ addr.textContent = wvShortAddr(a.bot_deposit_wallet); }, 1200); } catch(e) {} };
+  el.replaceChildren(sub, addr, document.createTextNode(` · ${bal} pUSD`));
+}
 botAccountController.render = state => {
   window.__privateRealBets = {session:sessionKey(),rows:[]};
+  paintAutoWallet(state);
   document.getElementById("connectWalletMenu").classList.toggle("ghost",!!state.account || state.status === "NOT_CREATED");
   // Personal transaction history is rendered only in the private account section. Public forecast lists stay separate.
   botAccountPaint(state);

@@ -79,6 +79,14 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
  assert.equal(calls.filter(c=>c.name==='bot_account_submit_transfer').length,1);assert.equal((await page.evaluate(()=>window.__walletMethods)).filter(m=>m==='eth_signTypedData_v4').length,1);
  await transfer.locator('.ba-transfer-close').click();
  await box.getByRole('button',{name:'Обновить',exact:true}).click();await box.getByText('Пополнение · Подтверждено',{exact:true}).first().waitFor();
+ // v144: дашборд показывает кошелёк автоставок зелёным (адрес счёта AISports + свободный остаток), адрес копируется
+ await page.locator('[data-tab="dash"]').click();const aw=page.locator('#autoWallet');await aw.waitFor({timeout:15000});
+ await page.waitForFunction(()=>/0x4444…4444/.test(document.getElementById('autoWallet').textContent),null,{timeout:15000});
+ const awText=await aw.evaluate(e=>e.textContent);assert.match(awText,/Автоставки · выключены/);assert.match(awText,/80 pUSD/);
+ assert.equal(await aw.evaluate(e=>getComputedStyle(e).color),'rgb(34, 197, 94)','green font');
+ await aw.locator('.aw-addr').click();assert.equal(await page.evaluate(()=>window.__clipboardValue),bot);
+ await page.screenshot({path:path.join(out,'07-dash-auto-wallet.png'),fullPage:false});
+ await page.locator('[data-tab="me"]').click();
  await page.setViewportSize({width:1280,height:960});await page.screenshot({path:path.join(out,'03-ready-desktop.png'),fullPage:true});
  await page.evaluate(()=>{Telegram.WebApp.initData='FIXTURE_B_NOT_REAL_AUTH';Telegram.WebApp.initDataUnsafe.user={id:222,first_name:'Второй',language_code:'ru'};});mode='NOT_CONNECTED';
  await page.evaluate(()=>initMe());await box.getByRole('button',{name:'Подключить MetaMask',exact:true}).waitFor();
