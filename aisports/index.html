@@ -143,6 +143,8 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .auto-wallet:empty{display:none}
 .auto-wallet .aw-addr{cursor:pointer;border-bottom:1px dashed color-mix(in srgb,var(--green) 55%,transparent)}
 .auto-wallet .aw-sub{display:block;font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb,var(--green) 80%,var(--mut));margin-bottom:2px}
+.auto-wallet.paused,.auto-wallet.paused .aw-sub{color:var(--amber)}
+.auto-wallet.paused .aw-addr{border-bottom-color:var(--amber)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
 .grid .card:first-child{grid-column:1/-1;
   background:linear-gradient(150deg,var(--card-2),var(--card) 62%);
@@ -1007,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v145"></script>
-<script src="wallet-connect.js?v=v145"></script>
+<script src="bot-account.js?v=v146"></script>
+<script src="wallet-connect.js?v=v146"></script>
 <script>
-const BUILD = "v145";
+const BUILD = "v146";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1212,6 +1214,17 @@ const T = {
   clvTitle: ["CLV <span class=\"tag\">честный базис</span>", "CLV <span class=\"tag\">honest basis</span>", "CLV <span class=\"tag\">诚实口径</span>"],
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Кошелёк Polymarket", "💰 Polymarket wallet", "💰 Polymarket 钱包"],
+  tradingAccount: ["💼 Торговый счёт AISports", "💼 AISports trading account", "💼 AISports 交易账户"],
+  taAvailable: ["свободно", "available", "可用"], taReserved: ["зарезервировано", "reserved", "已预留"], taTotal: ["на счёте", "in account", "账户内"],
+  taViewWallet: ["Кошелёк Polymarket (просмотр)", "Polymarket wallet (view)", "Polymarket 钱包（查看）"],
+  taWinrate: ["Доля прибыльных расчётов", "Profitable settlements", "盈利结算占比"],
+  taNoBets: ["расчётов ещё не было", "no settlements yet", "暂无结算"],
+  taPushes: ["без прибыли и убытка", "break-even", "盈亏相抵"],
+  taProfitAll: ["Прибыль автоставок за всё время", "Auto-bets all-time profit", "自动投注累计盈利"],
+  taProfit24: ["Прибыль автоставок за 24 часа", "Auto-bets profit, last 24h", "自动投注近24小时盈利"],
+  taSettledHint: ["по подтверждённым выплатам биржи", "from confirmed exchange payouts", "按交易所已确认的派息"],
+  taHistoryLimited: ["История ещё загружается или неполная", "History is loading or incomplete", "历史记录加载中或不完整"],
+  taAccountLoading: ["Загружаем торговый счёт", "Loading trading account", "正在加载交易账户"],
   walletNotConnected: ["Не подключён · привязка не подтверждена", "Not connected · link not verified", "未连接 · 绑定未验证"],
   guestName: ["Гость", "Guest", "访客"],
   walletNotLinkedHint: ["привязка кошелька к AI SPORTS не подтверждена — личные баланс и прибыль не показываются; общий тестовый банк стратегии сюда не подставляется", "wallet link to AI SPORTS is not verified — personal balance and profit are not shown; the shared strategy test bank is never substituted here", "钱包与 AI SPORTS 的绑定未验证——不显示个人余额与盈利；不会用策略的共享测试资金代替"],
@@ -1829,7 +1842,6 @@ async function main(){
   // «Не подключён» и «—»; общий PAPER-банк/P&L контура сюда не подставляется (это не
   // личные деньги пользователя). Статистика стратегии (винрейт, W/L, ROI %) — публичная.
   // Разметка карточек та же (дизайн заморожен, MINI_APP §0): изменились текст и данные.
-  const roiS = z.roi_pct != null ? `${t("strategyRoi")} ${z.roi_pct>=0?"+":""}${Number(z.roi_pct).toFixed(2)}%` : "";
   // v108 (W): статус просмотра выбранного аккаунта на карточке — без сумм; сессия сверяется после ожидания
   let wvView = null;
   const skW = sessionKey();
@@ -1843,38 +1855,52 @@ async function main(){
       wvStateAdopt(skW, wvView, loadGen);
     } catch(e) {}
   }
-  const wvStatusLine = () => {
-    const st = wvStateFor(skW);
-    return st.view ? `${t("wvConnected")} · ${v3Esc(st.view.profile_name || wvShortAddr(st.view.resolved_address || st.view.input_address))} · ${t("wvStatusLine")}` : t("walletNotConnected");
-  };
   // W1: карточки перерисовываются той же функцией, когда придут сумма/позиции выбранного адреса (сессия сверяется)
   const renderTop = (money) => {
+    window.__lastDashMoney = money;
     const wvName = money ? (money.view.profile_name ? v3Esc(money.view.profile_name) : v3Esc(wvShortAddr(money.view.resolved_address || money.view.input_address))) : "";
-    const wvLine = money ? `${t("wvConnected")} · ${wvName} · ${t("wvStatusLine")}<br>${wvMoneyLine(money.value, money.bal)}` : wvStatusLine();
     const wvVal = money && money.bal && money.bal.ok ? `${Number(money.bal.pusd).toFixed(2)} pUSD` : "—";
+    // v146 (владелец 25.09): главная карточка и статистика — по ТОРГОВОМУ СЧЁТУ AISports (на нём деньги, с него идут ставки);
+    // кошелёк Polymarket для просмотра — второй строкой. Источник — то же приватное состояние счёта, что в профиле.
+    const ta = tradingAccountStats(botAccountController.state);
+    if (ta) {
+      const fu = AISportsBotAccount.formatUnits, pnl = u => (u == null ? "—" : (u === "0" ? "" : u.startsWith("-") ? "−" : "+") + fu(u.replace(/^-/, "")) + " pUSD");
+      const tone = u => u == null || u === "0" ? "" : (u.startsWith("-") ? "neg" : "pos");
+      document.getElementById("topCards").innerHTML = `
+    <div class="card glass-sheen"><div class="k">${t("tradingAccount")}</div>
+      <div class="v">${fu(ta.available)} pUSD</div>
+      <div class="auto-wallet" id="autoWallet"></div>
+      <div class="d" style="color:var(--mut)">${t("taAvailable")} ${fu(ta.available)} · ${t("taReserved")} ${fu(ta.reserved)} · ${t("taTotal")} ${fu(ta.confirmed)} pUSD<br>${t("taViewWallet")}: ${wvVal}${money ? " · " + wvName : ""}</div></div>
+    <div class="card"><div class="k">${t("taWinrate")}</div>
+      <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${ta.settled ? (100 * ta.wins / ta.settled).toFixed(0) + "%" : "—"}</div>
+      <div class="d" style="color:var(--mut)">${ta.settled === null ? t("taHistoryLimited") : ta.settled + ta.pushes ? `${ta.wins}W · ${ta.losses}L${ta.pushes ? ` · ${ta.pushes} ${t("taPushes")}` : ""}` : t("taNoBets")}</div></div>
+    <div class="card"><div class="k">${t("taProfitAll")}</div>
+      <div class="v ${tone(ta.pnlAll)}">${pnl(ta.pnlAll)}</div>
+      <div class="d" style="color:var(--mut)">${t("taSettledHint")}</div></div>
+    <div class="card" style="grid-column:1/-1"><div class="k">${t("taProfit24")}</div>
+      <div class="v ${tone(ta.pnl24)}">${pnl(ta.pnl24)}</div>
+      <div class="d" style="color:var(--mut)">${ta.pnl24 === null ? t("taHistoryLimited") : t("taSettledHint")}</div></div>`;
+      paintAutoWallet(botAccountController.state);
+      return;
+    }
     document.getElementById("topCards").innerHTML = `
-    <div class="card glass-sheen"><div class="k">${t("myWallet")}</div>
-      <div class="v">${wvVal}</div>
-      <div class="d" style="color:var(--mut)">${wvLine}</div>
+    <div class="card glass-sheen"><div class="k">${t("tradingAccount")}</div>
+      <div class="v">—</div>
+      <div class="d" style="color:var(--mut)">${t("taAccountLoading")}<br>${t("taViewWallet")}: ${wvVal}</div>
       <div class="auto-wallet" id="autoWallet"></div></div>
-    <div class="card"><div class="k">${t("wrAll")}</div>
-      <div class="v ${N && W/N>=0.5?"pos":"neg"}">${N ? (100*W/N).toFixed(1)+"%" : "—"}</div>
-      <div class="d" style="color:var(--mut)">${W}W · ${N-W}L · ${N} ${t("betsN")}</div></div>
-    <div class="card"><div class="k">${t("profitAll")}</div>
+    <div class="card"><div class="k">${t("taWinrate")}</div>
       <div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("noPersonalData")}</div></div>
-    <div class="card" style="grid-column:1/-1"><div class="k">${t("profit24")}</div>
+      <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>
+    <div class="card"><div class="k">${t("taProfitAll")}</div>
       <div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("walletNotLinkedHint")}</div></div>`;
+      <div class="d" style="color:var(--mut)">${t("taAccountLoading")}</div></div>
+    <div class="card" style="grid-column:1/-1"><div class="k">${t("taProfit24")}</div>
+      <div class="v">—</div>
+      <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>`;
   };
   window.__renderTop = {session: sessionKey(), fn: renderTop};
   renderTop(null);
-  paintAutoWallet(window.botAccountController ? botAccountController.state : null);
-  // счёт автоставок подгружается сам при первом заходе на дашборд (только чтение; своя сессия)
-  if (window.botAccountController && wvInit() && !botAccountController.state.account && !botAccountController.state.busy && window.__autoWalletInit !== sessionKey()) {
-    window.__autoWalletInit = sessionKey();
-    try { botAccountController.refresh(); } catch(e) {}
-  }
+  paintAutoWallet(botAccountController.state);
   if (wvView) {
     const st = wvStateFor(skW); const myGen = st.gen; const addr = st.addr;
     const [v, bal] = await wvPublicMoney(addr);
@@ -2004,6 +2030,10 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     window.scrollTo({top: 0, behavior: "instant"});
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
+    if (t === "dash" && wvInit() && !botAccountController.state.account && !botAccountController.state.busy && window.__autoWalletInit !== sessionKey()) {
+      window.__autoWalletInit = sessionKey();
+      botAccountController.refresh();
+    }
     if (t === "stats") {
       // Флаг больше НЕ блокирует перерисовку: он лишь помечает, что вкладку
       // уже открывали (чтобы main() знал, что её нужно обновить после ленты).
@@ -2891,14 +2921,42 @@ const botWallet = () => botConnector.connect();
 const botAccountController = new AISportsBotAccount.Controller({
   session: wvInit,
   rpc: async (name, params) => { const r = await wvRpc(name, params); if (!r.server) throw new AISportsBotAccount.ClientError("SOURCE_UNAVAILABLE"); return r.data; },
-  // v145 (владелец 25.09): доступность торговли — свойство ТОРГОВОГО СЕРВЕРА (он отправляет ордера): служба пишет вердикт
-  // polymarket.com/api/geoblock, увиденный С СЕРВЕРА, в account.execution_region; включение автоставок идёт по нему
-  // (свежесть ≤10 мин, иначе «не подтверждён»). Перед КАЖДЫМ ордером сервер проверяет регион ещё раз (real_exec/account_execution).
+  // Включение требует одновременно разрешённого местонахождения пользователя и торгового сервера.
+  // Перед каждым ордером сервер дополнительно проверяет свой регион.
   wallet: botWallet, resolveWallet: wvResolve,
-  eligibility: async () => { const r = await wvRpc("bot_account_get", {p_init_data: wvInit()}); return r.server ? AISportsBotAccount.regionEligibility(r.data && r.data.account) : null; }
+  eligibility: async () => {
+    const deviceAllowed = await AISportsBotAccount.checkEligibility(fetch);
+    if (!deviceAllowed) return false;
+    const r = await wvRpc("bot_account_get", {p_init_data: wvInit()});
+    return r.server ? AISportsBotAccount.regionEligibility(r.data && r.data.account) : null;
+  }
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
 const botAccountPaint = botAccountController.render;
+// Статистика торгового счёта: баланс сервера и подтверждённые расчёты из приватной истории.
+// История ограничена 200 операциями; неполные выборки не выдаём за статистику за всё время.
+function tradingAccountStats(state){
+  const a = state && state.account; if (!a || !a.bot_deposit_wallet || !a.balance) return null;
+  const hist = Array.isArray(state.history) ? state.history : [];
+  const units = v => v != null && /^-?[0-9]+$/.test(String(v)) ? BigInt(v) : null;
+  const claims = hist.filter(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && units(o.realized_pnl_units) != null);
+  const wins = claims.filter(o => units(o.realized_pnl_units) > 0n).length;
+  const losses = claims.filter(o => units(o.realized_pnl_units) < 0n).length;
+  const pushes = claims.filter(o => units(o.realized_pnl_units) === 0n).length;
+  const dayAgo = Date.now() - 86400000;
+  const fullHistory = state.historyLoaded === true && hist.length < 200;
+  const oldest = hist.length && Date.parse(hist[hist.length - 1].created_at || "");
+  const fullDay = state.historyLoaded === true && (hist.length < 200 || Number.isFinite(oldest) && oldest < dayAgo);
+  const pnl24 = fullDay ? claims.filter(o => Date.parse(o.updated_at || o.created_at || "") >= dayAgo)
+    .reduce((acc, o) => acc + units(o.realized_pnl_units), 0n).toString() : null;
+  return {available: String(a.balance.available_units ?? "0"), reserved: String(a.balance.reserved_units ?? "0"), confirmed: String(a.balance.confirmed_units ?? "0"),
+          wins, losses, pushes, settled: fullHistory ? wins + losses : null,
+          pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24};
+}
+function rerenderDashFromAccount(){
+  const rt = window.__renderTop; if (!rt || rt.session !== sessionKey() || !document.getElementById("topCards")) return;
+  rt.fn(window.__lastDashMoney || null);
+}
 // v144: строка кошелька автоставок на дашборде — из того же состояния счёта, что и профиль; секретов нет
 function paintAutoWallet(state){
   const el = document.getElementById("autoWallet"); if (!el) return;
@@ -2907,15 +2965,21 @@ function paintAutoWallet(state){
   const on = !!(a.policy && a.policy.enabled);
   const bal = a.balance && /^[0-9]+$/.test(String(a.balance.available_units)) ? AISportsBotAccount.formatUnits(a.balance.available_units) : "—";
   const label = LANG==="ru" ? "Автоставки" : LANG==="zh" ? "自动投注" : "Auto-bets";
-  const st = on ? (LANG==="ru"?"включены":LANG==="zh"?"已开启":"on") : (LANG==="ru"?"выключены":LANG==="zh"?"已关闭":"off");
+  const paused = on && a.runtime_ready !== true;
+  const st = paused ? (LANG==="ru"?"приостановлены":LANG==="zh"?"已暂停":"paused") : on ? (LANG==="ru"?"включены":LANG==="zh"?"已开启":"on") : (LANG==="ru"?"выключены":LANG==="zh"?"已关闭":"off");
+  el.classList.toggle("paused",paused);
   const sub = document.createElement("span"); sub.className = "aw-sub"; sub.textContent = `${label} · ${st}`;
   const addr = document.createElement("span"); addr.className = "aw-addr"; addr.textContent = wvShortAddr(a.bot_deposit_wallet); addr.title = a.bot_deposit_wallet;
   addr.setAttribute("role","button"); addr.setAttribute("aria-label", (LANG==="ru"?"Скопировать адрес счёта автоставок ":"Copy auto-bets account address ") + a.bot_deposit_wallet);
   addr.onclick = async () => { try { await navigator.clipboard.writeText(a.bot_deposit_wallet); addr.textContent = LANG==="ru"?"скопировано":LANG==="zh"?"已复制":"copied"; setTimeout(()=>{ addr.textContent = wvShortAddr(a.bot_deposit_wallet); }, 1200); } catch(e) {} };
   el.replaceChildren(sub, addr, document.createTextNode(` · ${bal} pUSD`));
 }
+let __dashAcctSig = null;
 botAccountController.render = state => {
   window.__privateRealBets = {session:sessionKey(),rows:[]};
+  // перерисовать верхние карточки дашборда, когда изменились счёт или история (не на каждом busy-тике)
+  const a = state && state.account, sig = a ? JSON.stringify([a.account_id, a.balance, a.policy && a.policy.enabled, state.historyLoaded, (state.history || []).length, (state.history || [])[0] && (state.history || [])[0].updated_at]) : null;
+  if (sig !== __dashAcctSig) { __dashAcctSig = sig; rerenderDashFromAccount(); }
   paintAutoWallet(state);
   document.getElementById("connectWalletMenu").classList.toggle("ghost",!!state.account || state.status === "NOT_CREATED");
   // Personal transaction history is rendered only in the private account section. Public forecast lists stay separate.

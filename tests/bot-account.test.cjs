@@ -73,7 +73,7 @@ test('blocked or unavailable user location cannot call enable RPC',async()=>{
  const s=setup();await s.c.refresh();s.c.eligibility=async()=>{s.setAuth('B');return true;};await s.c.enable(true);assert.equal(s.c.state.account,null);assert.ok(!s.calls.some(c=>c.name==='bot_account_enable'));
 });
 test('enabled label requires runtime readiness, independent of old session grants',()=>{
- const a=account();a.policy.enabled=true;a.runtime_ready=false;assert.equal(stateLabel({account:a},NOW),'PREPARING');a.runtime_ready=true;a.reason='NO_SIGNAL';assert.equal(stateLabel({account:a},NOW),'ACTIVE_NO_SIGNAL');a.policy.enabled=false;a.reason='USER_STOP';assert.equal(stateLabel({account:a},NOW),'STOPPED');
+ const a=account();a.policy.enabled=true;a.runtime_ready=false;assert.equal(stateLabel({account:a},NOW),'AUTO_PAUSED');a.runtime_ready=true;a.reason='NO_SIGNAL';assert.equal(stateLabel({account:a},NOW),'ACTIVE_NO_SIGNAL');a.policy.enabled=false;a.reason='USER_STOP';assert.equal(stateLabel({account:a},NOW),'STOPPED');
 });
 test('A late response never paints after user changes to B',async()=>{
  let resolve;const s=setup({mutate:n=>n==='bot_account_get'?new Promise(r=>resolve=r):undefined});
@@ -142,7 +142,7 @@ test('official page uses private module, no raw session URL/test-page redirects/
  const official=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json')));const root=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json')));assert.equal(official.build,BUILD);assert.equal(root.build,official.build);assert.match(html,/const BUILD = "v\d+"/);
 });
 
-test('region eligibility comes from the trading server verdict, fresh and typed; device IP is irrelevant',()=>{
+test('the trading server verdict is fresh and typed; the browser also checks the device before enabling',()=>{
  const {regionEligibility}=api;const at=new Date(NOW-30000).toISOString();
  assert.equal(regionEligibility({execution_region:{country:'KZ',blocked:false,checked_at:at}},NOW),true);
  assert.equal(regionEligibility({execution_region:{country:'PL',blocked:true,checked_at:at}},NOW),false);

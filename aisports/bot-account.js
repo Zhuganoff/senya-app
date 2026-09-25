@@ -145,9 +145,8 @@
     if (!Number.isFinite(expiry) || expiry <= now || expiry > now + 15 * 60000) fail("SIGNATURE_EXPIRED");
     return {from:eoa, to:PUSD, data, value:"0x0"};
   }
-  // Owner 25.09: eligibility is a fact about the TRADING SERVER (it places the orders), written by the service from
-  // polymarket.com/api/geoblock as seen from the server (account.execution_region). true = allowed and fresh,
-  // false = server region blocked, null = unverified/stale. The user's device IP is not the trading party.
+  // The trading server's verdict is one of two required checks. The device check is also required before enabling.
+  // An unknown, stale or blocked verdict on either side must fail closed.
   const REGION_MAX_AGE = 10 * 60000;
   function regionEligibility(account, now = Date.now()) {
     const g = account && account.execution_region;
@@ -177,7 +176,7 @@
       this.eligibility=eligibility;
       this.epoch = 0; this.auth = null; this.idempotency = new Map(); this.state = {};
     }
-    reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],busy:false,error:null}; this.render(this.state); }
+    reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],historyLoaded:false,busy:false,error:null}; this.render(this.state); }
     context() {
       if (this.session() !== this.auth) this.reset();
       if (!this.auth) fail("SIGNED_OUT");
@@ -233,7 +232,7 @@
           const unfinished=h.operations.find(o=>!TERMINAL.has(o.state));
           // Resume only unfinished work. Old refusals belong in the future history screen, not the wallet card.
           const current=this.state.operation;
-          this.paint(c,{history:h.operations,operation:unfinished||current||null});
+          this.paint(c,{history:h.operations,historyLoaded:true,operation:unfinished||current||null});
           if (this.state.operation && !TERMINAL.has(this.state.operation.state)) {
             this.adopt(c,await this.call(c,"bot_account_operation",{p_operation_id:this.state.operation.operation_id}));
           }
@@ -534,6 +533,7 @@
     ERROR:["Счёт не создан","Account not created","账户未创建"],
     READY:["Готов к включению","Ready to enable","可以启用"], NEEDS_FUNDING:["Нужно пополнение","Funding required","需要充值"],
     PREPARING:["Подготовка торговли","Preparing trading","准备交易中"], ACTIVE:["Автоставки включены","Auto-bets enabled","自动投注已启用"],
+    AUTO_PAUSED:["Автоставки приостановлены — новые ставки не открываются","Auto-bets paused — no new bets","自动投注已暂停，不会开新单"],
     STALE:["Нет свежей проверки — состояние торговли уточняется","No recent check — trading status is uncertain","缺少最近检查，交易状态待确认"],
     ACTIVE_NO_SIGNAL:["Автоставки включены — подходящих прогнозов пока нет","Auto-bets enabled — no qualifying signals yet","自动投注已启用，暂时没有合适信号"],
     STOPPED:["Новые ставки остановлены","New bets stopped","新投注已停止"], AWAITING_SIGNATURE:["Перевод готов к подтверждению","Transfer ready for your confirmation","转账已准备，请确认"],
@@ -547,7 +547,7 @@
     FAILED:["Операция не выполнена","Transaction failed","交易失败"], REJECTED:["Операция отклонена","Transaction rejected","交易被拒绝"], CANCELLED:["Операция отменена","Transaction cancelled","交易已取消"], EXPIRED:["Срок подтверждения истёк","Confirmation expired","确认已过期"]
   };
   const errors = {
-    GEOBLOCKED:["Торговый сервер сейчас находится в регионе, где Polymarket не разрешает торговлю. Автоставки не включены.","The trading server is currently in a region where Polymarket does not allow trading. Auto-bets were not enabled.","交易服务器当前所在地区不允许在 Polymarket 交易，未启用自动投注。"],
+    GEOBLOCKED:["Polymarket не разрешает торговлю в вашем регионе или регионе сервера. Автоставки не включены.","Polymarket does not allow trading in your or the server's region. Auto-bets were not enabled.","Polymarket 不允许在您或服务器所在地区交易，自动投注未启用。"],
     GEOBLOCK_UNVERIFIED:["Сервер ещё не подтвердил регион исполнения (проверка идёт каждые ~20 с). Повторите через минуту.","The trading server has not confirmed its region yet (it re-checks every ~20 s). Retry in a minute.","交易服务器尚未确认执行地区（约每 20 秒复核一次）。请一分钟后重试。"],
     NOT_READY:["Счёт или исполнитель ещё не готовы. Обновите состояние.","The account or execution service is not ready. Refresh status.","账户或交易服务尚未就绪，请刷新。"],
     VERSION_CONFLICT:["Настройки изменились на другом устройстве. Обновите и проверьте их.","Settings changed on another device. Refresh and review them.","设置已在其他设备修改，请刷新并检查。"],
@@ -640,7 +640,7 @@
     if (["CREATING","PROVISIONING"].includes(a.state)) return a.state;
     if (a.policy && a.policy.enabled && (s.error || !a.runtime_expires_at || !Number.isFinite(Date.parse(a.runtime_expires_at)) || Date.parse(a.runtime_expires_at)<=now)) return "STALE";
     if (a.policy && a.policy.enabled && a.runtime_ready === true && a.state === "READY") return a.reason === "NO_SIGNAL" ? "ACTIVE_NO_SIGNAL" : "ACTIVE";
-    if (a.policy && a.policy.enabled) return "PREPARING";
+    if (a.policy && a.policy.enabled) return "AUTO_PAUSED";
     if (a.reason === "USER_STOP" || a.state === "STOPPED") return "STOPPED";
     if (a.state === "READY" && a.balance && a.balance.available_units === "0") return "NEEDS_FUNDING";
     return a.state;

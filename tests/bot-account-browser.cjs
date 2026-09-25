@@ -3,8 +3,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const repo=path.resolve(__dirname,'..'),out=path.resolve(process.env.UI_ARTIFACT_DIR||path.join(repo,'artifacts/ui'));
 const owner='0x'+'1'.repeat(40),funding='0x'+'2'.repeat(40),botOwner='0x'+'3'.repeat(40),bot='0x'+'4'.repeat(40);
-const account={account_id:'11111111-1111-4111-8111-111111111111',state:'READY',version:3,verified_user_signer:owner,funding_wallet:funding,bot_owner_address:botOwner,bot_deposit_wallet:bot,chain_id:137,collateral:'0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb',policy:{version:2,enabled:false,max_stake_bps:700,max_open:10,sports:['mlb']},balance:{confirmed_units:'100000000',reserved_units:'20000000',available_units:'80000000',position_value_units:'18000000',realized_pnl_units:'-1000000',checked_at:new Date().toISOString()},runtime_ready:true,last_checked_at:new Date().toISOString()};
-let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
+const account={account_id:'11111111-1111-4111-8111-111111111111',state:'READY',version:3,verified_user_signer:owner,funding_wallet:funding,bot_owner_address:botOwner,bot_deposit_wallet:bot,chain_id:137,collateral:'0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb',policy:{version:2,enabled:false,max_stake_bps:700,max_open:10,sports:['mlb']},balance:{confirmed_units:'100000000',reserved_units:'20000000',available_units:'80000000',position_value_units:'18000000',realized_pnl_units:'-1000000',checked_at:new Date().toISOString()},execution_region:{country:'KZ',blocked:false,checked_at:new Date().toISOString()},runtime_ready:true,last_checked_at:new Date().toISOString()};
+let mode='NOT_CREATED',operation=null,geoBlocked=true;const calls=[],errors=[];
 (async()=>{
  fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||chromium.executablePath()});
  try{
@@ -16,6 +16,7 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
    const filename=path.resolve(repo,'.'+decodeURIComponent(url.pathname));
    if(filename.startsWith(repo+path.sep)&&fs.existsSync(filename)&&fs.statSync(filename).isFile())return route.fulfill({body:fs.readFileSync(filename),contentType:filename.endsWith('.html')?'text/html':filename.endsWith('.js')?'application/javascript':filename.endsWith('.css')?'text/css':'application/octet-stream'});
   }
+  if(url.hostname==='polymarket.com'&&url.pathname==='/api/geoblock')return route.fulfill({status:200,body:JSON.stringify({blocked:geoBlocked,country:geoBlocked?'PL':'KZ'}),contentType:'application/json',headers:{'access-control-allow-origin':'*'}});
   if(req.resourceType()==='script')return route.fulfill({body:'',contentType:'application/javascript'});
   let result=[];
   if(url.pathname.includes('/rpc/')){
@@ -53,6 +54,9 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
  await box.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'01-create-mobile.png'),fullPage:true});
  await box.locator('input[type=checkbox]').check();await box.getByRole('button',{name:'Создать торговый счёт',exact:true}).click();
  await box.getByRole('button',{name:'Пополнить',exact:true}).waitFor();await box.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'02-ready-mobile.png'),fullPage:true});
+ assert.equal(await page.evaluate(()=>botAccountController.eligibility()),false,'blocked device cannot enable through an allowed server');
+ geoBlocked=false;
+ assert.equal(await page.evaluate(()=>botAccountController.eligibility()),true,'both device and server must allow trading');
  await box.evaluate(el=>window.scrollTo(0,el.getBoundingClientRect().top+scrollY-24));await page.screenshot({path:path.join(out,'06-account-mobile-viewport.png')});
  assert.match(await box.innerText(),/80 pUSD/);assert.doesNotMatch(await page.locator('body').innerText(),/PUBLIC_LEAK/);
  await box.getByText('Адреса кошельков',{exact:true}).click();
@@ -83,8 +87,16 @@ let mode='NOT_CREATED',operation=null;const calls=[],errors=[];
  await page.locator('[data-tab="dash"]').click();const aw=page.locator('#autoWallet');await aw.waitFor({timeout:15000});
  await page.waitForFunction(()=>/0x4444…4444/.test(document.getElementById('autoWallet').textContent),null,{timeout:15000});
  const awText=await aw.evaluate(e=>e.textContent);assert.match(awText,/Автоставки · выключены/);assert.match(awText,/80 pUSD/);
+ const first=page.locator('#topCards .card').first();const firstText=await first.evaluate(e=>e.textContent);
+ assert.match(firstText,/Торговый счёт AISports/,'trading account is the main card');assert.match(firstText,/80 pUSD/);assert.match(firstText,/зарезервировано 20/);
+ assert.match(firstText,/Кошелёк Polymarket \(просмотр\)/,'view wallet demoted to a line');
+ const cards=await page.locator('#topCards .card').allTextContents();assert.match(cards[1],/Доля прибыльных расчётов/);assert.match(cards[1],/расчётов ещё не было/);assert.match(cards[2],/Прибыль автоставок за всё время/);assert.match(cards[2],/−1 pUSD/);assert.match(cards[3],/0 pUSD/);
+ const partial=await page.evaluate(()=>tradingAccountStats({account:botAccountController.state.account,historyLoaded:true,history:Array.from({length:200},(_,i)=>({kind:'TRADE',state:'CONFIRMED',created_at:new Date(Date.now()-i*1000).toISOString()}))}));
+ assert.equal(partial.settled,null,'200-row history cannot be presented as all-time W/L');assert.equal(partial.pnl24,null,'200 recent operations cannot prove the full 24-hour result');
  assert.equal(await aw.evaluate(e=>getComputedStyle(e).color),'rgb(34, 197, 94)','green font');
  await aw.locator('.aw-addr').click();assert.equal(await page.evaluate(()=>window.__clipboardValue),bot);
+ await page.evaluate(()=>{botAccountController.state.account.policy.enabled=true;botAccountController.state.account.runtime_ready=false;botAccountController.render(botAccountController.state);});
+ assert.match(await aw.innerText(),/Автоставки · приостановлены/i,'enabled policy with a stopped runtime cannot look active');
  await page.screenshot({path:path.join(out,'07-dash-auto-wallet.png'),fullPage:false});
  await page.locator('[data-tab="me"]').click();
  await page.setViewportSize({width:1280,height:960});await page.screenshot({path:path.join(out,'03-ready-desktop.png'),fullPage:true});
