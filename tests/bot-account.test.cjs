@@ -141,3 +141,13 @@ test('official page uses private module, no raw session URL/test-page redirects/
  for(const code of [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).filter(x=>x.trim()))assert.doesNotThrow(()=>new vm.Script(code));
  const official=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json')));const root=JSON.parse(fs.readFileSync(path.join(__dirname,'../version.json')));assert.equal(official.build,BUILD);assert.equal(root.build,official.build);assert.match(html,/const BUILD = "v\d+"/);
 });
+
+test('region eligibility comes from the trading server verdict, fresh and typed; device IP is irrelevant',()=>{
+ const {regionEligibility}=api;const at=new Date(NOW-30000).toISOString();
+ assert.equal(regionEligibility({execution_region:{country:'KZ',blocked:false,checked_at:at}},NOW),true);
+ assert.equal(regionEligibility({execution_region:{country:'PL',blocked:true,checked_at:at}},NOW),false);
+ assert.equal(regionEligibility({execution_region:{country:null,blocked:null,checked_at:at}},NOW),null);          // unverified read
+ assert.equal(regionEligibility({execution_region:{country:'KZ',blocked:false,checked_at:new Date(NOW-11*60000).toISOString()}},NOW),null); // stale
+ assert.equal(regionEligibility({execution_region:{country:'kz',blocked:false,checked_at:at}},NOW),null);          // malformed country
+ assert.equal(regionEligibility({},NOW),null);assert.equal(regionEligibility(null,NOW),null);
+});

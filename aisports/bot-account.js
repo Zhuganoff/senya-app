@@ -145,6 +145,19 @@
     if (!Number.isFinite(expiry) || expiry <= now || expiry > now + 15 * 60000) fail("SIGNATURE_EXPIRED");
     return {from:eoa, to:PUSD, data, value:"0x0"};
   }
+  // Owner 25.09: eligibility is a fact about the TRADING SERVER (it places the orders), written by the service from
+  // polymarket.com/api/geoblock as seen from the server (account.execution_region). true = allowed and fresh,
+  // false = server region blocked, null = unverified/stale. The user's device IP is not the trading party.
+  const REGION_MAX_AGE = 10 * 60000;
+  function regionEligibility(account, now = Date.now()) {
+    const g = account && account.execution_region;
+    if (!g || typeof g !== "object" || !g.checked_at) return null;
+    const age = now - Date.parse(g.checked_at);
+    if (!Number.isFinite(age) || age < -60000 || age > REGION_MAX_AGE) return null;
+    if (g.blocked === false && /^[A-Z]{2}$/.test(String(g.country || ""))) return true;
+    if (g.blocked === true) return false;
+    return null;
+  }
   async function checkEligibility(fetcher) {
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
     try {
@@ -483,6 +496,8 @@
     autoNeedReady:["Счёт ещё готовится","The account is still being prepared","账户仍在准备中"],
     autoBusyOp:["Дождитесь завершения операции","Wait until the operation finishes","请等待操作完成"],
     autoConfirm:["Включить автоставки","Enable auto-bets","启用自动投注"],
+    regionLine:["Регион исполнения (торговый сервер)","Execution region (trading server)","执行地区（交易服务器）"],
+    regionOk:["разрешено","allowed","允许"], regionBlocked:["торговля запрещена","trading blocked","禁止交易"], regionUnknown:["ещё не подтверждён","not confirmed yet","尚未确认"],
     fundedOk:["Счёт пополнен","Account funded","账户已充值"],
     noMoneyMoved:["деньги не списаны","no funds were moved","未扣款"],
     policy:["MLB. Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Максимум открытых позиций:","MLB. The lower of the strategy allocation and your maximum; fees count toward risk. Maximum open positions:","MLB。采用策略比例和您上限中的较低值，费用计入风险。最大未平仓数量："],
@@ -532,8 +547,8 @@
     FAILED:["Операция не выполнена","Transaction failed","交易失败"], REJECTED:["Операция отклонена","Transaction rejected","交易被拒绝"], CANCELLED:["Операция отменена","Transaction cancelled","交易已取消"], EXPIRED:["Срок подтверждения истёк","Confirmation expired","确认已过期"]
   };
   const errors = {
-    GEOBLOCKED:["Торговля недоступна в вашем регионе. Автоставки не включены.","Trading is unavailable in your region. Auto-bets were not enabled.","您所在地区不支持交易，未启用自动投注。"],
-    GEOBLOCK_UNVERIFIED:["Не удалось проверить доступность торговли в вашем регионе. Включение остановлено.","Could not verify trading availability in your region. Enabling was stopped.","无法核实您所在地区是否允许交易，已停止启用操作。"],
+    GEOBLOCKED:["Торговый сервер сейчас находится в регионе, где Polymarket не разрешает торговлю. Автоставки не включены.","The trading server is currently in a region where Polymarket does not allow trading. Auto-bets were not enabled.","交易服务器当前所在地区不允许在 Polymarket 交易，未启用自动投注。"],
+    GEOBLOCK_UNVERIFIED:["Сервер ещё не подтвердил регион исполнения (проверка идёт каждые ~20 с). Повторите через минуту.","The trading server has not confirmed its region yet (it re-checks every ~20 s). Retry in a minute.","交易服务器尚未确认执行地区（约每 20 秒复核一次）。请一分钟后重试。"],
     NOT_READY:["Счёт или исполнитель ещё не готовы. Обновите состояние.","The account or execution service is not ready. Refresh status.","账户或交易服务尚未就绪，请刷新。"],
     VERSION_CONFLICT:["Настройки изменились на другом устройстве. Обновите и проверьте их.","Settings changed on another device. Refresh and review them.","设置已在其他设备修改，请刷新并检查。"],
     BALANCE_STALE:["Нужна свежая сверка баланса. Ожидаем подтверждения.","A fresh balance check is required. Awaiting confirmation.","需要重新核对余额，正在等待确认。"],
@@ -967,6 +982,8 @@
         },blocked,switchIsPrimary));
         if(!on&&enableOpen&&!blocked&&!s.busy) {
           view.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
+          const g=a.execution_region||{},ok=regionEligibility(a);   // вердикт сервера, не IP устройства
+          view.append(line(tr("regionLine"),(g.country?g.country+" · ":"")+tr(ok===true?"regionOk":ok===false?"regionBlocked":"regionUnknown")+(g.checked_at?" · "+new Date(g.checked_at).toLocaleTimeString(lang):"")));
           view.append(button(tr("autoConfirm"),()=>{enableOpen=false;controller.enable(true);},s.busy,true));
         }
         tail();
@@ -1007,5 +1024,5 @@
     controller.render=paint;controller.reset();
     return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferDialog||settingsDialog?null:controller.refresh(),reset:()=>{closeTransfer();closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
-  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,stateLabel,mount};
+  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,regionEligibility,stateLabel,mount};
 });

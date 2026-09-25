@@ -1007,10 +1007,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v144"></script>
-<script src="wallet-connect.js?v=v144"></script>
+<script src="bot-account.js?v=v145"></script>
+<script src="wallet-connect.js?v=v145"></script>
 <script>
-const BUILD = "v144";
+const BUILD = "v145";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2891,7 +2891,11 @@ const botWallet = () => botConnector.connect();
 const botAccountController = new AISportsBotAccount.Controller({
   session: wvInit,
   rpc: async (name, params) => { const r = await wvRpc(name, params); if (!r.server) throw new AISportsBotAccount.ClientError("SOURCE_UNAVAILABLE"); return r.data; },
-  wallet: botWallet, resolveWallet: wvResolve, eligibility: () => AISportsBotAccount.checkEligibility(window.fetch.bind(window))
+  // v145 (владелец 25.09): доступность торговли — свойство ТОРГОВОГО СЕРВЕРА (он отправляет ордера): служба пишет вердикт
+  // polymarket.com/api/geoblock, увиденный С СЕРВЕРА, в account.execution_region; включение автоставок идёт по нему
+  // (свежесть ≤10 мин, иначе «не подтверждён»). Перед КАЖДЫМ ордером сервер проверяет регион ещё раз (real_exec/account_execution).
+  wallet: botWallet, resolveWallet: wvResolve,
+  eligibility: async () => { const r = await wvRpc("bot_account_get", {p_init_data: wvInit()}); return r.server ? AISportsBotAccount.regionEligibility(r.data && r.data.account) : null; }
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
 const botAccountPaint = botAccountController.render;
