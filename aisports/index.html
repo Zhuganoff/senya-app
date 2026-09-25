@@ -998,10 +998,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v137"></script>
-<script src="wallet-connect.js?v=v137"></script>
+<script src="bot-account.js?v=v138"></script>
+<script src="wallet-connect.js?v=v138"></script>
 <script>
-const BUILD = "v137";
+const BUILD = "v138";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1861,7 +1861,7 @@ async function main(){
   renderTop(null);
   if (wvView) {
     const st = wvStateFor(skW); const myGen = st.gen; const addr = st.addr;
-    const [v, bal] = await Promise.all([wvValue(addr), wvBalance(addr)]);
+    const [v, bal] = await wvPublicMoney(addr);
     if (!wvAlive(skW, myGen, addr)) return;                 // поздний ответ: другая сессия, отключение или другой адрес — не рисуем
     wvRenderDashCard(wvView, v, bal, skW, myGen, addr);
   }
@@ -2648,27 +2648,34 @@ async function initWallet(me, boundSession){
 // ─────────── v108 (этап W): «Кошелёк Polymarket» — просмотр по публичному адресу ───────────
 const WV_ADDR_RE = /^0x[0-9a-fA-F]{40}$/;
 const wvInit = () => (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || "";
+const WV_READ_TIMEOUT_MS = 6000;
+async function wvPublicJSON(url, options = {}){
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), WV_READ_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, {...options, signal: ctl.signal});
+    return {response: r, data: r.ok ? await r.json() : null};
+  } finally { clearTimeout(timer); }
+}
 async function wvRpc(name, params){
   // RPC по подписанному initData; 404/PGRST202 = безопасный профиль не установлен → {server:false}
   // v133: ограниченное ожидание — зависший запрос прерывается через 15 с, экран не остаётся «занятым».
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 15000);
-  let r;
-  try { r = await fetch(SB + "/rpc/" + name, {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, H),
-                                               body: JSON.stringify(params), signal: ctl.signal}); }
-  finally { clearTimeout(timer); }
-  if (r.status === 404) return {server: false, data: null};
-  if (!r.ok) throw new Error("rpc " + r.status);
-  return {server: true, data: await r.json()};
+  try {
+    const r = await fetch(SB + "/rpc/" + name, {method: "POST", headers: Object.assign({"Content-Type": "application/json"}, H),
+                                                 body: JSON.stringify(params), signal: ctl.signal});
+    if (r.status === 404) return {server: false, data: null};
+    if (!r.ok) throw new Error("rpc " + r.status);
+    return {server: true, data: await r.json()};
+  } finally { clearTimeout(timer); }
 }
 async function wvResolve(addr){
   // Контракт публичного endpoint (W-R1): Gamma public-profile?address=X возвращает профиль аккаунта, связанного с X
   // (X — адрес аккаунта/proxyWallet ИЛИ адрес владельца Deposit Wallet); поля address/owner в ответе НЕТ.
   // Хост — константа GAMMA_API, введённая строка только параметр.
   const fetchProfile = async (a) => {
-    const r = await fetch(GAMMA_API + "/public-profile?address=" + encodeURIComponent(a), {headers: {"Accept": "application/json"}});
+    const {response:r,data:p} = await wvPublicJSON(GAMMA_API + "/public-profile?address=" + encodeURIComponent(a), {headers: {"Accept": "application/json"}});
     if (r.status === 404) return {status: "not_found"};
     if (!r.ok) return {status: "error", code: r.status};
-    const p = await r.json();
     if (!p || typeof p !== "object") return {status: "not_found"};
     const proxy = String(p.proxyWallet || "").toLowerCase();
     if (!WV_ADDR_RE.test(proxy)) return {status: "unsupported"};              // форма ответа/тип кошелька не распознаны
@@ -2683,11 +2690,22 @@ async function wvResolve(addr){
   if (second.status !== "ok" || second.proxy !== first.proxy || second.name !== first.name) return {status: "mismatch"};
   return {status: "ok", proxy: first.proxy, name: first.name, link: "owner"};
 }
+// Главная карточка и профиль разделяют один короткий публичный снимок кошелька.
+// Данные нужны только для отображения; денежные операции читают свежий баланс на сервере.
+const WV_PUBLIC_CACHE_MS = 10000;
+let wvPublicCache = null;
+function wvPublicMoney(addr){
+  const session = sessionKey(), key = String(addr || "").toLowerCase(), now = Date.now();
+  if (wvPublicCache && wvPublicCache.session === session && wvPublicCache.addr === key && now - wvPublicCache.at < WV_PUBLIC_CACHE_MS)
+    return wvPublicCache.promise;
+  const promise = Promise.all([wvValue(key), wvBalance(key)]);
+  wvPublicCache = {session, addr: key, at: now, promise};
+  return promise;
+}
 async function wvValue(proxy){
   try {
-    const r = await fetch(DATA_API + "/value?user=" + encodeURIComponent(proxy), {headers: {"Accept": "application/json"}});
+    const {response:r,data:j} = await wvPublicJSON(DATA_API + "/value?user=" + encodeURIComponent(proxy), {headers: {"Accept": "application/json"}});
     if (!r.ok) return null;
-    const j = await r.json();
     const row = Array.isArray(j) ? j.find(x => String(x.user || "").toLowerCase() === proxy) || j[0] : j;
     const v = row && Number(row.value);
     return (row && String(row.user || proxy).toLowerCase() === proxy && isFinite(v)) ? v : null;
@@ -2716,30 +2734,28 @@ function wvAlive(bound, gen, addr){
   return sessionKey() === bound && st.session === bound && st.gen === gen && (addr === undefined || st.addr === (addr == null ? null : String(addr).toLowerCase()));
 }
 async function wvRpcCall(method, params){
-  const r = await fetch(POLYGON_RPC, {method: "POST", headers: {"Content-Type": "application/json"},
+  const {response:r,data:j} = await wvPublicJSON(POLYGON_RPC, {method: "POST", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({jsonrpc: "2.0", id: 1, method, params})});
   if (!r.ok) throw new Error("http_" + r.status);
-  const j = await r.json();
   if (!j || typeof j.result !== "string" || !/^0x[0-9a-fA-F]*$/.test(j.result)) throw new Error("rpc_" + ((j && j.error && j.error.code) || "shape"));
   return j.result;
 }
 async function wvBalance(addr){
-  // v112: остаток pUSD (торговое обеспечение Polymarket) + USDC/USDC.e отдельно; сеть, контракт, decimals и форма
-  // ответа проверяются; все balanceOf читаются на ОДНОМ блоке; ошибка/неизвестный актив → не ноль, а «недоступно».
+  // На экране используется только pUSD. Проверяем сеть, decimals и balanceOf на одном блоке;
+  // USDC/USDC.e не запрашиваем, поскольку они не влияют на показанный остаток.
   const a = String(addr || "").toLowerCase();
   if (!/^0x[0-9a-f]{40}$/.test(a)) return {ok: false, error: "bad_address"};
   try {
-    const chain = await wvRpcCall("eth_chainId", []);
+    const [chain,block] = await Promise.all([wvRpcCall("eth_chainId", []),wvRpcCall("eth_blockNumber", [])]);
     if (BigInt(chain) !== BigInt(POLYGON_CHAIN_ID)) return {ok: false, error: "wrong_chain"};
-    const block = await wvRpcCall("eth_blockNumber", []);
-    const dec = await wvRpcCall("eth_call", [{to: WV_TOKENS.pusd, data: "0x313ce567"}, block]);
+    const [dec,res] = await Promise.all([
+      wvRpcCall("eth_call", [{to: WV_TOKENS.pusd, data: "0x313ce567"}, block]),
+      wvRpcCall("eth_call", [{to: WV_TOKENS.pusd, data: "0x70a08231" + a.slice(2).padStart(64, "0")}, block])
+    ]);
     if (dec === "0x" || Number(BigInt(dec)) !== 6) return {ok: false, error: "decimals"};
     const out = {ok: true, block: Number(BigInt(block)), ts: new Date().toISOString().slice(11, 16)};
-    for (const [k, token] of Object.entries(WV_TOKENS)) {
-      const res = await wvRpcCall("eth_call", [{to: token, data: "0x70a08231" + a.slice(2).padStart(64, "0")}, block]);
-      if (res === "0x") return {ok: false, error: "empty_" + k};
-      out[k] = Number(BigInt(res)) / 1e6;
-    }
+    if (res === "0x") return {ok: false, error: "empty_pusd"};
+    out.pusd = Number(BigInt(res)) / 1e6;
     return out;
   } catch(e) { return {ok: false, error: String(e && e.message || "network").slice(0, 40)}; }
 }
@@ -2770,7 +2786,6 @@ function wvRenderConnected(view, value, serverSaved, bal){
   if (connectBtn) connectBtn.style.display = "block";
   if (addrRow) addrRow.style.display = "flex";
   if (verifyBtn) verifyBtn.style.display = "none";
-  autoRefresh(window.__wv && window.__wv.session);
 }
 function wvRenderDashCard(view, value, bal, bound, gen, addr){
   // W1/v112: карточка «Кошелёк Polymarket» на дашборде — pUSD выбранного адреса и стоимость позиций раздельно;
@@ -2876,15 +2891,11 @@ document.getElementById("walletChoicePublic").addEventListener("click", () => {
   row.style.display = "flex"; inp.readOnly = false; inp.focus();
 });
 document.getElementById("verifyWalletOwner").addEventListener("click", openMetaMaskFlow);
-function autoRefresh(bound){
-  if (sessionKey() !== bound) return;
-  return window.__botAccountUI.refresh();
-}
 // GET-only recovery on return/refresh. No timer automatically retries a financial mutation or opens a wallet.
 let botLastPoll = 0;
 function botAccountPoll(){
   ensurePrivateSession();
-  if (document.hidden || !wvInit() || Date.now()-botLastPoll < 5000 || botAccountController.state.busy) return;
+  if (document.hidden || !wvInit() || window.__meInit !== sessionKey() || Date.now()-botLastPoll < 5000 || botAccountController.state.busy) return;
   botLastPoll = Date.now(); window.__botAccountUI.backgroundRefresh();
 }
 document.addEventListener("visibilitychange", botAccountPoll);
@@ -2953,7 +2964,7 @@ async function initWalletView(bound){
     window.__wv.view = view; window.__wv.server = server;
     const stGen2 = wvStateSet(bound, view);
     wvRenderConnected(view, undefined, server, undefined);
-    const [v, bal] = await Promise.all([wvValue(res.proxy), wvBalance(res.proxy)]);
+    const [v, bal] = await wvPublicMoney(res.proxy);
     if (sessionKey() === bound && window.__wv && window.__wv.view === view && window.__wv.gen === myGen && wvAlive(bound, stGen2, res.proxy)) { wvRenderConnected(view, v, server, bal); wvRenderDashCard(view, v, bal, bound, stGen2, res.proxy); }
   };
   btn.addEventListener("click", btn.__p0Handler);
@@ -2972,7 +2983,7 @@ async function initWalletView(bound){
         wvStateAdopt(bound, r.data, stLoadGen);
         const a2 = String(r.data.resolved_address || r.data.input_address).toLowerCase();
         wvRenderConnected(r.data, undefined, "saved", undefined);
-        const [v, bal] = await Promise.all([wvValue(a2), wvBalance(a2)]);
+        const [v, bal] = await wvPublicMoney(a2);
         if (sessionKey() === bound && window.__wv && window.__wv.view === r.data && window.__wv.gen === loadGen && wvAlive(bound, stLoadGen, a2)) { wvRenderConnected(r.data, v, "saved", bal); wvRenderDashCard(r.data, v, bal, bound, stLoadGen, a2); }
       }
     } catch(e) { if (sessionKey() === bound) wvRenderEmpty(t("wvSourceErr")); }

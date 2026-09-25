@@ -5,7 +5,7 @@ const repo=path.resolve(__dirname,'..'),out=path.resolve(process.env.UI_ARTIFACT
 const owner='0x'+'1'.repeat(40),funding='0x'+'2'.repeat(40),botOwner='0x'+'3'.repeat(40),bot='0x'+'4'.repeat(40),PUSD='0xc011a7e12a19f7b1f670d46f03b03f3342e82dfb';
 const oldId='65ce28bd-899c-44e2-8679-7f03aa576a3b',mmId='44444444-4444-4444-8444-444444444444';
 const now=()=>new Date().toISOString();
-let mm={balance:'0',pol:'0'},operations=[],current=null;const calls=[],errors=[];
+let mm={balance:'0',pol:'0'},operations=[],current=null;const calls=[],chainCalls=[],errors=[];
 function account(){return {account_id:'11111111-1111-4111-8111-111111111111',state:'READY',version:3,verified_user_signer:owner,funding_wallet:funding,bot_owner_address:botOwner,bot_deposit_wallet:bot,chain_id:137,collateral:PUSD,
  policy:{version:2,enabled:false,max_stake_bps:1000,max_open:10,sports:['mlb']},balance:{confirmed_units:'0',reserved_units:'0',available_units:'0',checked_at:now()},runtime_ready:true,last_checked_at:now(),
  sources:[{source_kind:'METAMASK',address:owner,balance_units:mm.balance,held_units:'0',available_units:mm.balance,pol_wei:mm.pol,owner_ok:true,block:94367497,checked_at:now(),fresh:true},
@@ -45,7 +45,12 @@ function mmOp(state,extra={}){
    else if(name==='app_version')result=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json'),'utf8')).build;
    else result={};
   }else if(url.pathname.endsWith('/app_assets'))result=[{content:{schema_version:1,session:{date:'2026-09-24',bets:0,bets_list:[]},history:[],sports:{},bets:[],paper_forecasts:[]}}];
-  else if(url.hostname==='polygon-bor-rpc.publicnode.com')result={jsonrpc:'2.0',id:1,result:'0x89'};
+  else if(url.hostname==='polygon-bor-rpc.publicnode.com'){
+   const q=req.postDataJSON();chainCalls.push(q);
+   const value=q.method==='eth_chainId'?'0x89':q.method==='eth_blockNumber'?'0x100':
+    q.method==='eth_call'&&q.params[0].data==='0x313ce567'?'0x6':'0x45317f1';
+   result={jsonrpc:'2.0',id:1,result:value};
+  }
   else if(url.pathname==='/value')result=[{value:100}];
   return route.fulfill({status:200,body:JSON.stringify(result),contentType:'application/json',headers:{'access-control-allow-origin':'*'}});
  });
@@ -146,6 +151,16 @@ function mmOp(state,extra={}){
    assert.equal(await head.evaluate(el=>el.isConnected),true,'unchanged poll must not replace the profile card');}
   await page.close();
  }
+ // A saved public wallet adds one bounded pUSD read, without repeating the private account refresh.
+ current=null;operations=[];
+ const beforeGet=calls.filter(c=>c.name==='bot_account_get').length,beforeChain=chainCalls.length;
+ ({page,box}=await open());
+ await page.waitForFunction(() => document.querySelector('#budgetHint')?.textContent?.includes('72.55 pUSD'));
+ assert.equal(calls.filter(c=>c.name==='bot_account_get').length-beforeGet,1,'public wallet paint must not re-read private account');
+ const walletReads=chainCalls.slice(beforeChain);
+ assert.deepEqual(walletReads.map(c=>c.method),['eth_chainId','eth_blockNumber','eth_call','eth_call']);
+ assert.ok(walletReads.filter(c=>c.method==='eth_call').every(c=>c.params[0].to===PUSD),'only displayed pUSD is queried');
+ await page.close();
  assert.deepEqual(errors,[]);
  assert.ok(calls.filter(x=>x.name.startsWith('bot_account_')).every(x=>x.body.p_init_data==='FIXTURE_A_NOT_REAL_AUTH'));
  fs.writeFileSync(path.join(out,'result.json'),JSON.stringify({offline:true,errors,rpcCalls:calls.length,scenarios:['old-refusal-hidden','settings-modal','unchanged-poll-keeps-profile-dom','compact-source-menu','75-over-72.554481-refused-before-request','metamask-0-pusd-refused','metamask-review-network-transaction','wallet-never-answers-wallet-pending','exact-erc20-transfer','reload-wallet-pending','reload-unknown-auto-reread','reload-rejected-hidden','reload-awaiting','reload-checking','refresh-read-only'],physicalWallet:'NOT_OBSERVED'},null,2)+'\n');
