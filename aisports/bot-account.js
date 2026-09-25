@@ -474,6 +474,7 @@
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
     checked:["Последняя сверка","Last checked","上次核对"], details:["Подробности","Details","详情"], waiting:["Проверяем состояние…","Checking status…","正在检查状态…"],
+    checkingHint:["Сервис читает остаток в сети Polygon и готовит перевод к подписи — обычно до 30 секунд. Экран обновится сам.","The service reads the on-chain balance and prepares the transfer for signing — usually within 30 seconds. This screen updates by itself.","服务正在读取链上余额并准备待签名的转账，通常不超过 30 秒。页面会自动更新。"],
     srcPolymarket:["Со счёта Polymarket","From Polymarket account","从 Polymarket 账户"], srcMetaMask:["Из MetaMask","From MetaMask","从 MetaMask"],
     srcChoose:["Откуда пополнить","Fund from","充值来源"], balanceSrc:["Баланс","Balance","余额"], heldSrc:["Удержано","Held","已冻结"],
     availableSrc:["Доступно","Available","可用"], gasSrc:["Газ, POL","Gas, POL","Gas (POL)"], blockSrc:["блок","block","区块"],
@@ -590,6 +591,12 @@
       if (o.state === "REJECTED") return "REJECTED_NO_DEBIT";   // SQL releases a funding only with proof of no debit
     }
     return o ? o.state : null;
+  }
+  // Owner 25.09: while the service prepares the transfer, show how long we have been waiting (usually ≤30 s).
+  function waitingLabel(o, lang, now = Date.now()) {
+    if (!o || opStateKey(o) !== "CHECKING" || !o.created_at) return "";
+    const sec = Math.max(0, Math.round((now - Date.parse(o.created_at)) / 1000));
+    return " · " + (lang === "ru" ? sec + " с" : lang === "zh" ? sec + " 秒" : sec + " s");
   }
   function formatPol(wei) {
     if (!/^[0-9]+$/.test(String(wei))) return "—";
@@ -838,7 +845,8 @@
         },s.busy,true));body.append(actions);
       }else if(o){
         const viaWallet=o.kind==="FUNDING"&&o.source_kind==="METAMASK";
-        body.append(statePill(stateText(opStateKey(o)),o.state==="CONFIRMED"?"on":o.state==="REJECTED"?"bad":"warn",!TERMINAL.has(o.state)));
+        body.append(statePill(stateText(opStateKey(o))+waitingLabel(o,lang),o.state==="CONFIRMED"?"on":o.state==="REJECTED"?"bad":"warn",!TERMINAL.has(o.state)));
+        if(opStateKey(o)==="CHECKING")body.append(el("div",tr("checkingHint"),"ba-foot"));
         if(o.intent&&!TERMINAL.has(o.state)){
           const amt=el("div",null,"ba-amount");amt.append(doc.createTextNode(formatUnits(o.amount_units)),el("span"," pUSD"));
           body.append(amt,el("div",tr("amount").replace(/\s*pUSD\s*$/i,""),"ba-cap"));
@@ -945,7 +953,7 @@
       } else tail();
       if(o&&!transferKind){
         const strip=el("div",null,"ba-transfer-status");
-        strip.append(el("span",kindText(o.kind)+" · "+stateText(opStateKey(o))));
+        strip.append(el("span",kindText(o.kind)+" · "+stateText(opStateKey(o))+waitingLabel(o,lang)));
         const details=el("button",tr("transferOpen"));details.type="button";details.onclick=openOperation;
         strip.append(details);view.append(strip);
       }
@@ -967,11 +975,13 @@
     function schedulePoll(s) {
       const win=doc.defaultView; if(pollTimer){win.clearTimeout(pollTimer);pollTimer=null;}
       const o=s.operation;
+      const checking=o&&opStateKey(o)==="CHECKING";
       if(!s.busy&&s.account&&o&&!TERMINAL.has(o.state)&&o.state!=="AWAITING_SIGNATURE")pollTimer=win.setTimeout(async()=>{
         pollTimer=null;const terminal=await controller.pollOperation(o.operation_id);
         if(terminal)await controller.refresh();
+        else if(checking&&controller.state.operation&&opStateKey(controller.state.operation)==="CHECKING"&&!controller.state.busy)paint(controller.state); // тикает время ожидания
         else schedulePoll(controller.state);
-      },5000);
+      },checking?3000:5000);   // пока сервис готовит перевод — чаще
     }
     controller.render=paint;controller.reset();
     return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferDialog||settingsDialog?null:controller.refresh(),reset:()=>{closeTransfer();closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
