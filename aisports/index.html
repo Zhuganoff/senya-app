@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v147"></script>
-<script src="wallet-connect.js?v=v147"></script>
+<script src="bot-account.js?v=v148"></script>
+<script src="wallet-connect.js?v=v148"></script>
 <script>
-const BUILD = "v147";
+const BUILD = "v148";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1027,6 +1027,12 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 const OFFICIAL_PERSONAL_LISTS = APP_PROFILE === "aisports";
 function personalBets(feed){ const p = window.__privateRealBets; return p && p.session === sessionKey() ? p.rows : []; }
 function personalUnknownTrades(){ const p = window.__privateRealBets; return p && p.session === sessionKey() ? p.unknown : 0; }
+function personalUnknownTradesHint(){
+  const p = window.__privateRealBets;
+  if (!p || p.session !== sessionKey() || !p.unknown) return "";
+  const names = (p.pendingNames || []).map(v3Esc).join(" · ");
+  return `${p.unknown} · ${t("unknownTradesHint")}${names ? `<br>${names}` : ""}`;
+}
 // 21.09 (перенос футбола в official, владелец; приёмка Астры): общие PAPER-прогнозы стратегии по футболу (лента: paper_forecasts,
 // origin=paper_signal) показываются ОТДЕЛЬНЫМ блоком с собственной подписью НЕЗАВИСИМО от личного списка — записи не смешиваются;
 // в personal_real_bets никогда не попадают; денег в них нет (HIDE_MONEY)
@@ -1103,7 +1109,7 @@ const T = {
   secLast: ["Личные сделки", "Personal trades", "个人交易"],
   noPersonalBets: ["Подтверждённых личных сделок нет", "No confirmed personal trades", "暂无已确认的个人交易"],
   noPersonalBetsHint: ["Операции и ставки отдельного счёта доступны в «Профиль → Торговый счёт AISports». Здесь нет публичной истории чужих счетов.", "Your separate account’s transactions and bets are in Profile → AISports trading account. Other accounts’ private history is not shown here.", "独立账户的交易与投注请见个人资料 → AISports 交易账户。此处不展示其他账户的私人历史。"],
-  unknownTradesHint: ["Заявки проверяются биржей. Средства удержаны; подтверждёнными ставками они пока не считаются.", "Orders are being reconciled with the exchange. Funds remain reserved; these are not confirmed bets yet.", "订单正在与交易所核对。资金仍被预留，暂不计为已确认投注。"],
+  unknownTradesHint: ["Отправка не подтверждена. Средства удержаны до сверки; это не ставки.", "Submission is unconfirmed. Funds remain reserved during reconciliation; these are not bets.", "提交尚未确认。资金在核对期间保留；这些不是已成交投注。"],
   realTradeConfirmed: ["Сделка подтверждена", "Trade confirmed", "交易已确认"],
   secEarn: ["Рефералы", "Referrals", "推荐"],
   secPayouts: ["Выплаты за рефералов", "Referral payouts", "推荐返佣"],
@@ -2474,7 +2480,7 @@ async function loadLastBets(quiet){
     const st0 = document.getElementById("lastStat");
     if (st0) st0.innerHTML = `<div class="dayhead"><span class="daydate">${t("secLast")}</span><span class="daydow">0 ${plBets(0)}</span></div>
       <div class="daysum" style="margin-top:6px"><span>${t("noPersonalBets")}</span></div>`;
-    box.innerHTML = `<div class="loading">${personalUnknownTrades() ? `${personalUnknownTrades()} · ${t("unknownTradesHint")}` : t("noPersonalBetsHint")}</div>` + forecastsBlock(fcLast);
+    box.innerHTML = `<div class="loading">${personalUnknownTradesHint() || t("noPersonalBetsHint")}</div>` + forecastsBlock(fcLast);
     return;
   }
   const last = (OFFICIAL_PERSONAL_LISTS ? personalBets(feed) : ((day.bets_list) || (feed.bets || [])
@@ -2504,7 +2510,7 @@ async function loadLastBets(quiet){
       <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
         <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${HIDE_MONEY ? "" : `${t("baStaked")}: $${turn.toFixed(2)}`}</span></div>`;
   }
-  box.innerHTML = (OFFICIAL_PERSONAL_LISTS && personalUnknownTrades() ? `<div class="loading">${personalUnknownTrades()} · ${t("unknownTradesHint")}</div>` : "") + last.map(betRow).join("") + forecastsBlock(fcLast);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
+  box.innerHTML = (OFFICIAL_PERSONAL_LISTS && personalUnknownTrades() ? `<div class="loading">${personalUnknownTradesHint()}</div>` : "") + last.map(betRow).join("") + forecastsBlock(fcLast);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
 }
 
 // v105 (безопасность P0, 09.09): ОДНА процедура очистки всей приватной отрисовки и памяти —
@@ -2946,8 +2952,10 @@ const botAccountController = new AISportsBotAccount.Controller({
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
 const botAccountPaint = botAccountController.render;
 function personalTradesFromHistory(state){
-  if (!state || state.historyLoaded !== true || !Array.isArray(state.history)) return {rows:[],unknown:0};
-  const unknown = state.history.filter(o => o.kind === "TRADE" && o.state === "UNKNOWN").length;
+  if (!state || state.historyLoaded !== true || !Array.isArray(state.history)) return {rows:[],unknown:0,pendingNames:[]};
+  const pending = state.history.filter(o => o.kind === "TRADE" && o.state === "UNKNOWN");
+  const unknown = pending.length;
+  const pendingNames = pending.map(o => String(o.match || o.fixture_id || "—"));
   const rows = state.history.filter(o => o.kind === "TRADE" && o.state === "CONFIRMED" && o.operation_id).map(o => {
     const date = Date.parse(o.created_at || "");
     const match = String(o.match || o.fixture_id || "");
@@ -2958,7 +2966,7 @@ function personalTradesFromHistory(state){
       result:null,session_date:Number.isFinite(date) ? new Date(date-6*3600000).toISOString().slice(0,10) : "",
       opened_ts:o.created_at,commence:String(o.fixture_id || "").split("|")[0],_realTrade:true};
   });
-  return {rows,unknown};
+  return {rows,unknown,pendingNames};
 }
 // Статистика торгового счёта: баланс сервера и подтверждённые расчёты из приватной истории.
 // История ограничена 200 операциями; неполные выборки не выдаём за статистику за всё время.
@@ -3006,7 +3014,7 @@ let __privateBetsSig = null;
 botAccountController.render = state => {
   const privateTrades = personalTradesFromHistory(state);
   window.__privateRealBets = {session:sessionKey(),...privateTrades};
-  const betsSig = JSON.stringify([sessionKey(),state.historyLoaded,privateTrades.rows,privateTrades.unknown]);
+  const betsSig = JSON.stringify([sessionKey(),state.historyLoaded,privateTrades.rows,privateTrades.unknown,privateTrades.pendingNames]);
   if (betsSig !== __privateBetsSig) {
     __privateBetsSig = betsSig;
     if (state.historyLoaded === true) queueMicrotask(() => {
