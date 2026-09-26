@@ -115,6 +115,8 @@ let mode='NOT_CREATED',operation=null,geoBlocked=true;const calls=[],errors=[];
  await page.locator('[data-tab="stats"]').click();
  await page.waitForFunction(()=>document.getElementById('bets').textContent.includes('Arizona Diamondbacks'));
  assert.match(await page.locator('#bets').innerText(),/Автоставка поставлена/i);
+ assert.match(await page.locator('#baPanel').innerText(),/Отбор и автоставки/);
+ assert.doesNotMatch(await page.locator('#baPanel').innerText(),/ТЕСТ|PAPER|\$0/);
  assert.match(await page.locator('#bets').innerText(),/Футбол|КХЛ|НФЛ/,'selected sports are visible');
  assert.equal((await page.locator('#bets').innerText()).split('Arizona Diamondbacks @ San Diego Padres').length-1,1,'matched trade appears once');
  assert.doesNotMatch(await page.locator('#bets').innerText(),/PRIVATE_PUBLIC_LEAK/);

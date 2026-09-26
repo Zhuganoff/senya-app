@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v149"></script>
-<script src="wallet-connect.js?v=v149"></script>
+<script src="bot-account.js?v=v150"></script>
+<script src="wallet-connect.js?v=v150"></script>
 <script>
-const BUILD = "v149";
+const BUILD = "v150";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1458,7 +1458,9 @@ const T = {
   dimForecasts: ["прогнозы · PAPER", "forecasts · PAPER", "预测 · PAPER"],
   forecastsTitle: ["Отбор стратегии · без денежной ставки", "Strategy selections · no cash bet", "策略选场 · 非现金投注"],
   selectedPicks: ["выбрано", "selected", "已选"],
-  selectedNoTrade: ["Выбрано · автоставка не подтверждена", "Selected · auto-bet unconfirmed", "已选 · 自动投注未确认"],
+  selectedNoTrade: ["Выбрано · реальной ставки нет", "Selected · no real bet", "已选 · 无真实投注"],
+  selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
+  selectionAnalysisScope: ["Все виды в отборе · реальные автоставки пока только MLB", "All sports in selections · real auto-bets currently MLB only", "全部项目选场 · 真实自动投注目前仅限 MLB"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
   autoBetsPlaced: ["автоставок поставлено", "auto-bets placed", "自动投注已成交"],
   paperWin: ["прогноз зашёл", "forecast won", "预测命中"],
@@ -2449,6 +2451,26 @@ async function loadBetAnalysis(shownDay){
   } catch(e) { box.innerHTML = `<div class="v3empty">${t("v3Waiting")}</div>`; }
 }
 
+function loadOfficialSelectionAnalysis(feed){
+  const box = document.getElementById("baPanel");
+  const heading = document.querySelector("#pane-stats .section");
+  if (heading) { heading.dataset.i18n = "selectionAnalysis"; heading.textContent = t("selectionAnalysis"); }
+  if (!box) return;
+  if (!feed) { box.innerHTML = `<div class="v3empty">${t("selectionSourceUnavailable")}</div>`; return; }
+  const day = feed.session || {}, date = day.date || "";
+  const selected = selectedPicks(feed).filter(b => b.session_date === date).length;
+  const confirmed = personalBets().filter(b => b.session_date === date).length;
+  const done = Number(day.matches || 0), planned = Number((day.scheduled || {}).total || 0);
+  box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("selectionAnalysis")}</div>
+      <div class="v3sub">${v3Esc(date)} · ${t("selectionAnalysisScope")}</div></div></div>
+    <div class="v3metrics">
+      <div class="v3metric"><b>${planned > done ? `${v3Num(done)}/${v3Num(planned)}` : v3Num(done)}</b><span>${t("v3Decisions")}</span></div>
+      <div class="v3metric"><b>${selected}</b><span>${t("selectedPicks")}</span></div>
+      <div class="v3metric"><b>${confirmed}</b><span>${t("autoBetsPlaced")}</span></div>
+      <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
+    </div>`;
+}
+
 // Онлайн-обновление вкладки «Ставки» (дефект 25.08: таймера не было вовсе —
 // открытая вкладка не перечитывала ленту никогда, и «Анализ ставок» замирал
 // на том, что было при открытии). Перерисовываем ТОЛЬКО когда вкладка
@@ -2484,11 +2506,10 @@ async function loadLastBets(quiet){
   if (OFFICIAL_PERSONAL_LISTS) {
     if (!quiet) box.innerHTML = `<div class="loading">${t("loading")}</div>`;
     const session = sessionKey();
-    const [strategyResult, officialResult] = await Promise.allSettled([strategyFeed(true),coreFeed(true)]);
+    let strategy = null;
+    try { strategy = await strategyFeed(true); } catch(e) { strategy = null; }
     if (session !== sessionKey()) return;
-    const strategy = strategyResult.status === "fulfilled" ? strategyResult.value : null;
-    const official = officialResult.status === "fulfilled" ? officialResult.value : null;
-    loadBetAnalysis(official && official.session || null);
+    loadOfficialSelectionAnalysis(strategy);
     const picks = selectedPicks(strategy);
     const lastDate = picks.reduce((v,b) => b.session_date > v ? b.session_date : v, "");
     const rows = picks.filter(b => b.session_date === lastDate).map(forecastRow)
@@ -2503,7 +2524,7 @@ async function loadLastBets(quiet){
       <span class="daydow">${rows.length} ${t("selectedPicks")}</span></div>
       <div class="daysum" style="margin-top:6px"><span class="pos">✓ ${confirmed} ${t("autoBetsPlaced")}</span></div>`;
     box.innerHTML = (personalUnknownTradesHint() ? `<div class="loading">${personalUnknownTradesHint()}</div>` : "")
-      + (strategyResult.status !== "fulfilled" ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "")
+      + (!strategy ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "")
       + (rows.length ? forecastsBlock(rows) : `<div class="loading">${t("noPickDay")}</div>`)
       + (extra.length ? `<div class="loading">${t("personalOnly")}</div>` + extra.map(betRow).join("") : "");
     return;
