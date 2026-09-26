@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v151"></script>
-<script src="wallet-connect.js?v=v151"></script>
+<script src="bot-account.js?v=v152"></script>
+<script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v151";
+const BUILD = "v152";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -3341,7 +3341,9 @@ async function initEarn(){
     // «игр зашло»: выигранные ставки бота с даты регистрации — у меня и у моих
     // рефералов (с их дат), те же условия, что WR-блок (staked & result)
     try {
-      const winDates = (await Promise.all(["bet_log","tennis_bet_log","soccer_bet_log"].map(t2 =>
+      const winTables = OFFICIAL_PERSONAL_LISTS ? ["bet_log","soccer_bet_log"]
+        : ["bet_log","tennis_bet_log","soccer_bet_log"];
+      const winDates = (await Promise.all(winTables.map(t2 =>
         q(`/${t2}?select=match_date&staked=is.true&result=eq.1&order=match_date.desc&limit=1000`).catch(() => [])
       ))).flat().map(r => r.match_date || "").filter(Boolean);
       if (sessionKey() !== sk) return;          // v105 R3: сессия сменилась во время подсчёта — не рисуем чужие счётчики
