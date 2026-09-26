@@ -36,7 +36,7 @@ let mode='NOT_CREATED',operation=null,geoBlocked=true;const calls=[],errors=[];
    else if(name==='get_profile_v2')result={tg_id:111,username:'fixture',is_paid:true};
    else if(name==='app_version')result=JSON.parse(fs.readFileSync(path.join(__dirname,'../aisports/version.json'),'utf8')).build;
    else result={};
-  }else if(url.pathname.endsWith('/app_assets'))result=[{content:{schema_version:1,session:{date:'2026-09-23',bets:0,bets_list:[]},history:[],sports:{},bets:[],paper_forecasts:[],personal_real_bets:[{PRIVATE_PUBLIC_LEAK:true}],bot_account:{bot_deposit_wallet:'PUBLIC_LEAK'}}}];
+  }else if(url.pathname.endsWith('/app_assets'))result=[{content:{schema_version:1,mode:'PAPER_ONLY',real_stake:0,session:{date:'2026-09-23',bets:0,bets_list:[]},history:[],sports:{},bets:[],paper_forecasts:[],personal_real_bets:[{PRIVATE_PUBLIC_LEAK:true}],bot_account:{bot_deposit_wallet:'PUBLIC_LEAK'}}}];
   else if(url.hostname==='polygon-bor-rpc.publicnode.com')result={jsonrpc:'2.0',id:1,result:'0x89'};
   else if(url.pathname==='/value')result=[{value:100}];
   return route.fulfill({status:200,body:JSON.stringify(result),contentType:'application/json',headers:{'access-control-allow-origin':'*'}});
@@ -98,6 +98,25 @@ let mode='NOT_CREATED',operation=null,geoBlocked=true;const calls=[],errors=[];
  await page.evaluate(()=>{botAccountController.state.account.policy.enabled=true;botAccountController.state.account.runtime_ready=false;botAccountController.render(botAccountController.state);});
  assert.match(await aw.innerText(),/Автоставки · приостановлены/i,'enabled policy with a stopped runtime cannot look active');
  await page.screenshot({path:path.join(out,'07-dash-auto-wallet.png'),fullPage:false});
+ await page.locator('[data-tab="me"]').click();
+ // The public strategy feed must never be mistaken for a personal trade. A confirmed
+ // account operation appears in Bets; an unresolved order stays visibly unresolved.
+ operation={operation_id:'33333333-3333-4333-8333-333333333333',kind:'TRADE',state:'CONFIRMED',
+   fixture_id:'2026-09-26T01:41:00Z|arizona diamondbacks@san diego padres',
+   match:'Arizona Diamondbacks — San Diego Padres',side:'away',average_price:'0.55',
+   created_at:'2026-09-26T01:15:00Z'};
+ await page.evaluate(()=>botAccountController.refresh());
+ await page.locator('[data-tab="stats"]').click();
+ await page.waitForFunction(()=>document.getElementById('bets').textContent.includes('Arizona Diamondbacks'));
+ assert.match(await page.locator('#bets').innerText(),/Сделка подтверждена/i);
+ assert.doesNotMatch(await page.locator('#bets').innerText(),/PRIVATE_PUBLIC_LEAK/);
+ await page.evaluate(()=>loadDay('2026-09-25'));
+ assert.match(await page.locator('#dayBets').innerText(),/Arizona Diamondbacks/,'confirmed trade must appear on the private day');
+ assert.doesNotMatch(await page.locator('#dayStat').innerText(),/0W-0L/,'filled order is not a settled result');
+ operation={...operation,state:'UNKNOWN'};
+ await page.evaluate(()=>botAccountController.refresh());
+ await page.waitForFunction(()=>document.getElementById('bets').textContent.includes('Заявки проверяются биржей'));
+ assert.doesNotMatch(await page.locator('#bets').innerText(),/Сделка подтверждена/i);
  await page.locator('[data-tab="me"]').click();
  await page.setViewportSize({width:1280,height:960});await page.screenshot({path:path.join(out,'03-ready-desktop.png'),fullPage:true});
  await page.evaluate(()=>{Telegram.WebApp.initData='FIXTURE_B_NOT_REAL_AUTH';Telegram.WebApp.initDataUnsafe.user={id:222,first_name:'Второй',language_code:'ru'};});mode='NOT_CONNECTED';
