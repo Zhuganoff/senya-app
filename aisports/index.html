@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v148"></script>
-<script src="wallet-connect.js?v=v148"></script>
+<script src="bot-account.js?v=v149"></script>
+<script src="wallet-connect.js?v=v149"></script>
 <script>
-const BUILD = "v148";
+const BUILD = "v149";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1033,12 +1033,43 @@ function personalUnknownTradesHint(){
   const names = (p.pendingNames || []).map(v3Esc).join(" · ");
   return `${p.unknown} · ${t("unknownTradesHint")}${names ? `<br>${names}` : ""}`;
 }
-// 21.09 (перенос футбола в official, владелец; приёмка Астры): общие PAPER-прогнозы стратегии по футболу (лента: paper_forecasts,
-// origin=paper_signal) показываются ОТДЕЛЬНЫМ блоком с собственной подписью НЕЗАВИСИМО от личного списка — записи не смешиваются;
-// в personal_real_bets никогда не попадают; денег в них нет (HIDE_MONEY)
-function paperForecasts(feed){ return (feed && Array.isArray(feed.paper_forecasts)) ? feed.paper_forecasts : []; }
-function forecastRow(b){ const r = feedBetToRow(b); r.selection = `${r.selection || ""} · ${t("originPaper")}`; r._forecast = true; return r; }
-function forecastsBlock(rows){ if (!rows.length) return ""; return `<div class="loading">${t("forecastsTitle")}</div>` + rows.map(betRow).join(""); }
+// Общий публичный отбор берём из ленты песочницы; это не личные денежные сделки.
+// Для зелёной отметки требуется совпадение события И стороны с CONFIRMED TRADE
+// текущей Telegram-сессии. По имени матча без времени совпадать запрещено.
+function selectedPicks(feed){
+  if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0) return [];
+  const blocks = [feed.session, ...(Array.isArray(feed.history) ? feed.history : [])];
+  const all = [...(Array.isArray(feed.bets) ? feed.bets : []),
+    ...blocks.flatMap(b => (b && Array.isArray(b.bets_list)) ? b.bets_list : [])];
+  const seen = new Set();
+  return all.filter(b => {
+    if (!b || typeof b.entry_id !== "string" || !b.entry_id || seen.has(b.entry_id) || !b.sport || !b.match
+        || Number(b.real_stake || 0) !== 0) return false;
+    seen.add(b.entry_id); return true;
+  });
+}
+function selectionEventId(b){
+  if (b.sport !== "mlb" || !b.commence || !b.match || !String(b.match).includes("@")) return "";
+  const ts = new Date(b.commence);
+  if (Number.isNaN(ts.getTime())) return "";
+  return ts.toISOString().replace(".000Z", "Z") + "|" + String(b.match).trim().toLowerCase().replace(/\s+/g, " ").replace(/\s*@\s*/g, "@");
+}
+function tradeKey(b){
+  const event = b._forecast ? selectionEventId(b) : b.fixture_id;
+  return event && b.side ? `${b.sport}|${event}|${b.side}` : "";
+}
+function forecastRow(b){
+  const r = feedBetToRow(b); r._forecast = true;
+  const key = tradeKey(r);
+  r._realTrade = !!key && personalBets().some(o => tradeKey(o) === key);
+  return r;
+}
+function forecastsBlock(rows){
+  if (!rows.length) return "";
+  const sports = [...new Set(rows.map(r => r.sport))];
+  return sports.map(sport => `<div class="loading">${v3Esc((ICO_BY_SPORT[sport] || "") + ({mlb:t("sportMlb"),tennis:t("sportTennis"),soccer:t("sportSoccer"),khl:t("sportKhl"),nfl:t("sportNfl")}[sport] || sport))} · ${t("selectedPicks")}</div>`
+    + rows.filter(r => r.sport === sport).map(betRow).join("")).join("");
+}
 // v106 (блок C задания 09.09): новые финансовые секреты в localStorage не сохраняются — до защищённого хранения (P1).
 // Существующие записи не читаются в отчёт, не удаляются и не переносятся автоматически; отвязать может сам пользователь.
 const KEY_SAVE_ENABLED = false;
@@ -1067,7 +1098,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "23.09.2026";
+const BUILD_DATE = "26.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1104,9 +1135,9 @@ const T = {
   headSub: ["Каждая ставка — в открытой базе. Проверь сам.", "Every bet lives in an open database. Verify it yourself.", "每一笔投注都记录在公开数据库中，欢迎亲自查证。"],
   loading: ["Загрузка…", "Loading…", "加载中…"],
   secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>", "今日投注 <span class=\"tag\" id=\"todayTag\">live</span>"],
-  secDayBets: ["Ставки за день", "Bets by day", "按日查看投注"],
+  secDayBets: ["История отбора", "Selection history", "选场历史"],
   secWr: ["Винрейт по видам спорта", "Win rate by sport", "各项目胜率"],
-  secLast: ["Личные сделки", "Personal trades", "个人交易"],
+  secLast: ["Выбранные ставки", "Selected bets", "精选投注"],
   noPersonalBets: ["Подтверждённых личных сделок нет", "No confirmed personal trades", "暂无已确认的个人交易"],
   noPersonalBetsHint: ["Операции и ставки отдельного счёта доступны в «Профиль → Торговый счёт AISports». Здесь нет публичной истории чужих счетов.", "Your separate account’s transactions and bets are in Profile → AISports trading account. Other accounts’ private history is not shown here.", "独立账户的交易与投注请见个人资料 → AISports 交易账户。此处不展示其他账户的私人历史。"],
   unknownTradesHint: ["Отправка не подтверждена. Средства удержаны до сверки; это не ставки.", "Submission is unconfirmed. Funds remain reserved during reconciliation; these are not bets.", "提交尚未确认。资金在核对期间保留；这些不是已成交投注。"],
@@ -1335,7 +1366,7 @@ const T = {
   profit24: ["Моя прибыль за 24 часа", "My profit, last 24h", "我近24小时的盈利"],
   win100sub: ["идеальный день", "perfect day", "完美的一天"],
   ofBankShort: ["от банка", "of bankroll", "占资金"],
-  wrBySport: ["Винрейт по видам", "Win rate by sport", "分项胜率"],
+  wrBySport: ["Результаты отбора · симуляция", "Selection results · simulation", "选场结果 · 模拟"],
   msInnings: ["Счёт по иннингам", "Line score by inning", "各局比分"],
   msSets: ["Счёт по сетам", "Score by set", "各盘比分"],
   msHalves: ["Счёт по таймам", "Score by half", "半场比分"],
@@ -1425,7 +1456,16 @@ const T = {
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
   originPaper: ["прогноз стратегии · PAPER", "strategy forecast · PAPER", "策略预测 · PAPER"],
   dimForecasts: ["прогнозы · PAPER", "forecasts · PAPER", "预测 · PAPER"],
-  forecastsTitle: ["Прогнозы стратегии · футбол · PAPER (не ваши сделки)", "Strategy forecasts · soccer · PAPER (not your trades)", "策略预测 · 足球 · PAPER（非您的交易）"],
+  forecastsTitle: ["Отбор стратегии · без денежной ставки", "Strategy selections · no cash bet", "策略选场 · 非现金投注"],
+  selectedPicks: ["выбрано", "selected", "已选"],
+  selectedNoTrade: ["Выбрано · автоставка не подтверждена", "Selected · auto-bet unconfirmed", "已选 · 自动投注未确认"],
+  autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
+  autoBetsPlaced: ["автоставок поставлено", "auto-bets placed", "自动投注已成交"],
+  paperWin: ["прогноз зашёл", "forecast won", "预测命中"],
+  paperLoss: ["прогноз не зашёл", "forecast lost", "预测未中"],
+  selectionSourceUnavailable: ["История отбора временно недоступна", "Selection history temporarily unavailable", "选场历史暂不可用"],
+  personalOnly: ["Подтверждённые автоставки вне списка отбора", "Confirmed auto-bets outside selection list", "选场列表外的已确认自动投注"],
+  sportNfl: ["НФЛ", "NFL", "美式橄榄球 NFL"],
   comingFrom: ["скоро · сезон с", "coming · season from", "即将 · 赛季自"],
   errWord: ["Ошибка", "Error", "错误"],
   // динамика: профиль и рефы
@@ -1504,6 +1544,9 @@ document.querySelectorAll("[data-i18n]").forEach(el => {
 })();
 
 const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";
+// Публичная лента отбора песочницы; личные сделки остаются только в aisports RPC.
+const STRATEGY_SB = "https://gqlfnhlrpteqfdfyhavl.supabase.co/rest/v1";
+const STRATEGY_KEY = "sb_publishable_J1keRlMi77VotTCnuqGJQg_inumrH9o";
 const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M";
 const H = {apikey: KEY, Authorization: "Bearer " + KEY};
 
@@ -1752,6 +1795,27 @@ async function q(path) {
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
+// Публичная лента песочницы доступна без Telegram-подписи; private RPC сюда не попадает.
+function strategyFeed(force){
+  if (!force && window.__strategyFeedPromise && Date.now() - (window.__strategyFeedAt || 0) < 30000)
+    return window.__strategyFeedPromise;
+  window.__strategyFeedAt = Date.now();
+  window.__strategyFeedPromise = (async () => {
+    const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const resp = await fetch(STRATEGY_SB + "/app_assets?select=content&name=eq.core_feed&limit=1",
+        {headers:{apikey:STRATEGY_KEY,Authorization:"Bearer " + STRATEGY_KEY},signal:ctrl.signal});
+      if (!resp.ok) throw new Error("STRATEGY_FEED_HTTP_" + resp.status);
+      const rows = await resp.json();
+      if (!Array.isArray(rows) || !rows.length) throw new Error("STRATEGY_FEED_EMPTY");
+      const feed = typeof rows[0].content === "string" ? JSON.parse(rows[0].content) : rows[0].content;
+      if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0)
+        throw new Error("STRATEGY_FEED_UNSAFE");
+      return feed;
+    } finally { clearTimeout(timer); }
+  })();
+  return window.__strategyFeedPromise;
+}
 
 function pct(x){ return (x>=0?"+":"") + x.toFixed(1) + "%"; }
 function cls(x){ return x>=0 ? "pos" : "neg"; }
@@ -1808,23 +1872,23 @@ async function main(){
   }
   // v71: ЕДИНЫЙ источник — ассет core_feed. Разметка карточек и блоков
   // не менялась: заменён только слой данных (дизайн заморожен, MINI_APP §0).
+  const strategyPromise = strategyFeed().catch(() => null);
   let feed = null;
   try { feed = await coreFeed(); } catch(e) { feed = null; }
   if (window.__schedInit) { try { renderSched(); } catch(e) {} }   // v107 (C-R2): «Игры» зависят от свежести ленты
+  const strategy = await strategyPromise;
   const z = (feed && feed.totals) || {}, fb = (feed && feed.bank) || {},
         day = (feed && feed.session) || {};
-  const bySport = (feed && feed.by_sport) || {};
+  const bySport = (strategy && strategy.by_sport) || {};
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
-  const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer")};
+  const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer"), khl: t("sportKhl"), nfl: t("sportNfl")};
   // CEO 04.09: теннис копится виртуально — строка затемнена; данные и
   // разметка те же, изменение только инлайн-прозрачностью и подписью.
   // CEO 05.09: затемнение ОСТАЁТСЯ (v96 вернул после v94); строка живая —
   // W/L/число ставок/процент берутся из by_sport.tennis ленты (кошелёк).
-  const DIM_SPORTS = APP_PROFILE === "aisports"
-    ? {tennis: t("dimVirtual"), soccer: t("dimForecasts"), khl: t("dimVirtual")}
-    : {tennis: t("dimVirtual")};
+  const DIM_SPORTS = APP_PROFILE === "aisports" ? {} : {tennis: t("dimVirtual")};
   // 21.09 (перенос футбола в official): футбол виден в статистике как прогнозы стратегии (PAPER) — строка затемнена с пометкой
-  const sortRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb" || k === "soccer");
+  const sortRows = Object.keys(bySport);
   const sportRows = sortRows.map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
@@ -2075,7 +2139,7 @@ function plBets(n){
   const a=Math.abs(n)%100, b=a%10;
   return (a>10&&a<20)||b===0||b>4 ? "ставок" : b===1 ? "ставка" : "ставки";
 }
-function rowCls(r){ return r.result===1 ? "win" : r.result===0 ? "lose" : r.result===-1 ? "void" : ""; }
+function rowCls(r){ return r._forecast ? "" : r.result===1 ? "win" : r.result===0 ? "lose" : r.result===-1 ? "void" : ""; }
 function resIco(r){ return r.result===1?"✓":r.result===0?"×":r.result===-1?"↶":(isStale(r)?"Ⅱ":"·"); }
 // ставка «висит»: результата нет, а игра стартовала больше 6 часов назад
 // (дождь/перенос — кейс Lajal 12.08) → честная пометка вместо вечного «в игре»
@@ -2091,7 +2155,7 @@ function oddsOf(r){ return r.best_odds ?? r.odds ?? null; }
 
 // ─────────── история по дням ───────────
 function betRow(r){
-  const ico = r._realTrade ? "✓" : resIco(r);
+  const ico = r._realTrade ? "✓" : r._forecast ? "·" : resIco(r);
   const clv = r.clv_pct != null
     ? ` · CLV ${r.clv_pct>=0?"+":""}${Number(r.clv_pct).toFixed(1)}%`
     : ((r.closing_ts && r.closing_odds && r.best_odds)
@@ -2105,7 +2169,8 @@ function betRow(r){
   const money = HIDE_MONEY ? ""
               : r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
-  const res = r._realTrade ? `<span class="pos">${t("realTradeConfirmed")}</span>`
+  const res = r._realTrade ? `<span class="pos">${t("autoBetPlaced")}</span>`
+            : r._forecast ? `<span style="color:var(--mut)">${t("selectedNoTrade")}${r.result===1 ? " · " + t("paperWin") : r.result===0 ? " · " + t("paperLoss") : ""}</span>`
             : r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
             : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
@@ -2115,7 +2180,7 @@ function betRow(r){
   const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
   const scoreS = ms && ms.final_score ? `<span class="bscore">${v3Esc(ms.final_score)}</span>` : "";
   const msAttr = ms ? ` data-ms="${v3Esc(`${ms.sport}|${r.match||""}|${ms.match_date}`)}"` : "";
-  return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
+  return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res"${r._realTrade ? ' style="color:var(--green)"' : ""}>${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
     <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${(!HIDE_MONEY && r.pnl!=null)?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
@@ -2273,10 +2338,10 @@ function fmtGDate(iso){
 // v73: строки дня берутся из ЕДИНОГО ассета core_feed (сессия + история),
 // а не из старых таблиц. Копирования и перезаписи истории нет: сессии уже
 // посчитаны в ленте по append-only журналу кошелька.
-const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ "};
+const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ ", khl: "🏒 ", nfl: "🏈 "};
 function feedBetToRow(b){
-  return {_ico: ICO_BY_SPORT[b.sport] || "", match: b.match,
-          selection: b.selection || b.side, best_odds: b.odds,
+  return {_ico: ICO_BY_SPORT[b.sport] || "", sport: b.sport, fixture_id: b.fixture_id,
+          side: b.side, match: b.match, selection: b.selection || b.side, best_odds: b.odds,
           stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
           stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
           match_date: b.session_date || String(b.commence || "").slice(0,10),
@@ -2290,52 +2355,24 @@ function feedSession(feed, d){
 }
 
 async function loadDay(d){
-  const box = document.getElementById("dayBets");
-  const stat = document.getElementById("dayStat");
+  const box = document.getElementById("dayBets"), stat = document.getElementById("dayStat");
   box.innerHTML = `<div class="loading">${t("loading")}</div>`;
-  try{
-    const feed = await coreFeed();
-    const fcDay = OFFICIAL_PERSONAL_LISTS ? paperForecasts(feed).filter(b => b.session_date === d).map(forecastRow) : [];
-    if (OFFICIAL_PERSONAL_LISTS) {
-      const mine = personalBets(feed).filter(b => b.session_date === d);
-      if (!mine.length) {
-        if (fcDay.length) await loadMatchStats(fcDay.map(r => r.match_date).concat(d));
-        stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
-          <span class="daydow">${dowOf(d)}</span></div>
-        <div class="d" style="color:var(--mut);margin-top:4px">${t("noPersonalBets")}</div>`;
-        box.innerHTML = `<div class="loading">${t("noPersonalBetsHint")}</div>` + forecastsBlock(fcDay);
-        return;
-      }
-    }
-    const sess = feedSession(feed, d);
-    const rows = (OFFICIAL_PERSONAL_LISTS ? personalBets(feed).filter(b => b.session_date === d) : ((sess && sess.bets_list) || [])).map(feedBetToRow);
-    await loadMatchStats(rows.map(r => r.match_date).concat(d));
-    if(!rows.length){
-      stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
-          <span class="daydow">${dowOf(d)}</span></div>
-        <div class="d" style="color:var(--mut);margin-top:4px">${t("noBetsDay")}</div>`;
-      box.innerHTML = `<div class="loading">${t("dayOff")}</div>`;
-      return;
-    }
-    const dec = rows.filter(r=>r.result===1||r.result===0);
-    const w = dec.filter(r=>r.result===1).length;
-    // v77: дни ДО объединения кошелька (архив прежних контуров) считаются
-    // только в ДОЛЯХ БАНКА: у каждого контура был свой банк, поэтому суммы в
-    // долларах здесь были бы выдумкой. Их результат уже внутри стартового
-    // баланса единого кошелька — второй раз он никуда не прибавляется.
-    // v89 (CEO 04.09): дневной блок — только статистика ставок (сколько
-    // ставок, W-L, винрейт); проценты и суммы банка убраны — это про
-    // кошелёк, а не про день
-    stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span>
-        <span class="daydow">${dowOf(d)}${sess && sess.legacy?` · ${t("archiveDay")}`:""}</span></div>
-      <div class="daysum" style="margin-top:8px;align-items:center">
-        <span style="font-size:15px">${rows.length} ${plBets(rows.length)}</span>
-        <span>${OFFICIAL_PERSONAL_LISTS ? t("realTradeConfirmed") : `<b class="${dec.length && w/dec.length>=0.5?"pos":"neg"}" style="font-size:17px">${w}W-${dec.length-w}L${dec.length?` · ${(100*w/dec.length).toFixed(0)}%`:""}</b>${dec.length<rows.length?` · ${rows.length-dec.length} ${t("inPlay")}`:""}`}</span>
-      </div>`;
-    box.innerHTML = rows.map(betRow).join("") + forecastsBlock(fcDay);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
-  }catch(e){
-    box.innerHTML = `<div class="loading">${t("errWord")}: ${e.message}</div>`;
-  }
+  const session = sessionKey();
+  let strategy = null, error = null;
+  try { strategy = await strategyFeed(); } catch(e) { error = e; }
+  if (session !== sessionKey()) return;
+  const rows = selectedPicks(strategy).filter(b => b.session_date === d).map(forecastRow)
+    .sort((a,b) => String(b.ts || "").localeCompare(String(a.ts || "")));
+  const matched = new Set(rows.filter(r => r._realTrade).map(tradeKey));
+  const extra = personalBets().filter(r => r.session_date === d && !matched.has(tradeKey(r)));
+  await loadMatchStats(rows.concat(extra).map(r => r.match_date).concat(d));
+  if (session !== sessionKey()) return;
+  const confirmed = rows.filter(r => r._realTrade).length + extra.length;
+  stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)}</span></div>
+    <div class="daysum" style="margin-top:8px"><span>${rows.length} ${t("selectedPicks")}</span><span class="pos">✓ ${confirmed} ${t("autoBetsPlaced")}</span></div>`;
+  const note = error ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "";
+  box.innerHTML = note + (rows.length ? forecastsBlock(rows) : `<div class="loading">${t("noPickDay")}</div>`)
+    + (extra.length ? `<div class="loading">${t("personalOnly")}</div>` + extra.map(betRow).join("") : "");
 }
 
 async function initHistory(){
@@ -2350,12 +2387,11 @@ async function initHistory(){
   // выбор начальной даты в том же элементе.
   let start = iso(today);
   try {
-    const feed = await coreFeed();
-    const days = (OFFICIAL_PERSONAL_LISTS ? personalBets(feed).map(b => ({date:b.session_date,bets:1})) : [feed.session].concat(feed.history || []))
-      .filter(d => d && d.date && Number(d.bets || 0) > 0)
-      .map(d => d.date)
-      .sort()
-      .reverse();
+    const feed = OFFICIAL_PERSONAL_LISTS ? await strategyFeed() : await coreFeed();
+    const days = (OFFICIAL_PERSONAL_LISTS
+      ? selectedPicks(feed).map(b => b.session_date).concat(personalBets().map(b => b.session_date))
+      : [feed.session].concat(feed.history || []).filter(d => d && d.date && Number(d.bets || 0) > 0).map(d => d.date))
+      .filter(Boolean).sort().reverse();
     if (days.length) start = days[0] > pick.max ? pick.max : days[0];
   } catch(e){}
   pick.value = start;
@@ -2445,6 +2481,33 @@ async function loadLastBets(quiet){
   // v71: список ставок берётся из ЕДИНОГО ассета core_feed. Разметка строки
   // (betRow) и контейнер #bets не менялись — заменён только источник.
   const box = document.getElementById("bets");
+  if (OFFICIAL_PERSONAL_LISTS) {
+    if (!quiet) box.innerHTML = `<div class="loading">${t("loading")}</div>`;
+    const session = sessionKey();
+    const [strategyResult, officialResult] = await Promise.allSettled([strategyFeed(true),coreFeed(true)]);
+    if (session !== sessionKey()) return;
+    const strategy = strategyResult.status === "fulfilled" ? strategyResult.value : null;
+    const official = officialResult.status === "fulfilled" ? officialResult.value : null;
+    loadBetAnalysis(official && official.session || null);
+    const picks = selectedPicks(strategy);
+    const lastDate = picks.reduce((v,b) => b.session_date > v ? b.session_date : v, "");
+    const rows = picks.filter(b => b.session_date === lastDate).map(forecastRow)
+      .sort((a,b) => String(b.ts || "").localeCompare(String(a.ts || "")));
+    const matched = new Set(picks.map(forecastRow).filter(r => r._realTrade).map(tradeKey));
+    const extra = personalBets().filter(r => !matched.has(tradeKey(r)));
+    await loadMatchStats(rows.concat(extra).map(r => r.match_date));
+    if (session !== sessionKey()) return;
+    const st = document.getElementById("lastStat");
+    const confirmed = rows.filter(r => r._realTrade).length + extra.length;
+    st.innerHTML = `<div class="dayhead"><span class="daydate">${lastDate ? fmtDay(lastDate) : t("secLast")}</span>
+      <span class="daydow">${rows.length} ${t("selectedPicks")}</span></div>
+      <div class="daysum" style="margin-top:6px"><span class="pos">✓ ${confirmed} ${t("autoBetsPlaced")}</span></div>`;
+    box.innerHTML = (personalUnknownTradesHint() ? `<div class="loading">${personalUnknownTradesHint()}</div>` : "")
+      + (strategyResult.status !== "fulfilled" ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "")
+      + (rows.length ? forecastsBlock(rows) : `<div class="loading">${t("noPickDay")}</div>`)
+      + (extra.length ? `<div class="loading">${t("personalOnly")}</div>` + extra.map(betRow).join("") : "");
+    return;
+  }
   // Пока лента едет — честное «Загрузка…», а не «ставок нет».
   // При фоновом обновлении (quiet) уже нарисованное не гасим: иначе открытая
   // вкладка мигала бы «Загрузка…» каждую минуту.
@@ -2957,14 +3020,16 @@ function personalTradesFromHistory(state){
   const unknown = pending.length;
   const pendingNames = pending.map(o => String(o.match || o.fixture_id || "—"));
   const rows = state.history.filter(o => o.kind === "TRADE" && o.state === "CONFIRMED" && o.operation_id).map(o => {
-    const date = Date.parse(o.created_at || "");
+    const start = String(o.fixture_id || "").split("|")[0];
+    const date = Date.parse(start || o.created_at || "");
     const match = String(o.match || o.fixture_id || "");
     const teams = match.split(" — ");
     const selection = o.side === "home" ? teams[0] : o.side === "away" ? teams[teams.length-1] : String(o.side || "");
     const price = Number(o.average_price);
     return {sport:"mlb",match,selection,odds:Number.isFinite(price) && price > 0 && price < 1 ? Number((1/price).toFixed(2)) : null,
       result:null,session_date:Number.isFinite(date) ? new Date(date-6*3600000).toISOString().slice(0,10) : "",
-      opened_ts:o.created_at,commence:String(o.fixture_id || "").split("|")[0],_realTrade:true};
+      opened_ts:o.created_at,commence:String(o.fixture_id || "").split("|")[0],fixture_id:String(o.fixture_id || ""),
+      side:String(o.side || ""),_realTrade:true};
   });
   return {rows,unknown,pendingNames};
 }
@@ -3019,10 +3084,8 @@ botAccountController.render = state => {
     __privateBetsSig = betsSig;
     if (state.historyLoaded === true) queueMicrotask(() => {
       if (window.__statsInit) loadLastBets(true);
-      const pick = document.getElementById("dpick"), latest = privateTrades.rows[0] && privateTrades.rows[0].session_date;
-      if (OFFICIAL_PERSONAL_LISTS && pick && latest && !window.__dayManuallySelected) {
-        pick.value = latest; loadDay(latest);
-      }
+      const pick = document.getElementById("dpick");
+      if (OFFICIAL_PERSONAL_LISTS && pick && pick.value) loadDay(pick.value);
     });
   }
   // перерисовать верхние карточки дашборда, когда изменились счёт или история (не на каждом busy-тике)
