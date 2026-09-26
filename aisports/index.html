@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v150"></script>
-<script src="wallet-connect.js?v=v150"></script>
+<script src="bot-account.js?v=v151"></script>
+<script src="wallet-connect.js?v=v151"></script>
 <script>
-const BUILD = "v150";
+const BUILD = "v151";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1044,7 +1044,8 @@ function selectedPicks(feed){
   const seen = new Set();
   return all.filter(b => {
     if (!b || typeof b.entry_id !== "string" || !b.entry_id || seen.has(b.entry_id) || !b.sport || !b.match
-        || Number(b.real_stake || 0) !== 0) return false;
+        || Number(b.real_stake || 0) !== 0
+        || (OFFICIAL_PERSONAL_LISTS && b.sport !== "mlb" && b.sport !== "soccer")) return false;
     seen.add(b.entry_id); return true;
   });
 }
@@ -1454,13 +1455,15 @@ const T = {
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
+  sandboxOnly: ["Только в песочнице", "Sandbox only", "仅在沙盒中"],
+  soccerPaper: ["Прогнозы · PAPER", "Forecasts · PAPER", "预测 · 模拟"],
   originPaper: ["прогноз стратегии · PAPER", "strategy forecast · PAPER", "策略预测 · PAPER"],
   dimForecasts: ["прогнозы · PAPER", "forecasts · PAPER", "预测 · PAPER"],
   forecastsTitle: ["Отбор стратегии · без денежной ставки", "Strategy selections · no cash bet", "策略选场 · 非现金投注"],
   selectedPicks: ["выбрано", "selected", "已选"],
   selectedNoTrade: ["Выбрано · реальной ставки нет", "Selected · no real bet", "已选 · 无真实投注"],
   selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
-  selectionAnalysisScope: ["Все виды в отборе · реальные автоставки пока только MLB", "All sports in selections · real auto-bets currently MLB only", "全部项目选场 · 真实自动投注目前仅限 MLB"],
+  selectionAnalysisScope: ["Отбор MLB и футбола · реальные автоставки пока только MLB", "MLB and soccer selections · real auto-bets currently MLB only", "MLB 和足球选场 · 真实自动投注目前仅限 MLB"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
   autoBetsPlaced: ["автоставок поставлено", "auto-bets placed", "自动投注已成交"],
   paperWin: ["прогноз зашёл", "forecast won", "预测命中"],
@@ -1883,33 +1886,36 @@ async function main(){
         day = (feed && feed.session) || {};
   const bySport = (strategy && strategy.by_sport) || {};
   const W = Number(z.wins || 0), N = W + Number(z.losses || 0);
-  const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer"), khl: t("sportKhl"), nfl: t("sportNfl")};
+  const SPORT_T = {mlb: t("sportMlb"), tennis: t("sportTennis"), soccer: t("sportSoccer"), khl: t("sportKhl"), nhl: t("sportNhl"), nfl: t("sportNfl")};
   // CEO 04.09: теннис копится виртуально — строка затемнена; данные и
   // разметка те же, изменение только инлайн-прозрачностью и подписью.
   // CEO 05.09: затемнение ОСТАЁТСЯ (v96 вернул после v94); строка живая —
   // W/L/число ставок/процент берутся из by_sport.tennis ленты (кошелёк).
-  const DIM_SPORTS = APP_PROFILE === "aisports" ? {} : {tennis: t("dimVirtual")};
+  const DIM_SPORTS = APP_PROFILE === "aisports"
+    ? {khl: t("sandboxOnly"), nhl: t("sandboxOnly"), nfl: t("sandboxOnly")}
+    : {tennis: t("dimVirtual")};
   // 21.09 (перенос футбола в official): футбол виден в статистике как прогнозы стратегии (PAPER) — строка затемнена с пометкой
-  const sortRows = Object.keys(bySport);
+  const sortRows = Object.keys(bySport).filter(k => !OFFICIAL_PERSONAL_LISTS || k === "mlb" || k === "soccer");
   const sportRows = sortRows.map(k => {
     const sp = bySport[k], w = Number(sp.wins || 0), n = w + Number(sp.losses || 0);
     const wr = n ? 100*w/n : 0;
     const dim = DIM_SPORTS[k];
     return `<div class="sport"${dim ? ' style="opacity:.45"' : ""}><div class="ico">${v3Esc(sp.emoji || "")}</div>
       <div class="info"><div class="nm">${v3Esc(SPORT_T[k] || sp.title || k)}</div>
-      <div class="st">${w}W-${n-w}L · ${n} ${plBets(n)}${dim ? " · " + dim : ""}</div>
+      <div class="st">${w}W-${n-w}L · ${n} ${plBets(n)}${k === "soccer" && OFFICIAL_PERSONAL_LISTS ? " · " + t("soccerPaper") : ""}${dim ? " · " + dim : ""}</div>
       <div class="wr-bar" style="margin-top:6px"><i style="width:${Math.min(100,wr)}%;background:${wr>=50?"var(--green)":"var(--red)"}"></i></div></div>
       <div class="bank"><div class="b ${wr>=50?"pos":"neg"}">${n?wr.toFixed(0)+"%":"—"}</div></div></div>`;
   });
   // CEO 04.09: будущие виды — затемнённые строки той же разметки с честной
   // датой старта сезона; появятся данные в ленте — строки оживут сами.
-  (OFFICIAL_PERSONAL_LISTS ? [] : [["khl", "🏒", t("sportKhl"), "05.09"],
-   ["nhl", "🏒", t("sportNhl"), "29.09"],
-   ["nba", "🏀", t("sportNba"), "20.10"]]).forEach(([k, ico, nm, from]) => {
+  (OFFICIAL_PERSONAL_LISTS
+    ? [["khl", "🏒", t("sportKhl"), ""], ["nhl", "🏒", t("sportNhl"), ""], ["nfl", "🏈", t("sportNfl"), ""]]
+    : [["khl", "🏒", t("sportKhl"), "05.09"], ["nhl", "🏒", t("sportNhl"), "29.09"],
+       ["nba", "🏀", t("sportNba"), "20.10"]]).forEach(([k, ico, nm, from]) => {
     if (bySport[k]) return;            // вид уже в ленте — честная строка выше
     sportRows.push(`<div class="sport" style="opacity:.45"><div class="ico">${ico}</div>
       <div class="info"><div class="nm">${nm}</div>
-      <div class="st">${t("comingFrom")} ${from}</div>
+      <div class="st">${OFFICIAL_PERSONAL_LISTS ? t("sandboxOnly") : `${t("comingFrom")} ${from}`}</div>
       <div class="wr-bar" style="margin-top:6px"><i style="width:0%"></i></div></div>
       <div class="bank"><div class="b">—</div></div></div>`);
   });
@@ -1997,7 +2003,13 @@ async function main(){
 // иконка + короткая аббревиатура. Хоккей и баскетбол показываются заранее,
 // расписания по ним ещё нет — чип будет неактивным с честной надписью.
 // теннис скрыт из расписания (CEO 05.09) — контур копится виртуально
-const SCHED_SPORTS = [
+const SCHED_SPORTS = APP_PROFILE === "aisports" ? [
+  ["mlb",        "⚾", "MLB"],
+  ["soccer",     "⚽", "SOC"],
+  ["khl",        "🏒", "KHL"],
+  ["nhl",        "🏒", "NHL"],
+  ["nfl",        "🏈", "NFL"],
+] : [
   ["mlb",        "⚾", "MLB"],
   ["soccer",     "⚽", "SOC"],
   ["khl",        "🏒", "KHL"],
@@ -2030,12 +2042,13 @@ async function initSched(){
   });
   await loadMatchStats(dts);
   // чипы показываем ВСЕГДА все виды; выбран первый, у которого есть игры
-  const withGames = SCHED_SPORTS.filter(([sp]) => __schedRows.some(r => r.sport === sp));
+  const withGames = SCHED_SPORTS.filter(([sp]) => (!OFFICIAL_PERSONAL_LISTS || sp === "mlb" || sp === "soccer") && __schedRows.some(r => r.sport === sp));
   __schedSport = (withGames[0] || SCHED_SPORTS[0])[0];
   const chips = document.getElementById("schedChips");
   chips.innerHTML = SCHED_SPORTS.map(([sp, ico, abbr]) => {
-    const n = __schedRows.filter(r => r.sport === sp).length;
-    return `<button class="spchip${n ? "" : " off"}" data-sp="${sp}" title="${abbr}">
+    const unavailable = OFFICIAL_PERSONAL_LISTS && sp !== "mlb" && sp !== "soccer";
+    const n = unavailable ? 0 : __schedRows.filter(r => r.sport === sp).length;
+    return `<button class="spchip${n ? "" : " off"}" data-sp="${sp}" title="${abbr}"${unavailable ? ' disabled aria-disabled="true"' : ""}>
       <span class="ic">${ico}</span>${n ? `<span class="cnt">${n}</span>` : ""}</button>`;
   }).join("");
   chips.querySelectorAll("button").forEach(b => b.addEventListener("click", () => {
