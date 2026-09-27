@@ -1012,7 +1012,7 @@ body.splash-on{overflow:hidden}
 <script src="bot-account.js?v=v152"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v152";
+const BUILD = "v153";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1099,7 +1099,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "26.09.2026";
+const BUILD_DATE = "27.09.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1704,8 +1704,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // v72: стартовая вкладка «Ставки» больше не «схватывает» пустое состояние —
   // loadLastBets() сам ждёт общую ленту. Флаг лишь помечает, что вкладку уже
   // рисовали, чтобы main() обновил её сразу после прихода данных.
-  window.__statsInit = true; try { loadLastBets(); } catch(e) {}
-  if (OFFICIAL_PERSONAL_LISTS && wvInit()) botAccountController.refresh();
+  window.__statsInit = true;
+  // 27.09: сначала история счёта, потом список. Иначе первая отрисовка
+  // без автоставки успевает затереть уже пришедшую историю, и ставка
+  // видна только после захода в дашборд и возврата в «Ставки».
+  const paintBets = () => { try { loadLastBets(); } catch(e) {} };
+  if (OFFICIAL_PERSONAL_LISTS && wvInit()) {
+    const pending = botAccountController.refresh();
+    if (pending && typeof pending.finally === "function") pending.finally(paintBets);
+    else paintBets();
+  } else paintBets();
   try { startStatsAutoRefresh(); } catch(e) {}
   document.querySelectorAll("#themeSel button").forEach(b =>
     b.addEventListener("click", () => applyTheme(b.dataset.t)));
@@ -2126,8 +2134,13 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     if (t === "stats") {
       // Флаг больше НЕ блокирует перерисовку: он лишь помечает, что вкладку
       // уже открывали (чтобы main() знал, что её нужно обновить после ленты).
-      window.__statsInit = true; loadLastBets();
-      if (OFFICIAL_PERSONAL_LISTS && wvInit() && !botAccountController.state.busy) botAccountController.refresh();
+      window.__statsInit = true;
+      if (OFFICIAL_PERSONAL_LISTS && wvInit() && !botAccountController.state.busy) {
+        const pending = botAccountController.refresh();
+        const paint = () => { try { loadLastBets(); } catch(e) {} };
+        if (pending && typeof pending.finally === "function") pending.finally(paint);
+        else paint();
+      } else { try { loadLastBets(); } catch(e) {} }
       try { startStatsAutoRefresh(); } catch(e) {}
     }
     if (t === "sched") {
@@ -2154,7 +2167,7 @@ function plBets(n){
   const a=Math.abs(n)%100, b=a%10;
   return (a>10&&a<20)||b===0||b>4 ? "ставок" : b===1 ? "ставка" : "ставки";
 }
-function rowCls(r){ return r._forecast ? "" : r.result===1 ? "win" : r.result===0 ? "lose" : r.result===-1 ? "void" : ""; }
+function rowCls(r){ return r.result===1 ? "win" : r.result===0 ? "lose" : r.result===-1 ? "void" : ""; }
 function resIco(r){ return r.result===1?"✓":r.result===0?"×":r.result===-1?"↶":(isStale(r)?"Ⅱ":"·"); }
 // ставка «висит»: результата нет, а игра стартовала больше 6 часов назад
 // (дождь/перенос — кейс Lajal 12.08) → честная пометка вместо вечного «в игре»
@@ -2170,7 +2183,7 @@ function oddsOf(r){ return r.best_odds ?? r.odds ?? null; }
 
 // ─────────── история по дням ───────────
 function betRow(r){
-  const ico = r._realTrade ? "✓" : r._forecast ? "·" : resIco(r);
+  const ico = resIco(r);
   const clv = r.clv_pct != null
     ? ` · CLV ${r.clv_pct>=0?"+":""}${Number(r.clv_pct).toFixed(1)}%`
     : ((r.closing_ts && r.closing_odds && r.best_odds)
@@ -2180,13 +2193,15 @@ function betRow(r){
   // фактических $23.76 и вводил в заблуждение рядом с реальным P&L).
   // Пересчёт на личный банк остаётся запасным для старых строк без суммы.
   const sh = share(r);
-  const pctS = (!HIDE_MONEY && sh) ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "";
-  const money = HIDE_MONEY ? ""
+  // 27.09: длинная плашка «выбрано · реальной ставки нет» сжимала колонку
+  // названия до нуля (ellipsis). На отборе — короткая плашка исхода, как в
+  // песочнице, и бумажные суммы этого дня: владелец попросил ту же карточку.
+  const hideMoney = HIDE_MONEY && !r._forecast;
+  const pctS = (!hideMoney && sh) ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "";
+  const money = hideMoney ? ""
               : r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
-  const res = r._realTrade ? `<span class="pos">${t("autoBetPlaced")}</span>`
-            : r._forecast ? `<span style="color:var(--mut)">${t("selectedNoTrade")}${r.result===1 ? " · " + t("paperWin") : r.result===0 ? " · " + t("paperLoss") : ""}</span>`
-            : r.result===1?`<span class="pos">${t("win")}</span>`
+  const res = r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
             : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
@@ -2195,9 +2210,10 @@ function betRow(r){
   const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
   const scoreS = ms && ms.final_score ? `<span class="bscore">${v3Esc(ms.final_score)}</span>` : "";
   const msAttr = ms ? ` data-ms="${v3Esc(`${ms.sport}|${r.match||""}|${ms.match_date}`)}"` : "";
-  return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res"${r._realTrade ? ' style="color:var(--green)"' : ""}>${ico}</div>
+  const auto = r._realTrade ? ` · ${t("autoBetPlaced")}` : "";
+  return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
-    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${(!HIDE_MONEY && r.pnl!=null)?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}</div></div>
+    <div class="sel">${v3Esc((r.selection||"").replace(/[\[\]]/g," ").trim())}${clv}${gameTime(r)}${(!hideMoney && r.pnl!=null)?` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}`:""}${auto}</div></div>
     <div class="odds"><div>@${oddsOf(r)??"—"}</div>
     <div class="pnl" style="color:var(--mut)">${pctS}${money}</div>
     <div class="pnl">${res}</div></div></div>`;
@@ -2354,9 +2370,19 @@ function fmtGDate(iso){
 // а не из старых таблиц. Копирования и перезаписи истории нет: сессии уже
 // посчитаны в ленте по append-only журналу кошелька.
 const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ ", khl: "🏒 ", nfl: "🏈 "};
+function readableMatch(raw){
+  const src = String(raw || "").trim();
+  const bar = src.indexOf("|");
+  const body = bar >= 0 ? src.slice(bar + 1).trim() : src;
+  if (!body.includes("@")) return src;
+  const [a, h] = body.split("@");
+  const title = p => p.trim().replace(/(^|\s)\S/g, m => m.toUpperCase());
+  if (body === body.toLowerCase()) return `${title(a)} @ ${title(h)}`;
+  return body;
+}
 function feedBetToRow(b){
   return {_ico: ICO_BY_SPORT[b.sport] || "", sport: b.sport, fixture_id: b.fixture_id,
-          side: b.side, match: b.match, selection: b.selection || b.side, best_odds: b.odds,
+          side: b.side, match: readableMatch(b.match), selection: b.selection || b.side, best_odds: b.odds,
           stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
           stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
           match_date: b.session_date || String(b.commence || "").slice(0,10),
@@ -2382,12 +2408,13 @@ async function loadDay(d){
   const extra = personalBets().filter(r => r.session_date === d && !matched.has(tradeKey(r)));
   await loadMatchStats(rows.concat(extra).map(r => r.match_date).concat(d));
   if (session !== sessionKey()) return;
-  const confirmed = rows.filter(r => r._realTrade).length + extra.length;
-  stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)}</span></div>
-    <div class="daysum" style="margin-top:8px"><span>${rows.length} ${t("selectedPicks")}</span><span class="pos">✓ ${confirmed} ${t("autoBetsPlaced")}</span></div>`;
+  const day = selectionDay(strategy, d);
+  stat.innerHTML = rows.length ? paperDayCard(day, rows.concat(extra))
+    : `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)} · 0 ${plBets(0)}</span></div>
+    <div class="daysum" style="margin-top:6px"><span>${t("noPickDay")}</span></div>`;
   const note = error ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "";
-  box.innerHTML = note + (rows.length ? forecastsBlock(rows) : `<div class="loading">${t("noPickDay")}</div>`)
-    + (extra.length ? `<div class="loading">${t("personalOnly")}</div>` + extra.map(betRow).join("") : "");
+  const shown = rows.concat(extra);
+  box.innerHTML = note + (shown.length ? shown.map(betRow).join("") : `<div class="loading">${t("noPickDay")}</div>`);
 }
 
 async function initHistory(){
@@ -2511,35 +2538,54 @@ function startStatsAutoRefresh(){
   });
 }
 
+function selectionDay(feed, date){
+  if (!feed) return {date: date || ""};
+  if ((feed.session || {}).date === date) return feed.session;
+  return (feed.history || []).find(h => h.date === date) || {date: date || ""};
+}
+function paperDayCard(day, rows){
+  const w = rows.filter(r => r.result === 1).length;
+  const l = rows.filter(r => r.result === 0).length;
+  const pnl = Number(day.pnl_usd || 0);
+  const turn = Number((day.staked_usd != null ? day.staked_usd : day.turnover_usd) || 0);
+  const roi = day.roi_pct != null ? ` · ROI ${Number(day.roi_pct)>=0?"+":""}${Number(day.roi_pct).toFixed(2)}%` : "";
+  const date = day.date || "";
+  return `<div class="dayhead"><span class="daydate">${fmtDay(date)}</span>
+        <span class="daydow">${dowOf(date)} · ${rows.length} ${plBets(rows.length)}</span></div>
+      <div class="v ${cls(pnl)}" style="margin-top:2px">${pnl>=0?"+":"−"}$${Math.abs(pnl).toFixed(2)}${roi}</div>
+      <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
+        <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${t("baStaked")}: $${turn.toFixed(2)}</span></div>`;
+}
+let __betsGen = 0;
 // последние ставки по ВСЕМ видам спорта (раньше здесь был только бейсбол)
 async function loadLastBets(quiet){
   // v71: список ставок берётся из ЕДИНОГО ассета core_feed. Разметка строки
   // (betRow) и контейнер #bets не менялись — заменён только источник.
+  const gen = ++__betsGen;
   const box = document.getElementById("bets");
   if (OFFICIAL_PERSONAL_LISTS) {
     if (!quiet) box.innerHTML = `<div class="loading">${t("loading")}</div>`;
     const session = sessionKey();
     let strategy = null;
     try { strategy = await strategyFeed(true); } catch(e) { strategy = null; }
-    if (session !== sessionKey()) return;
+    if (gen !== __betsGen || session !== sessionKey()) return;
     loadOfficialSelectionAnalysis(strategy);
     const picks = selectedPicks(strategy);
     const lastDate = picks.reduce((v,b) => b.session_date > v ? b.session_date : v, "");
     const rows = picks.filter(b => b.session_date === lastDate).map(forecastRow)
       .sort((a,b) => String(b.ts || "").localeCompare(String(a.ts || "")));
     const matched = new Set(picks.map(forecastRow).filter(r => r._realTrade).map(tradeKey));
-    const extra = personalBets().filter(r => !matched.has(tradeKey(r)));
+    const extra = personalBets().filter(r => !matched.has(tradeKey(r)) && (!lastDate || r.session_date === lastDate));
     await loadMatchStats(rows.concat(extra).map(r => r.match_date));
-    if (session !== sessionKey()) return;
+    if (gen !== __betsGen || session !== sessionKey()) return;
     const st = document.getElementById("lastStat");
-    const confirmed = rows.filter(r => r._realTrade).length + extra.length;
-    st.innerHTML = `<div class="dayhead"><span class="daydate">${lastDate ? fmtDay(lastDate) : t("secLast")}</span>
-      <span class="daydow">${rows.length} ${t("selectedPicks")}</span></div>
-      <div class="daysum" style="margin-top:6px"><span class="pos">✓ ${confirmed} ${t("autoBetsPlaced")}</span></div>`;
+    const shown = rows.concat(extra);
+    st.innerHTML = shown.length ? paperDayCard(selectionDay(strategy, lastDate), shown)
+      : `<div class="dayhead"><span class="daydate">${lastDate ? fmtDay(lastDate) : t("secLast")}</span>
+      <span class="daydow">0 ${plBets(0)}</span></div>`;
     box.innerHTML = (personalUnknownTradesHint() ? `<div class="loading">${personalUnknownTradesHint()}</div>` : "")
       + (!strategy ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "")
-      + (rows.length ? forecastsBlock(rows) : `<div class="loading">${t("noPickDay")}</div>`)
-      + (extra.length ? `<div class="loading">${t("personalOnly")}</div>` + extra.map(betRow).join("") : "");
+      + (shown.length ? shown.map(betRow).join("") : `<div class="loading">${t("noPickDay")}</div>`);
     return;
   }
   // Пока лента едет — честное «Загрузка…», а не «ставок нет».
@@ -3056,7 +3102,7 @@ function personalTradesFromHistory(state){
   const rows = state.history.filter(o => o.kind === "TRADE" && o.state === "CONFIRMED" && o.operation_id).map(o => {
     const start = String(o.fixture_id || "").split("|")[0];
     const date = Date.parse(start || o.created_at || "");
-    const match = String(o.match || o.fixture_id || "");
+    const match = readableMatch(o.match || o.fixture_id || "");
     const teams = match.split(" — ");
     const selection = o.side === "home" ? teams[0] : o.side === "away" ? teams[teams.length-1] : String(o.side || "");
     const price = Number(o.average_price);
