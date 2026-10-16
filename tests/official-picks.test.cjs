@@ -15,6 +15,7 @@ const context = {APP_PROFILE: 'aisports', OFFICIAL_PERSONAL_LISTS: true,
   ICO_BY_SPORT: {mlb: '⚾ ', tennis: '🎾 ', soccer: '⚽ ', khl: '🏒 ', nfl: '🏈 '}};
 vm.createContext(context);
 vm.runInContext(segment('function selectedPicks(feed){', '// v106 (блок C')
+  + segment('function readableMatch(raw){', 'function feedBetToRow(b){')
   + segment('function feedBetToRow(b){', 'function feedSession(feed, d){'), context);
 const fixture = '2026-09-25T22:41:00Z|pittsburgh pirates@detroit tigers';
 const pick = (sport, entry_id, side='home') => ({sport, entry_id, side,

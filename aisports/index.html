@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v152"></script>
+<script src="bot-account.js?v=v156"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v155";
+const BUILD = "v156";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1099,7 +1099,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "27.09.2026";
+const BUILD_DATE = "16.10.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1465,6 +1465,8 @@ const T = {
   selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
   selectionAnalysisScope: ["Отбор MLB и футбола · реальные автоставки пока только MLB", "MLB and soccer selections · real auto-bets currently MLB only", "MLB 和足球选场 · 真实自动投注目前仅限 MLB"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
+  awaitingRedeem: ["Ставка поставлена · выиграла · ожидает погашения", "Bet placed · won · awaiting redemption", "已下注 · 已赢 · 等待兑付"],
+  reconciling: ["сверяется", "reconciling", "核对中"],
   autoBetsPlaced: ["автоставок поставлено", "auto-bets placed", "自动投注已成交"],
   paperWin: ["прогноз зашёл", "forecast won", "预测命中"],
   paperLoss: ["прогноз не зашёл", "forecast lost", "预测未中"],
@@ -2176,6 +2178,7 @@ function resIco(r){ return r.result===1?"✓":r.result===0?"×":r.result===-1?"�
 // ставка «висит»: результата нет, а игра стартовала больше 6 часов назад
 // (дождь/перенос — кейс Lajal 12.08) → честная пометка вместо вечного «в игре»
 function isStale(r){
+  if (r._wallet || r._unknown || r._forecast) return false;
   if (r.result !== null && r.result !== undefined) return false;
   let st = r.commence || r.commence_ts || r.ts;
   if (!st) return false;
@@ -2207,7 +2210,22 @@ function betRow(r){
               : hideMoney ? ""
               : r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
-  const res = r.result===1?`<span class="pos">${t("win")}</span>`
+  // Личная покупка не получает бумажный выигрыш. «Выиграла · ожидает погашения»
+  // ставится только подтверждённой сделке этой сессии, если тот же отбор уже
+  // знает победу этой стороны, а CLAIM ещё нет. Сумма погашения сюда не входит.
+  const placed = r._wallet === true && r._realTrade === true && r._unknown !== true;
+  const awaiting = placed && r.claim_confirmed !== true && r._resolution === 1;
+  const res = r._unknown ? `<span style="color:var(--mut)">${t("reconciling")}</span>`
+            : awaiting ? `<span class="pos">${t("awaitingRedeem")}</span>`
+            : placed && r.claim_confirmed ? (r.result===1?`<span class="pos">${t("win")}</span>`
+            : r.result===0?`<span class="neg">${t("lose")}</span>`
+            : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
+            : `<span class="pos">${t("autoBetPlaced")}</span>`)
+            : placed ? `<span class="pos">${t("autoBetPlaced")}</span>`
+            : r._forecast ? (r.result===1?`<span class="pos">${t("paperWin")}</span>`
+            : r.result===0?`<span class="neg">${t("paperLoss")}</span>`
+            : `<span style="color:var(--mut)">${t("selectedNoTrade")}</span>`)
+            : r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
             : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
@@ -2410,15 +2428,17 @@ async function loadDay(d){
   let strategy = null, error = null;
   try { strategy = await strategyFeed(); } catch(e) { error = e; }
   if (session !== sessionKey()) return;
-  const shown = officialRows(selectedPicks(strategy)).filter(r => r.session_date === d)
+  const mine = withResolution(personalTradeRows().filter(r => r.session_date === d), strategy)
+    .sort((a,b) => String(b.opened_ts || "").localeCompare(String(a.opened_ts || "")));
+  const picks = selectionDisplayRows(strategy).filter(r => r.session_date === d)
     .sort((a,b) => String(b.ts || "").localeCompare(String(a.ts || "")));
-  await loadMatchStats(shown.map(r => r.match_date).concat(d));
+  await loadMatchStats(mine.map(r => r.session_date).concat(picks.map(r => r.match_date), [d]));
   if (session !== sessionKey()) return;
-  stat.innerHTML = shown.length ? walletDayCard(d, shown)
+  stat.innerHTML = mine.length ? walletDayCard(d, mine)
     : `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)} · 0 ${plBets(0)}</span></div>
     <div class="daysum" style="margin-top:6px"><span>${t("noPersonalBets")}</span></div>`;
   const note = error ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "";
-  box.innerHTML = note + (shown.length ? shown.map(betRow).join("") : `<div class="loading">${t("noPersonalBets")}</div>`);
+  box.innerHTML = note + (mine.length ? mine.map(betRow).join("") : `<div class="loading">${t("noPersonalBets")}</div>`) + forecastsBlock(picks);
 }
 
 async function initHistory(){
@@ -2503,7 +2523,7 @@ function loadOfficialSelectionAnalysis(feed){
   if (!feed) { box.innerHTML = `<div class="v3empty">${t("selectionSourceUnavailable")}</div>`; return; }
   const day = feed.session || {}, date = day.date || "";
   const selected = selectedPicks(feed).filter(b => b.session_date === date).length;
-  const confirmed = personalBets().filter(b => b.session_date === date).length;
+  const confirmed = personalTradeRows().filter(b => b.session_date === date && b._realTrade).length;
   const done = Number(day.matches || 0), planned = Number((day.scheduled || {}).total || 0);
   box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("selectionAnalysis")}</div>
       <div class="v3sub">${v3Esc(date)} · ${t("selectionAnalysisScope")}</div></div></div>
@@ -2563,50 +2583,67 @@ function settledPnl(stake, odds, result){
   if (result === 1 && o > 1) return stake * (o - 1);
   return null;
 }
-function walletBets(picks){
-  const byKey = new Map();
-  (picks || []).map(forecastRow).forEach(f => { const k = tradeKey(f); if (k) byKey.set(k, f); });
-  return personalBets().map(row => {
-    const pick = byKey.get(tradeKey(row));
-    const r = Object.assign({}, row, {_wallet:true, _forecast:false, _realTrade:false, _ico: ICO_BY_SPORT[row.sport] || ""});
-    if (pick) {
-      r.match = pick.match || r.match;
-      r.selection = pick.selection || r.selection;
-      r.clv_pct = pick.clv_pct;
-      r.commence = pick.commence || r.commence;
-      r.ts = pick.ts || r.opened_ts;
-      r.session_date = pick.session_date || r.session_date;
-      r.match_date = pick.match_date || r.session_date;
-      if (pick.best_odds) r.odds = pick.best_odds;
-      if (pick.result === 1 || pick.result === 0 || pick.result === -1) r.result = pick.result;
-      r._ico = pick._ico || r._ico;
-    }
-    r.pnl = settledPnl(r.stake, r.odds, r.result);
-    return r;
+function personalTradeRows(){
+  // Одна строка на operation_id. Бумажные result и pnl не копируются.
+  // Деньги появляются только из CONFIRMED CLAIM той же встречи и стороны.
+  const seen = new Set();
+  const out = [];
+  for (const row of personalBets()) {
+    const id = row && row.operation_id;
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const confirmed = row.state === "CONFIRMED" && row._unknown !== true;
+    out.push(Object.assign({}, row, {
+      _wallet: true, _forecast: false,
+      _realTrade: confirmed, _unknown: !confirmed,
+      _ico: ICO_BY_SPORT[row.sport] || row._ico || "",
+      result: row.claim_confirmed ? row.result : null,
+      pnl: row.claim_confirmed ? row.pnl : null
+    }));
+  }
+  return out;
+}
+function selectionDisplayRows(feed){
+  // Отбор MLB и футбола остаётся отдельным списком, без личной суммы и без зелёной отметки.
+  return selectedPicks(feed).map(b => Object.assign({}, forecastRow(b), {
+    stake: null, stake_pct: null, pnl: null, _wallet: false, _realTrade: false
+  }));
+}
+function resolutionByKey(feed){
+  const out = new Map();
+  selectedPicks(feed).forEach(b => {
+    const row = forecastRow(b);
+    const key = tradeKey(row);
+    if (key && (row.result === 1 || row.result === 0 || row.result === -1)) out.set(key, row.result);
   });
+  return out;
+}
+function withResolution(rows, feed){
+  // Результат отбора только подписывает личную строку. Сумму прогноза не переносит.
+  const known = resolutionByKey(feed);
+  return (rows || []).map(r => Object.assign({}, r, {
+    _resolution: known.has(tradeKey(r)) ? known.get(tradeKey(r)) : null
+  }));
+}
+function walletBets(picks){
+  return personalTradeRows();
 }
 function officialRows(picks){
-  const placed = walletBets(picks);
-  const byKey = new Map();
-  placed.forEach(r => { const k = tradeKey(r); if (k) byKey.set(k, r); });
-  const used = new Set();
-  const rows = (picks || []).map(forecastRow).map(f => {
-    const real = byKey.get(tradeKey(f));
-    if (!real) return Object.assign({}, f, {stake:null, stake_pct:null, pnl:null, _wallet:false});
-    used.add(tradeKey(f));
-    return Object.assign({}, f, {_wallet:true, stake:real.stake, stake_pct:null, pnl:real.pnl, odds:f.best_odds || real.odds});
-  });
-  placed.forEach(r => { const k = tradeKey(r); if (!k || !used.has(k)) rows.push(r); });
-  return rows;
+  return personalTradeRows().concat(selectionDisplayRows({mode:"PAPER_ONLY", real_stake:0, bets: picks || [], session:{bets_list:[]}, history:[]}));
 }
 function walletDayCard(date, rows){
-  const placed = rows.filter(r => r._wallet && r.stake != null);
-  const w = rows.filter(r => r.result === 1).length;
-  const l = rows.filter(r => r.result === 0).length;
+  const mine = (rows || []).filter(r => r._wallet);
+  const placed = mine.filter(r => r._realTrade && r.stake != null);
+  const claimed = mine.filter(r => r.claim_confirmed);
+  const w = claimed.filter(r => r.result === 1).length;
+  const l = claimed.filter(r => r.result === 0).length;
   const turn = placed.reduce((s,r) => s + (Number(r.stake) || 0), 0);
+  const pnl = claimed.reduce((s,r) => s + (Number(r.pnl) || 0), 0);
+  const record = claimed.length ? `${w}W-${l}L` : `${placed.length} ${t("autoBetsPlaced")}`;
+  const pnlBit = claimed.length ? ` · ${pnl>=0?"+":"−"}${pusdTxt(pnl)} pUSD` : "";
   return `<div class="dayhead"><span class="daydate">${fmtDay(date||"")}</span>
-        <span class="daydow">${dowOf(date||"")} · ${rows.length} ${t("selectedPicks")}</span></div>
-      <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
+        <span class="daydow">${mine.length} ${plBets(mine.length)}</span></div>
+      <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${record}${pnlBit}</b></span>
         <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${placed.length ? `${t("baStaked")}: ${pusdTxt(turn)} pUSD` : ""}</span></div>`;
 }
 let __betsGen = 0;
@@ -2623,17 +2660,21 @@ async function loadLastBets(quiet){
     try { strategy = await strategyFeed(true); } catch(e) { strategy = null; }
     if (gen !== __betsGen || session !== sessionKey()) return;
     loadOfficialSelectionAnalysis(strategy);
-    const all = officialRows(selectedPicks(strategy))
+    const mine = withResolution(personalTradeRows(), strategy)
+      .sort((a,b) => String(b.opened_ts || b.ts || "").localeCompare(String(a.opened_ts || a.ts || "")));
+    const picks = selectionDisplayRows(strategy)
       .sort((a,b) => String(b.ts || "").localeCompare(String(a.ts || "")));
-    const lastDate = all.reduce((v,b) => (b.session_date || "") > v ? b.session_date : v, "");
-    const shown = all.filter(b => b.session_date === lastDate);
-    await loadMatchStats(shown.map(r => r.match_date));
+    const lastPick = picks.reduce((v,b) => (b.session_date || "") > v ? b.session_date : v, "");
+    const shownPicks = lastPick ? picks.filter(b => b.session_date === lastPick) : [];
+    await loadMatchStats(mine.map(r => r.session_date).concat(shownPicks.map(r => r.match_date)));
     if (gen !== __betsGen || session !== sessionKey()) return;
     const st = document.getElementById("lastStat");
-    st.innerHTML = shown.length ? walletDayCard(lastDate, shown)
+    st.innerHTML = mine.length ? walletDayCard("", mine)
       : `<div class="dayhead"><span class="daydate">${t("secLast")}</span><span class="daydow">0 ${plBets(0)}</span></div>
       <div class="daysum" style="margin-top:6px"><span>${t("noPersonalBets")}</span></div>`;
-    box.innerHTML = shown.length ? shown.map(betRow).join("") : `<div class="loading">${t("noPersonalBets")}</div>`;
+    const personalHtml = mine.length ? mine.map(betRow).join("") : `<div class="loading">${t("noPersonalBets")}</div>`;
+    const outside = mine.some(r => !shownPicks.some(p => tradeKey(p) && tradeKey(p) === tradeKey(r)));
+    box.innerHTML = personalHtml + (outside && mine.length ? `<div class="loading">${t("personalOnly")}</div>` : "") + forecastsBlock(shownPicks);
     return;
   }
   // Пока лента едет — честное «Загрузка…», а не «ставок нет».
@@ -3144,25 +3185,40 @@ window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("
 const botAccountPaint = botAccountController.render;
 function personalTradesFromHistory(state){
   if (!state || state.historyLoaded !== true || !Array.isArray(state.history)) return {rows:[],unknown:0,pendingNames:[]};
-  const pending = state.history.filter(o => o.kind === "TRADE" && o.state === "UNKNOWN");
-  const unknown = pending.length;
+  const hist = state.history.filter(o => o && typeof o === "object");
+  const closed = new Set(["FAILED","REJECTED","CANCELLED","EXPIRED"]);
+  const claims = hist.filter(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && o.fixture_id && o.realized_pnl_units != null && /^-?[0-9]+$/.test(String(o.realized_pnl_units)));
+  const pending = hist.filter(o => o.kind === "TRADE" && o.state === "UNKNOWN" && o.operation_id);
   const pendingNames = pending.map(o => String(o.match || o.fixture_id || "—"));
-  const rows = state.history.filter(o => o.kind === "TRADE" && o.state === "CONFIRMED" && o.operation_id).map(o => {
+  const seen = new Set();
+  const rows = [];
+  for (const o of hist) {
+    if (o.kind !== "TRADE" || !o.operation_id || closed.has(o.state) || seen.has(o.operation_id)) continue;
+    seen.add(o.operation_id);
+    const unknown = o.state !== "CONFIRMED";
     const start = String(o.fixture_id || "").split("|")[0];
     const date = Date.parse(start || o.created_at || "");
     const match = readableMatch(o.match || o.fixture_id || "");
     const teams = match.split(" — ");
-    const selection = o.side === "home" ? teams[0] : o.side === "away" ? teams[teams.length-1] : String(o.side || "");
+    const selection = o.side === "home" ? teams[0] : o.side === "away" ? teams[teams.length - 1] : String(o.side || "");
     const price = Number(o.average_price);
     const units = o.amount_units;
-    return {sport:"mlb",match,selection,odds:Number.isFinite(price) && price > 0 && price < 1 ? Number((1/price).toFixed(5)) : null,
+    const claim = !unknown ? claims.find(c => c.fixture_id === String(o.fixture_id || "") && String(c.side || "") === String(o.side || "")) : null;
+    let result = null, pnl = null;
+    if (claim) {
+      const pnlUnits = BigInt(String(claim.realized_pnl_units));
+      pnl = Number(pnlUnits) / 1e6;
+      result = pnlUnits > 0n ? 1 : pnlUnits < 0n ? 0 : -1;
+    }
+    rows.push({sport: o.sport || "mlb", operation_id: o.operation_id, state: o.state, match, selection,
+      odds: Number.isFinite(price) && price > 0 && price < 1 ? Number((1 / price).toFixed(5)) : null,
       stake: units != null && /^[0-9]+$/.test(String(units)) ? Number(units) / 1e6 : null,
-      stake_pct: null, result:null,
-      session_date:Number.isFinite(date) ? new Date(date-6*3600000).toISOString().slice(0,10) : "",
-      opened_ts:o.created_at,commence:String(o.fixture_id || "").split("|")[0],fixture_id:String(o.fixture_id || ""),
-      side:String(o.side || ""),_realTrade:true,_wallet:true};
-  });
-  return {rows,unknown,pendingNames};
+      stake_pct: null, result, pnl, claim_confirmed: !!claim,
+      session_date: Number.isFinite(date) ? new Date(date - 6 * 3600000).toISOString().slice(0, 10) : "",
+      opened_ts: o.created_at, commence: start, fixture_id: String(o.fixture_id || ""),
+      side: String(o.side || ""), _unknown: unknown, _realTrade: !unknown, _wallet: true});
+  }
+  return {rows, unknown: pending.length, pendingNames};
 }
 // Статистика торгового счёта: баланс сервера и подтверждённые расчёты из приватной истории.
 // История ограничена 200 операциями; неполные выборки не выдаём за статистику за всё время.
