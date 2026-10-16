@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v167"></script>
-<script src="wallet-connect.js?v=v167"></script>
+<script src="bot-account.js?v=v168"></script>
+<script src="wallet-connect.js?v=v168"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v167";
+const BUILD = "v168";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2691,7 +2691,7 @@ async function loadDay(d){
     : `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)} · 0 ${plBets(0)}</span></div>
     <div class="daysum" style="margin-top:6px"><span>${t("noPersonalBets")}</span></div>`;
   const note = error ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "";
-  box.innerHTML = note + (mine.length ? mine.map(betRow).join("") : `<div class="loading">${t("noPersonalBets")}</div>`) + forecastsBlock(picks);
+  box.innerHTML = note + (mine.length ? (OFFICIAL_PERSONAL_LISTS ? walletCardList(mine) : mine.map(betRow).join("")) : `<div class="loading">${t("noPersonalBets")}</div>`) + forecastsBlock(picks);
 }
 
 async function initHistory(){
@@ -3104,6 +3104,18 @@ function pickDetails(r){
   const fee = cardFeeText(r);
   return fee ? `<div class="pick-detail">${fee}</div>` : "";
 }
+// v167 (§9.2, п.1): реальные покупки на «Дашборде» (последние) и в архиве — та же короткая карточка, что на «Ставках».
+// Строка личной истории → вид карточки: только подтверждённые факты (затраты с комиссией, чистый результат CLAIM, комиссия, если она известна).
+function walletCardRow(r){
+  if (!r) return r;
+  const unknown = r._unknown === true;
+  const settled = r.claim_confirmed === true && r.pnl != null && Number.isFinite(Number(r.pnl));
+  const staked = settled && r.cost != null && Number.isFinite(Number(r.cost)) ? Number(r.cost)
+               : (r.cost_known != null && Number.isFinite(Number(r.cost_known)) ? Number(r.cost_known) : null);
+  return Object.assign({}, r, {_cash: !unknown, _forecast: false, _unknown: unknown, staked,
+    fee: r.fee != null && Number.isFinite(Number(r.fee)) ? Number(r.fee) : null, _ico: r._ico || undefined});
+}
+function walletCardList(rows){ return rows.map(r => dayPickRow(walletCardRow(r))).join(""); }
 function dayPickRow(r){
   const tone = pickTone(r);
   const cash = r._cash === true;
@@ -3501,7 +3513,8 @@ async function loadLastBets(quiet){
       <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${w}W-${l}L${w+l?` · ${(100*w/(w+l)).toFixed(0)}%`:""}</b></span>
         <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${HIDE_MONEY ? "" : `${t("baStaked")}: $${turn.toFixed(2)}`}</span></div>`;
   }
-  box.innerHTML = (OFFICIAL_PERSONAL_LISTS && personalUnknownTrades() ? `<div class="loading">${personalUnknownTradesHint()}</div>` : "") + last.map(betRow).join("") + forecastsBlock(fcLast);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
+  box.innerHTML = (OFFICIAL_PERSONAL_LISTS && personalUnknownTrades() ? `<div class="loading">${personalUnknownTradesHint()}</div>` : "")
+    + (OFFICIAL_PERSONAL_LISTS ? walletCardList(last.filter(r => r._wallet === true)) + last.filter(r => r._wallet !== true).map(betRow).join("") : last.map(betRow).join("")) + forecastsBlock(fcLast);   // 21.09: общие прогнозы футбола — отдельным блоком после личных сделок
 }
 
 // v105 (безопасность P0, 09.09): ОДНА процедура очистки всей приватной отрисовки и памяти —

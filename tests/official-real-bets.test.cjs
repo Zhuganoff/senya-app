@@ -791,3 +791,24 @@ test("a confirmed soccer purchase becomes a money row next to MLB while a soccer
   const forecastOnly = context.mergeDayRow({sport:"soccer", match:"Alpha vs Beta", selection:"Alpha", side:"home", session_date:"2026-10-16"}, []);
   assert.equal(forecastOnly._cash, false);
 });
+
+test("dashboard last bets and archive use the same short card as «Ставки» (v167 §9.2.1)", () => {
+  const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
+    fixture_id:fixture, side:"home", match:"Cleveland Guardians — Tampa Bay Rays",
+    amount_units:"3420112", created_at:"2026-10-15T16:31:22Z", sport:"mlb", fee_units:"76870"};
+  const claim = {kind:"CLAIM", state:"CONFIRMED", operation_id:"claim-cleveland", realized_pnl_units:"2770530",
+    intent:{resolution:{trades:[{operation_id:cleveland.operation_id, cost_units:"3419470", shares_units:"6190000"}]}}};
+  load([cleveland, claim]);
+  const html = context.walletCardList(context.personalTradeRows());
+  assert.match(face(html), /Поставлено 3,42 USD/);
+  assert.match(face(html), /Прибыль \+2,77 USD/);
+  assert.match(html, /Комиссия Polymarket: 0,08 USD · включена/);
+  assert.doesNotMatch(html, /Выплата получена|pUSD|@\d|Цена недоступна|Доли|резерв|3,420112|прогноз зашёл/);
+  // UNKNOWN — «Сверяется», без денег; нерассчитанная — «В расчёте», резерв не подставляется
+  load([Object.assign({}, cleveland, {operation_id:"op-u", state:"UNKNOWN"})]);
+  const u = context.walletCardList(context.personalTradeRows());
+  assert.match(face(u), /Сверяется/); assert.doesNotMatch(u, /Поставлено|Прибыль|3,42/);
+  load([Object.assign({}, cleveland, {fee_units:null})]);
+  const pend = context.walletCardList(context.personalTradeRows());
+  assert.match(face(pend), /В расчёте/); assert.doesNotMatch(pend, /3,42|Комиссия/);
+});
