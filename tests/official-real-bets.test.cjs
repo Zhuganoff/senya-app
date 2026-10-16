@@ -12,7 +12,8 @@ function segment(start, end) {
 }
 const I18N = {
   autoBetPlaced: ["Автоставка поставлена"], reconciling: ["сверяется"],
-  awaitingRedeem: ["Ставка поставлена · выиграла · ожидает погашения"],
+  awaitingRedeem: ["Выиграла · ожидает погашения"],
+  payoutReceived: ["Выплата получена"],
   paperWin: ["прогноз зашёл"], paperLoss: ["прогноз не зашёл"], selectedNoTrade: ["Выбрано · реальной ставки нет"],
   win: ["выигрыш"], lose: ["проигрыш"], voided: ["возврат"], suspended: ["приостановлена"], inPlay: ["в игре"],
   ofBank: ["%"], autoBetsPlaced: ["автоставок поставлено"], baStaked: ["поставлено"], secLast: ["Последние"],
@@ -47,7 +48,7 @@ const src = [
   segment("function betRow(r){", "// ─────────── счёт и статистика"),
   segment("function readableMatch(raw){", "function feedSession(feed, d){"),
   segment("function personalTradeRows(){", "let __betsGen"),
-  segment("function personalTradesFromHistory(state){", "// Статистика торгового счёта")
+  segment("function claimPnlTxt(n){", "// Статистика торгового счёта")
 ].join("\n");
 vm.runInContext(src, context);
 const fixture = "2026-10-15T17:00:00Z|tampa bay rays@cleveland guardians";
@@ -77,7 +78,7 @@ test("owner sees confirmed purchase when public selection exists", () => {
   assert.equal(shown.pnl, null);
   assert.equal(shown.result, null);
   const htmlRow = context.betRow(shown);
-  assert.match(htmlRow, /Ставка поставлена · выиграла · ожидает погашения/);
+  assert.match(htmlRow, /Выиграла · ожидает погашения/);
   assert.doesNotMatch(htmlRow, /Автоставка поставлена|выигрыш|\+2\.|27\.10|33\.45|2\.85/);
   const picks = context.selectionDisplayRows(feed);
   assert.equal(picks.length, 1);
@@ -132,8 +133,8 @@ test("confirmed claim on the same fixture is the only pnl", () => {
   assert.equal(row.result, 1);
   assert.ok(Math.abs(row.pnl - 2.8474) < 1e-9);
   const htmlRow = context.betRow(context.withResolution([row], feed)[0]);
-  assert.match(htmlRow, /выигрыш/);
-  assert.match(htmlRow, /2\.85/);
+  assert.match(htmlRow, /Выплата получена/);
+  assert.match(htmlRow, /2\.847400/);
   assert.doesNotMatch(htmlRow, /ожидает погашения/);
 });
 test("real Cleveland history renders awaiting redemption without paper profit", () => {
@@ -146,12 +147,33 @@ test("real Cleveland history renders awaiting redemption without paper profit", 
   assert.equal(shown.stake, 3.420112);
   assert.equal(shown.pnl, null);
   const htmlRow = context.betRow(shown);
-  assert.match(htmlRow, /Ставка поставлена · выиграла · ожидает погашения/);
+  assert.match(htmlRow, /Выиграла · ожидает погашения/);
   assert.match(htmlRow, /3\.42 pUSD/);
   assert.doesNotMatch(htmlRow, /33\.45|27\.10|2\.85|\+2/);
   const card = context.walletDayCard("2026-10-15", [shown]);
   assert.doesNotMatch(card, /W-|2\.85|27\.|33\.45/);
   assert.match(card, /3\.42/);
+});
+test("one market payout is split by cost and Cleveland is not the gross mark", () => {
+  const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
+    fixture_id:fixture, side:"home", match:"Cleveland Guardians — Tampa Bay Rays",
+    amount_units:"3420112", created_at:"2026-10-15T16:31:22Z", sport:"mlb"};
+  const claim = {kind:"CLAIM", state:"CONFIRMED", operation_id:"claim-cleveland", realized_pnl_units:"2770530",
+    intent:{resolution:{trades:[{operation_id:cleveland.operation_id, cost_units:"3419470"}]}}};
+  const shown = load([cleveland, claim]).rows[0];
+  assert.equal(shown.pnl, 2.77053);
+  const htmlRow = context.betRow(shown);
+  assert.match(htmlRow, /Выплата получена/);
+  assert.match(htmlRow, /\+2\.770530 pUSD/);
+  assert.doesNotMatch(htmlRow, /2\.85/);
+  const first = {kind:"TRADE", state:"CONFIRMED", operation_id:"buy-1", fixture_id:fixture, side:"home",
+    amount_units:"1000000", created_at:"2026-10-15T16:00:00Z", sport:"mlb"};
+  const second = Object.assign({}, first, {operation_id:"buy-2", amount_units:"3000000"});
+  const shared = {kind:"CLAIM", state:"CONFIRMED", operation_id:"claim-shared", realized_pnl_units:"4000000",
+    intent:{resolution:{trades:[{operation_id:"buy-1", cost_units:"1000000"}, {operation_id:"buy-2", cost_units:"3000000"}]}}};
+  const rows = load([first, second, shared]).rows;
+  assert.equal(rows.find(r => r.operation_id === "buy-1").pnl, 1);
+  assert.equal(rows.find(r => r.operation_id === "buy-2").pnl, 3);
 });
 test("fixture and side still gate the green match flag", () => {
   load([trade]);

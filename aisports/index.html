@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v157"></script>
+<script src="bot-account.js?v=v158"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v157";
+const BUILD = "v158";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1465,7 +1465,8 @@ const T = {
   selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
   selectionAnalysisScope: ["Отбор MLB и футбола · реальные автоставки пока только MLB", "MLB and soccer selections · real auto-bets currently MLB only", "MLB 和足球选场 · 真实自动投注目前仅限 MLB"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
-  awaitingRedeem: ["Ставка поставлена · выиграла · ожидает погашения", "Bet placed · won · awaiting redemption", "已下注 · 已赢 · 等待兑付"],
+  awaitingRedeem: ["Выиграла · ожидает погашения", "Won · awaiting redemption", "已赢 · 等待兑付"],
+  payoutReceived: ["Выплата получена", "Payout received", "兑付已到账"],
   reconciling: ["сверяется", "reconciling", "核对中"],
   autoBetsPlaced: ["автоставок поставлено", "auto-bets placed", "自动投注已成交"],
   paperWin: ["прогноз зашёл", "forecast won", "预测命中"],
@@ -2217,10 +2218,7 @@ function betRow(r){
   const awaiting = placed && r.claim_confirmed !== true && r._resolution === 1;
   const res = r._unknown ? `<span style="color:var(--mut)">${t("reconciling")}</span>`
             : awaiting ? `<span class="pos">${t("awaitingRedeem")}</span>`
-            : placed && r.claim_confirmed ? (r.result===1?`<span class="pos">${t("win")}</span>`
-            : r.result===0?`<span class="neg">${t("lose")}</span>`
-            : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
-            : `<span class="pos">${t("autoBetPlaced")}</span>`)
+            : placed && r.claim_confirmed ? `<span class="${r.result===0?"neg":"pos"}">${t("payoutReceived")}</span>`
             : placed ? `<span class="pos">${t("autoBetPlaced")}</span>`
             : r._forecast ? (r.result===1?`<span class="pos">${t("paperWin")}</span>`
             : r.result===0?`<span class="neg">${t("paperLoss")}</span>`
@@ -2235,6 +2233,7 @@ function betRow(r){
   const scoreS = ms && ms.final_score ? `<span class="bscore">${v3Esc(ms.final_score)}</span>` : "";
   const msAttr = ms ? ` data-ms="${v3Esc(`${ms.sport}|${r.match||""}|${ms.match_date}`)}"` : "";
   const pnlBit = r.pnl == null ? ""
+    : wallet && r.claim_confirmed ? ` · ${r.pnl>=0?"+":"−"}${claimPnlTxt(r.pnl)} pUSD`
     : wallet ? ` · ${r.pnl>=0?"+":"−"}${pusdTxt(r.pnl)} pUSD`
     : (!hideMoney ? ` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}` : "");
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
@@ -3184,11 +3183,32 @@ const botAccountController = new AISportsBotAccount.Controller({
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
 const botAccountPaint = botAccountController.render;
+function claimPnlTxt(n){
+  const v = Math.abs(Number(n));
+  if (!Number.isFinite(v)) return "—";
+  return v.toFixed(6);
+}
+function claimShares(claim){
+  const trades = claim && claim.intent && claim.intent.resolution && Array.isArray(claim.intent.resolution.trades)
+    ? claim.intent.resolution.trades : null;
+  if (!trades || !trades.length || !/^-?[0-9]+$/.test(String(claim.realized_pnl_units))) return null;
+  let costs;
+  try { costs = trades.map(t => BigInt(String(t.cost_units))); }
+  catch (e) { return null; }
+  const total = costs.reduce((acc, cost) => acc + cost, 0n);
+  const payout = BigInt(String(claim.realized_pnl_units)) + total;
+  let used = 0n;
+  return trades.map((trade, index) => {
+    const share = index === trades.length - 1 ? payout - used : (total === 0n ? 0n : payout * costs[index] / total);
+    used += share;
+    return {operation_id: trade.operation_id, pnl: share - costs[index]};
+  });
+}
 function personalTradesFromHistory(state){
   if (!state || state.historyLoaded !== true || !Array.isArray(state.history)) return {rows:[],unknown:0,pendingNames:[]};
   const hist = state.history.filter(o => o && typeof o === "object");
   const closed = new Set(["FAILED","REJECTED","CANCELLED","EXPIRED"]);
-  const claims = hist.filter(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && o.fixture_id && o.realized_pnl_units != null && /^-?[0-9]+$/.test(String(o.realized_pnl_units)));
+  const claims = hist.filter(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && o.realized_pnl_units != null && /^-?[0-9]+$/.test(String(o.realized_pnl_units)) && (o.fixture_id || claimShares(o)));
   const pending = hist.filter(o => o.kind === "TRADE" && o.state === "UNKNOWN" && o.operation_id);
   const pendingNames = pending.map(o => String(o.match || o.fixture_id || "—"));
   const seen = new Set();
@@ -3204,10 +3224,21 @@ function personalTradesFromHistory(state){
     const selection = o.side === "home" ? teams[0] : o.side === "away" ? teams[teams.length - 1] : String(o.side || "");
     const price = Number(o.average_price);
     const units = o.amount_units;
-    const claim = !unknown ? claims.find(c => c.fixture_id === String(o.fixture_id || "") && String(c.side || "") === String(o.side || "")) : null;
+    let claim = null, pnlUnits = null;
+    if (!unknown) {
+      for (const candidate of claims) {
+        const shares = claimShares(candidate);
+        const mine = shares && shares.find(s => s.operation_id === o.operation_id);
+        if (mine) { claim = candidate; pnlUnits = mine.pnl; break; }
+      }
+      if (!claim) {
+        const legacy = claims.filter(c => !claimShares(c) && c.fixture_id === String(o.fixture_id || "") && String(c.side || "") === String(o.side || ""));
+        const same = hist.filter(t => t.kind === "TRADE" && t.state === "CONFIRMED" && t.fixture_id === o.fixture_id && String(t.side || "") === String(o.side || ""));
+        if (legacy.length === 1 && same.length === 1) { claim = legacy[0]; pnlUnits = BigInt(String(claim.realized_pnl_units)); }
+      }
+    }
     let result = null, pnl = null;
-    if (claim) {
-      const pnlUnits = BigInt(String(claim.realized_pnl_units));
+    if (claim && pnlUnits != null) {
       pnl = Number(pnlUnits) / 1e6;
       result = pnlUnits > 0n ? 1 : pnlUnits < 0n ? 0 : -1;
     }
