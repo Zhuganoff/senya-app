@@ -279,6 +279,10 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
 .hist-toggle{display:block;width:100%;margin:8px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
   background:var(--card-3);color:var(--txt);font:inherit;font-size:12px;font-weight:700;cursor:pointer;min-height:40px}
 .hist-partial{padding:6px 12px 0;color:var(--mut)}
+.pick-tech{color:var(--mut)}
+.money-more{margin-top:8px;padding:6px 0;border:0;background:transparent;color:var(--accent);font:inherit;font-size:12px;font-weight:700;cursor:pointer;min-height:32px}
+.money-details{margin-top:var(--s2);padding:10px 12px}
+.money-details .pick-detail{font-size:12px;margin-top:6px}
 /* v162: раздел «Отбор · симуляция» — тот же стиль заголовка секции, кнопкой; подсказка справа */
 .sim-toggle{width:100%;justify-content:space-between;border:0;background:transparent;cursor:pointer;font:inherit;
   font-size:inherit;font-weight:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;min-height:40px}
@@ -851,6 +855,8 @@ body.splash-on{overflow:hidden}
 
   <div id="pane-dash" class="pane-glass pane-dash" style="display:none">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <!-- 16.10: раскрытие денег — обе погашённые ставки, исходные игровые дни, время подтверждения, вклад, период 24 ч -->
+  <div id="moneyDetails" class="card money-details" hidden></div>
   <!-- v161 (владелец 16.10): личные реальные сделки живут на дашборде, не под «сегодняшними играми»;
        компактно последние, архив по игровым дням — только своя Telegram-сессия -->
   <div class="section" data-i18n="secRealBets">Последние реальные ставки</div>
@@ -1073,7 +1079,7 @@ body.splash-on{overflow:hidden}
 <script src="bot-account.js?v=v160"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v161";
+const BUILD = "v162";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1334,8 +1340,20 @@ const T = {
   feedUnavailable: ["Лента отбора сейчас недоступна. Показываем последнее известное состояние.", "The selection feed is unavailable right now. Showing the last known state.", "选场数据源暂不可用，显示最后已知状态。"],
   feedStale: ["Лента отбора не обновлялась {h} ч. Состояние дня может быть неполным.", "The selection feed has not updated for {h} h. Today's state may be incomplete.", "选场数据已 {h} 小时未更新，今日状态可能不完整。"],
   noMatchesDay: ["На этот игровой день матчей в отборе нет.", "No games are scheduled for this game day.", "本比赛日没有待分析的比赛。"],
-  reservedLabel: ["Зарезервировано", "Reserved", "已预留"], spentLabel: ["Потрачено", "Spent", "实际支出"],
-  feeLabel: ["Комиссия", "Fee", "手续费"], sharesLabel: ["Доли", "Shares", "份额"],
+  reservedLabel: ["Первоначальный резерв", "Initial reserve", "初始预留"], spentLabel: ["Потрачено", "Spent", "实际支出"],
+  feeLabel: ["Комиссия, уже включена", "Fee, already included", "手续费（已包含）"], sharesLabel: ["Доли", "Shares", "份额"],
+  lastSelection: ["Последний отбор", "Latest selection", "最近一次选场"],
+  newSelectionNotStarted: ["Новый отбор ещё не начался", "The new selection has not started yet", "新一轮选场尚未开始"],
+  dayResult: ["Результат ставок", "Bets result", "投注结果"], allTimeResult: ["За всё время", "All time", "累计"],
+  dayResultHint: ["по подтверждённым выплатам ставок этого игрового дня", "from confirmed payouts of this game day's bets", "按该比赛日投注的已确认派息"],
+  awaitingSettle: ["{n} ожидают расчёта", "{n} awaiting settlement", "{n} 笔待结算"],
+  noDayResult: ["подтверждённых результатов за этот день нет", "no confirmed results for this day", "该日暂无已确认结果"],
+  moneyMore: ["Подробнее о деньгах", "Money details", "资金明细"], moneyLess: ["Свернуть", "Collapse", "收起"],
+  period24: ["Погашения за последние 24 часа", "Redemptions in the last 24 hours", "近 24 小时赎回"],
+  period24Incomplete: ["период неполный: учёт не хранит время подтверждения выплаты, показано время создания задания", "period incomplete: the ledger does not store the payout confirmation time, task creation time shown", "周期不完整：账本未记录派息确认时间，显示的是任务创建时间"],
+  claimConfirmedAt: ["подтверждено", "confirmed", "已确认"], claimTimeUnknown: ["время подтверждения в учёте не записано", "confirmation time not recorded in the ledger", "账本未记录确认时间"],
+  claimCreatedAt: ["задание создано", "task created", "任务创建于"], gameDayLabel: ["игровой день", "game day", "比赛日"],
+  restoredSnapshot: ["Снимок ленты от {t} ({m} мин назад), обновление не удалось.", "Feed snapshot from {t} ({m} min ago), refresh failed.", "数据快照来自 {t}（{m} 分钟前），刷新失败。"],
   historyPartial: ["показаны последние 200 операций, история неполная", "last 200 operations shown, history incomplete", "仅显示最近 200 条操作，历史不完整"],
   secSimulation: ["Отбор · симуляция", "Selection · simulation", "选场 · 模拟"],
   showSection: ["Показать", "Show", "展开"], hideSection: ["Скрыть", "Hide", "收起"],
@@ -1549,7 +1567,7 @@ const T = {
   priceUnavailable: ["Цена недоступна", "Price unavailable", "价格不可用"],
   fillPrice: ["Цена сделки", "Fill price", "成交价格"],
   payoutAmount: ["Выплата", "Payout", "派彩"],
-  costAmount: ["Себестоимость (потрачено)", "Cost (spent)", "成本（实际支出）"],
+  costAmount: ["Потрачено", "Spent", "实际支出"],
   resultAmount: ["Результат", "Result", "结果"],
   forecastOddsLabel: ["коэффициент прогноза", "forecast odds", "预测赔率"],
   exactStake: ["Сумма", "Amount", "金额"],
@@ -1899,11 +1917,27 @@ async function q(path) {
   return r.json();
 }
 // Публичная лента песочницы доступна без Telegram-подписи; private RPC сюда не попадает.
+// 16.10 (п.5): один выполняющийся запрос на сущность (общий Promise), 30-секундный свежий снимок, последний удачный
+// снимок переживает ошибку, публичный отбор сохраняется в версионированном кэше браузера (профиль, источник, игровой
+// день, время публикации) и восстанавливается с подписью давности. Приватного в этом кэше нет: только публичная лента.
+const FEED_CACHE_KEY = "aisports.strategyFeed.v1." + APP_PROFILE;
+function readFeedCache(){
+  try {
+    const raw = localStorage.getItem(FEED_CACHE_KEY); if (!raw) return null;
+    const c = JSON.parse(raw);
+    if (!c || c.source !== STRATEGY_SB || !c.feed || c.feed.mode !== "PAPER_ONLY" || Number(c.feed.real_stake || 0) !== 0) return null;
+    return c;
+  } catch(e) { return null; }
+}
+function writeFeedCache(feed){
+  try { localStorage.setItem(FEED_CACHE_KEY, JSON.stringify({v: 1, profile: APP_PROFILE, source: STRATEGY_SB, day: (feed.session || {}).date || "", generated_ts: feed.generated_ts || "", at: Date.now(), feed})); } catch(e) {}
+}
 function strategyFeed(force){
   if (!force && window.__strategyFeedPromise && Date.now() - (window.__strategyFeedAt || 0) < 30000)
     return window.__strategyFeedPromise;
+  if (window.__strategyFeedInflight) return window.__strategyFeedInflight;     // параллельные вызовы делят один запрос
   window.__strategyFeedAt = Date.now();
-  window.__strategyFeedPromise = (async () => {
+  const p = (async () => {
     const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 8000);
     try {
       const resp = await fetch(STRATEGY_SB + "/app_assets?select=content&name=eq.core_feed&limit=1",
@@ -1914,10 +1948,20 @@ function strategyFeed(force){
       const feed = typeof rows[0].content === "string" ? JSON.parse(rows[0].content) : rows[0].content;
       if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0)
         throw new Error("STRATEGY_FEED_UNSAFE");
+      writeFeedCache(feed);
+      window.__strategyFeedError = null;
       return feed;
-    } finally { clearTimeout(timer); }
+    } catch (e) {
+      window.__strategyFeedError = e;
+      if (window.__strategyFeed) return window.__strategyFeed;                 // последний удачный снимок остаётся
+      const cached = readFeedCache();
+      if (cached) { const f = cached.feed; f.__restoredAt = cached.at; return f; }
+      throw e;
+    } finally { clearTimeout(timer); window.__strategyFeedInflight = null; }
   })();
-  return window.__strategyFeedPromise;
+  window.__strategyFeedInflight = p;
+  window.__strategyFeedPromise = p;
+  return p;
 }
 
 function pct(x){ return (x>=0?"+":"") + x.toFixed(1) + "%"; }
@@ -2044,31 +2088,53 @@ async function main(){
     const pnlTxt = u => moneyUnits(u, {exact:true, sign:true});
     const tone = u => u == null || String(u) === "0" ? "" : (String(u).startsWith("-") ? "neg" : "pos");
     const hint = u => u == null ? t("taHistoryLimited") : t("taSettledHint");
-    const hint24 = u => u == null ? t("taHistoryLimited") : t("taClaim24Hint");   // v161: период по времени выплаты
+    const shortTxt = u => moneyUnits(u, {decimals: 2, sign: true});
+    // 16.10 (владелец, п.4): вместо «за 24 часа» — результат ставок ИГРОВОГО ДНЯ, согласованного со списком «Ставок»;
+    // «За всё время» — из учёта счёта (realized_pnl_units), не из обрезанной истории; «погашения за 24 ч» — в раскрытии
+    const feed = window.__strategyFeed || null;
+    const view = feed ? selectionListDay(feed) : {date: "", current: true};
+    const dm = view.date ? dayMoneyResult(view.date, feed) : null;
+    const dayTitle = `${t("dayResult")}${view.date ? " · " + fmtDay(view.date) : ""}`;
+    const dayVal = dm && dm.pnlUnits != null ? shortTxt(dm.pnlUnits) : "—";
+    const dayHint = dm && dm.open > 0 ? t("awaitingSettle").replace("{n}", String(dm.open)) : dm && dm.settled ? t("dayResultHint") : t("noDayResult");
+    const more = `<button type="button" class="money-more" id="moneyMore" aria-expanded="false" aria-controls="moneyDetails">${t("moneyMore")}</button>`;
     if (ta) {
       const wr = winrateText(ta);
       document.getElementById("topCards").innerHTML = `
     ${card}
-    <div class="card"><div class="k">${t("taProfit24")}</div>
-      <div class="v ${tone(ta.pnl24)}">${pnlTxt(ta.pnl24)}</div>
-      <div class="d" style="color:var(--mut)">${hint24(ta.pnl24)}</div></div>
-    <div class="card"><div class="k">${t("taProfitAll")}</div>
-      <div class="v ${tone(ta.pnlAll)}">${pnlTxt(ta.pnlAll)}</div>
-      <div class="d" style="color:var(--mut)">${hint(ta.pnlAll)}</div></div>
+    <div class="card"><div class="k">${dayTitle}</div>
+      <div class="v ${dm && dm.pnlUnits != null ? tone(dm.pnlUnits) : ""}">${dayVal}</div>
+      <div class="d" style="color:var(--mut)">${dayHint}</div>${more}</div>
+    <div class="card"><div class="k">${t("allTimeResult")}</div>
+      <div class="v ${tone(ta.pnlAll)}">${ta.pnlAll != null ? shortTxt(ta.pnlAll) : "—"}</div>
+      <div class="d" style="color:var(--mut)">${ta.pnlAll != null ? moneyUnits(ta.pnlAll, {exact:true, sign:true}) + " · " + t("taSettledHint") : t("taHistoryLimited")}</div></div>
     <div class="card"><div class="k">${t("taWinrate")}</div>
       <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${wr.rate}</div>
       <div class="d" style="color:var(--mut)">${wr.detail}</div></div>`;
+      wireMoneyDetails(feed);
       return;
     }
     document.getElementById("topCards").innerHTML = `
     ${card}
-    <div class="card"><div class="k">${t("taProfit24")}</div><div class="v">—</div>
+    <div class="card"><div class="k">${dayTitle}</div><div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>
-    <div class="card"><div class="k">${t("taProfitAll")}</div><div class="v">—</div>
+    <div class="card"><div class="k">${t("allTimeResult")}</div><div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("taAccountLoading")}</div></div>
     <div class="card"><div class="k">${t("taWinrate")}</div><div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>`;
+    const det = document.getElementById("moneyDetails"); if (det) { det.hidden = true; det.innerHTML = ""; }
   };
+  function wireMoneyDetails(feed){
+    const btn = document.getElementById("moneyMore"), det = document.getElementById("moneyDetails");
+    if (!btn || !det) return;
+    const paint = open => {
+      det.hidden = !open; btn.setAttribute("aria-expanded", open ? "true" : "false");
+      btn.textContent = open ? t("moneyLess") : t("moneyMore");
+      if (open) det.innerHTML = moneyDetailsHtml(feed, botAccountController.state);
+    };
+    paint(window.__moneyOpen === sessionKey());
+    btn.addEventListener("click", () => { window.__moneyOpen = det.hidden ? sessionKey() : null; paint(!det.hidden); });
+  }
   window.__renderTop = {session: sessionKey(), fn: renderTop};
   renderTop(null);
   paintAutoWallet(botAccountController.state);
@@ -2226,11 +2292,13 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
       // Флаг больше НЕ блокирует перерисовку: он лишь помечает, что вкладку
       // уже открывали (чтобы main() знал, что её нужно обновить после ленты).
       window.__statsInit = true;
-      if (OFFICIAL_PERSONAL_LISTS && wvInit() && !botAccountController.state.busy) {
+      // 16.10: счёт и историю не перечитывать при каждом переходе — только если снимок старше 30 с или его нет;
+      // список рисуется сразу из памяти, обновление счёта дорисует личные суммы тем же рендером
+      const acctFresh = botAccountController.state.historyLoaded === true && Date.now() - (window.__acctRefreshAt || 0) < ACCOUNT_SNAPSHOT_MS;
+      if (OFFICIAL_PERSONAL_LISTS && wvInit() && !botAccountController.state.busy && !acctFresh) {
+        try { loadLastBets(); } catch(e) {}
         const pending = botAccountController.refresh();
-        const paint = () => { try { loadLastBets(); } catch(e) {} };
-        if (pending && typeof pending.finally === "function") pending.finally(paint);
-        else paint();
+        if (pending && typeof pending.finally === "function") pending.finally(() => { try { loadLastBets(true); } catch(e) {} });
       } else { try { loadLastBets(); } catch(e) {} }
       try { startStatsAutoRefresh(); } catch(e) {}
     }
@@ -2656,6 +2724,7 @@ function loadOfficialSelectionAnalysis(feed){
 // действительно видна: фоновая вкладка и свёрнутое приложение сети не тратят.
 // Разметка не меняется: обновляются те же элементы теми же функциями.
 const STATS_REFRESH_MS = 60000;
+const ACCOUNT_SNAPSHOT_MS = 30000;    // 16.10: снимок счёта/истории считается свежим для навигации 30 с
 function statsTabVisible(){
   const pane = document.getElementById("pane-stats");
   return !!pane && pane.style.display !== "none"
@@ -2903,9 +2972,12 @@ function daySelectionRows(feed, date){
 function dayStakeUnits(rows){
   return (rows || []).filter(r => r._cash && r.stake != null).reduce((s, r) => s + Number(r.stake), 0);
 }
-function dayPickHead(date, rows){
+function dayPickHead(date, rows, view){
   const n = (rows || []).length;
-  return `<div class="dayhead"><span class="daydate">${date ? fmtDay(date) : t("secLast")}</span><span class="daydow">${n} ${plBets(n)}</span></div>`;
+  const last = view && view.current === false;
+  const title = !date ? t("secLast") : last ? `${t("lastSelection")} · ${fmtDay(date)}` : fmtDay(date);
+  const note = last ? `<div class="daysum" style="margin-top:6px"><span>${t("newSelectionNotStarted")}</span></div>` : "";
+  return `<div class="dayhead"><span class="daydate">${title}</span><span class="daydow">${n} ${plBets(n)}</span></div>${note}`;
 }
 function pickAria(r, tone){
   const sport = r.sport === "soccer" ? t("sportSoccer") : r.sport === "mlb" ? t("sportMlb") : (r.sport || "");
@@ -2923,9 +2995,12 @@ function pickDetails(r){
   const bits = [];
   if (r._unknown) bits.push(t("reconciling"));
   else if (r._cash && r.claim_confirmed && r.pnl != null) {
+    // 16.10 (владелец): «Потрачено» — фактические затраты (комиссия уже включена), «Выплата», «Результат»;
+    // первоначальный резерв операции — только технической строкой ниже, разница резерв−затраты второй раз не списывается
     bits.push(r.result === 0 ? t("lose") : t("payoutReceived"));
-    if (r.payout != null) bits.push(t("payoutAmount") + " " + usdTxt(r.payout, 6));
     if (r.cost != null) bits.push(t("costAmount") + " " + usdTxt(r.cost, 6));
+    if (r.fee != null) bits.push(t("feeLabel") + " " + usdTxt(r.fee, 6));
+    if (r.payout != null) bits.push(t("payoutAmount") + " " + usdTxt(r.payout, 6));
     const sign = r.pnl > 0 ? "+" : r.pnl < 0 ? "−" : "";
     bits.push(t("resultAmount") + " " + sign + claimPnlTxt(r.pnl) + " USD");
   } else if (r._cash && r._resolution === 1) bits.push(t("awaitingRedeem"));
@@ -2936,13 +3011,13 @@ function pickDetails(r){
     if (r.result === 1) bits.push(t("paperWin"));
     else if (r.result === 0) bits.push(t("paperLoss"));
   }
-  // v162 (п.4.3): в подробностях различаются резерв операции, фактически потраченное, комиссия, доли и цена
-  if (r._cash && r.reserved != null) bits.push(t("reservedLabel") + " " + usdTxt(r.reserved, 6));
-  else if (r._cash && r.stake != null && !r.stake_is_cost) bits.push(t("exactStake") + " " + usdTxt(r.stake, 6));
-  if (r._cash && r.fee != null) bits.push(t("feeLabel") + " " + usdTxt(r.fee, 6));
+  if (r._cash && !r.claim_confirmed && r.fee != null) bits.push(t("feeLabel") + " " + usdTxt(r.fee, 6));
   if (r._cash && r.shares != null) bits.push(t("sharesLabel") + " " + Number(r.shares).toFixed(2));
   if (r._cash) bits.push(r.fill_price != null ? t("fillPrice") + " " + priceTxt(r.fill_price) : t("priceUnavailable"));
   if (r.forecast_odds != null && Number.isFinite(Number(r.forecast_odds))) bits.push(t("forecastOddsLabel") + " " + Number(r.forecast_odds).toFixed(5));
+  // техническая строка: заявленная/зарезервированная сумма операции (до погашения она же стоит на карточке)
+  if (r._cash && r.reserved != null) bits.push(`<span class="pick-tech">${t("reservedLabel")} ${usdTxt(r.reserved, 6)}</span>`);
+  else if (r._cash && r.stake != null && !r.stake_is_cost) bits.push(`<span class="pick-tech">${t("reservedLabel")} ${usdTxt(r.stake, 6)}</span>`);
   return bits.map(x => `<div class="pick-detail">${x}</div>`).join("");
 }
 function dayPickRow(r){
@@ -2958,7 +3033,12 @@ function dayPickRow(r){
   const subBits = [selHtml, date ? v3Esc(date) : "", faceResult && stakeTxt ? v3Esc(stakeTxt) : ""].filter(Boolean);
   const mark = cash && tone === "win" ? "✓" : cash && tone === "lose" ? "×" : "";
   const glow = cash && tone === "win" ? "green" : cash && tone === "lose" ? "red" : "";
-  return `<article class="pickline ${tone}"><button type="button" class="pickline-row" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}"><span class="sport" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${subBits.join(" · ")}</small></span><span class="right">${amount ? "<b>" + amount + "</b>" : ""}${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span></button>${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}<div class="pick-more" hidden>${pickDetails(r)}</div></article>`;
+  const key = v3Esc(rowKey(r));   // устойчивый ключ строки: раскрытие переживает перерисовку (16.10)
+  return `<article class="pickline ${tone}" data-key="${key}"><button type="button" class="pickline-row" data-key="${key}" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}"><span class="sport" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${subBits.join(" · ")}</small></span><span class="right">${amount ? "<b>" + amount + "</b>" : ""}${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span></button>${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}<div class="pick-more" hidden>${pickDetails(r)}</div></article>`;
+}
+function rowKey(r){
+  const ids = Array.isArray(r.operation_ids) && r.operation_ids.length ? r.operation_ids.slice().sort().join("+") : (r.operation_id || "");
+  return ids || [r.sport || "", r.match || "", r.side || r.selection || "", r.session_date || ""].join("|");
 }
 function selectionHistoryRow(r){
   const won = r.result === 1;
@@ -2969,7 +3049,7 @@ function selectionHistoryRow(r){
 }
 function historyCashRow(r){
   return dayPickRow({
-    sport: r.sport, _ico: r._ico, match: r.match, selection: r.selection, session_date: r.session_date,
+    sport: r.sport, _ico: r._ico, match: r.match, selection: r.selection, session_date: r.session_date, operation_id: r.operation_id,
     _cash: r._realTrade === true || r._unknown === true,
     _unknown: r._unknown === true, stake: r._realTrade ? r.stake : null, pnl: r.claim_confirmed ? r.pnl : null,
     result: r.claim_confirmed ? r.result : null, _resolution: r._resolution,
@@ -3031,22 +3111,91 @@ function renderPersonalHistory(feed){
     renderPersonalHistory(feed);
   });
 }
-// v162 (п.4.5): обновление списка при опросе — только если разметка изменилась; раскрытые подробности
-// (aria-expanded по ключу строки) переживают замену. Возвращает true, если DOM был заменён.
-function swapListHtml(box, html){
+// v162 (п.4.5), переписано 16.10 (дефект «вечная Загрузка…»): ЕДИНСТВЕННАЯ точка записи в контейнеры списков.
+//  • сравнение идёт с ФАКТИЧЕСКИМ DOM (`__lastDom`), а не только с сохранённой строкой: чужая запись в контейнер
+//    (старый прямой innerHTML, textContent при сбросе) делает кэш недействительным, и те же данные рисуются заново;
+//  • загрузчик ({loader:true}) НИКОГДА не заменяет уже готовые строки — при навигации и фоновом опросе они остаются;
+//  • раскрытые подробности переживают замену по устойчивому ключу строки (data-key: operation_id / событие+сторона+день),
+//    не по изменяемому тексту aria-label. Возвращает true, если DOM был заменён.
+const ROW_MARK = "<article";
+function listRowKey(el){
+  return (el && (el.getAttribute("data-key") || (el.closest && el.closest("[data-key]") && el.closest("[data-key]").getAttribute("data-key")))) || "";
+}
+function swapListHtml(box, html, opts){
   if (!box) return false;
-  if (box.__lastHtml === html) return false;
+  const loader = !!(opts && opts.loader);
+  const untouched = box.__lastDom != null && box.innerHTML === box.__lastDom;
+  const hasRows = untouched && box.__hasRows === true;
+  if (loader && hasRows) return false;                       // готовые строки загрузчиком не стираем
+  if (!loader && untouched && box.__lastHtml === html) return false;   // тот же HTML уже стоит в DOM
   const open = new Set();
-  box.querySelectorAll(".pickline-row[aria-expanded=\"true\"]").forEach(b => open.add(b.getAttribute("aria-label") || ""));
+  box.querySelectorAll(".pickline-row[aria-expanded=\"true\"]").forEach(b => { const k = listRowKey(b); if (k) open.add(k); });
   box.innerHTML = html;
   box.__lastHtml = html;
+  box.__lastDom = box.innerHTML;
+  box.__hasRows = !loader && html.indexOf(ROW_MARK) >= 0;
   if (open.size) box.querySelectorAll(".pickline-row").forEach(b => {
-    if (!open.has(b.getAttribute("aria-label") || "")) return;
+    if (!open.has(listRowKey(b))) return;
     b.setAttribute("aria-expanded", "true");
     const more = b.parentElement && b.parentElement.querySelector(".pick-more");
     if (more) more.hidden = false;
   });
   return true;
+}
+// сброс контейнера при смене сессии/выходе — тоже через общую точку, чтобы кэш не пережил чужую запись
+function resetListBox(box, text){
+  if (!box) return;
+  box.textContent = text == null ? "" : String(text);
+  box.__lastHtml = null; box.__lastDom = box.innerHTML; box.__hasRows = false;
+}
+// Какой день показывает список «Ставок» (владелец 16.10, п.3): текущий игровой день — как только отбор НАЧАЛСЯ
+// (издатель обработал ≥1 матч или в дне уже есть прогноз/подтверждённая покупка); до этого — последний доступный
+// день с прогнозами или личными покупками, подписанный как «Последний отбор · дата». Смена даты расписания или
+// ошибка запроса началом отбора не считаются. Сводка «Отбор и автоставки» наверху всегда за текущий день.
+// Результат ставок ИГРОВОГО ДНЯ (владелец 16.10, п.4): подтверждённые финансовые результаты покупок, отнесённых к
+// исходному игровому дню (сохранённый день отбора, граница 06:00 UTC), а не к дню погашения. Cleveland 15.10 остаётся
+// в 15.10 после выплаты 16.10; Royals 26.09 в день Cleveland не попадает. Ожидаемый выигрыш до выплаты не включается.
+function dayMoneyResult(day, feed){
+  const rows = personalHistoryRows(feed).filter(r => r._realTrade === true && (r.session_date || "") === day);
+  const settled = rows.filter(r => r.claim_confirmed && r.pnl != null && Number.isFinite(Number(r.pnl)));
+  const open = rows.length - settled.length;
+  const units = settled.reduce((acc, r) => acc + Math.round(Number(r.pnl) * 1e6), 0);
+  return {day, trades: rows.length, settled: settled.length, open, pnlUnits: settled.length ? String(units) : null, rows: settled};
+}
+// Расшифровка денег для раскрытия на дашборде: каждая погашённая покупка с исходным игровым днём, вкладом и временем
+// подтверждения (если учёт его хранит), сумма, и период 24 ч — только когда время известно у всех погашений.
+function moneyDetailsHtml(feed, state){
+  const rows = personalHistoryRows(feed).filter(r => r._realTrade === true && r.claim_confirmed && r.pnl != null);
+  if (!rows.length) return `<div class="pick-detail">${t("noDayResult")}</div>`;
+  const hist = Array.isArray(state && state.history) ? state.history : [];
+  const claimOf = id => hist.find(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && claimShares(o) && claimShares(o).some(s => s.operation_id === id)) || null;
+  const line = r => {
+    const c = claimOf(r.operation_id);
+    const when = c && claimMoneyTime(c) ? `${t("claimConfirmedAt")} ${new Date(claimMoneyTime(c)).toLocaleString()}`
+      : c && c.created_at ? `${t("claimTimeUnknown")} · ${t("claimCreatedAt")} ${new Date(c.created_at).toLocaleString()}` : t("claimTimeUnknown");
+    const sign = r.pnl > 0 ? "+" : r.pnl < 0 ? "−" : "";
+    return `<div class="pick-detail"><b>${v3Esc(r.match || "")}</b> · ${t("gameDayLabel")} ${v3Esc(fmtDayFull(r.session_date || ""))} · ${sign}${claimPnlTxt(r.pnl)} USD · ${v3Esc(when)}</div>`;
+  };
+  const total = rows.reduce((acc, r) => acc + Math.round(Number(r.pnl) * 1e6), 0);
+  const sign = total > 0 ? "+" : total < 0 ? "−" : "";
+  const ta = tradingAccountStats(state);
+  const p24 = ta && ta.period24Complete && ta.pnl24 != null ? `${t("period24")}: ${moneyUnits(ta.pnl24, {exact:true, sign:true})}`
+    : `${t("period24")}: — · ${t("period24Incomplete")}`;
+  return rows.sort((a, b) => String(b.session_date).localeCompare(String(a.session_date))).map(line).join("")
+    + `<div class="pick-detail"><b>${t("resultAmount")} (${rows.length}): ${sign}${claimPnlTxt(total / 1e6)} USD</b></div>`
+    + `<div class="pick-detail">${p24}</div>`;
+}
+function selectionListDay(feed){
+  const current = (feed && feed.session && feed.session.date) || "";
+  if (!current) return {date: "", current: true, started: false};
+  const started = Number((feed.session || {}).matches || 0) > 0 || daySelectionRows(feed, current).length > 0;
+  if (started) return {date: current, current: true, started: true};
+  const days = new Set();
+  selectionDisplayRows(feed).forEach(r => { if (r.session_date && r.session_date < current) days.add(r.session_date); });
+  const saved = savedSessionByKey(feed);
+  withResolution(personalTradeRows(), feed).forEach(r => { const d = rowGameDay(r, saved); if (d && d < current) days.add(d); });
+  const last = [...days].sort().pop() || "";
+  return last ? {date: last, current: false, started: false} : {date: current, current: true, started: false};
 }
 // «Ставки»: пока волны T-60/T-30 не дошли до матчей дня, «0/5» — это ожидание, а не сбой; подпись говорит это прямо
 function pendingAnalysisLabel(day){
@@ -3066,6 +3215,10 @@ function pendingAnalysisLabel(day){
 const FEED_STALE_MS = 6 * 3600000;
 function dayStatusNote(feed, now){
   if (!feed || !feed.session) return t("feedUnavailable");
+  if (feed.__restoredAt) {                                     // восстановлено из кэша браузера после неудачного обновления
+    const m = Math.max(0, Math.round(((now || Date.now()) - feed.__restoredAt) / 60000));
+    return t("restoredSnapshot").replace("{t}", new Date(feed.__restoredAt).toLocaleString()).replace("{m}", String(m));
+  }
   const gen = Date.parse(feed.generated_ts || "");
   const ageMs = Number.isFinite(gen) ? (now || Date.now()) - gen : NaN;
   if (Number.isFinite(ageMs) && ageMs > FEED_STALE_MS) return t("feedStale").replace("{h}", String(Math.floor(ageMs / 3600000)));
@@ -3107,22 +3260,29 @@ async function loadLastBets(quiet){
   const gen = ++__betsGen;
   const box = document.getElementById("bets");
   if (OFFICIAL_PERSONAL_LISTS) {
-    if (!quiet) box.innerHTML = `<div class="loading">${t("loading")}</div>`;
+    // 16.10: загрузчик — только пока строк нет; при навигации и опросе готовые строки остаются на месте
+    if (!quiet) swapListHtml(box, `<div class="loading">${t("loading")}</div>`, {loader: true});
     const session = sessionKey();
     let strategy = null;
-    try { strategy = await strategyFeed(true); } catch(e) { strategy = null; }
+    // общий Promise и 30-секундный снимок strategyFeed: десять переходов по меню — одно чтение
+    try { strategy = await strategyFeed(false); } catch(e) { strategy = null; }
     if (gen !== __betsGen || session !== sessionKey()) return;
-    window.__strategyFeed = strategy;
-    loadOfficialSelectionAnalysis(strategy);
-    const day = (strategy && strategy.session && strategy.session.date) || "";
-    const rows = day ? daySelectionRows(strategy, day) : [];
-    await loadMatchStats(rows.map(r => r.session_date));
-    if (gen !== __betsGen || session !== sessionKey()) return;
-    const st = document.getElementById("lastStat");
-    st.innerHTML = dayPickHead(day, rows);
-    const nextHtml = rows.length ? rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || dayStatusNote(strategy)}</div>`;
-    swapListHtml(box, nextHtml);     // v162 (п.4.5): при фоновом опросе не пересоздавать список без изменений и не терять раскрытые детали
-    renderPersonalHistory(strategy);
+    if (strategy) window.__strategyFeed = strategy;          // ошибка не затирает последний удачный снимок
+    const feed = window.__strategyFeed || null;
+    loadOfficialSelectionAnalysis(feed);
+    const view = selectionListDay(feed);
+    const rows = view.date ? daySelectionRows(feed, view.date) : [];
+    const paint = () => {
+      if (gen !== __betsGen || session !== sessionKey()) return;
+      const st = document.getElementById("lastStat");
+      if (st) st.innerHTML = dayPickHead(view.date, rows, view);
+      const nextHtml = rows.length ? rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || dayStatusNote(feed)}</div>`;
+      swapListHtml(box, nextHtml);
+      renderPersonalHistory(feed);
+      rerenderDashFromAccount();                            // карточка «Результат ставок · день» следует за днём списка
+    };
+    paint();                                                 // названия и суммы — сразу, статистика матчей не блокирует показ
+    loadMatchStats(rows.map(r => r.session_date)).then(paint).catch(() => {});
     return;
   }
   // Пока лента едет — честное «Загрузка…», а не «ставок нет».
@@ -3208,10 +3368,10 @@ function resetPrivateUI(){
   window.__wv = null;
   window.__privateRealBets = null;
   if (OFFICIAL_PERSONAL_LISTS) {
-    document.getElementById("bets").textContent = t("noPersonalBets");
-    document.getElementById("dayBets").textContent = t("noPickDay");
-    const hist = document.getElementById("personalHistory");
-    if (hist) hist.textContent = t("noPersonalBets");
+    resetListBox(document.getElementById("bets"), t("noPersonalBets"));
+    resetListBox(document.getElementById("dayBets"), t("noPickDay"));
+    resetListBox(document.getElementById("personalHistory"), t("noPersonalBets"));
+    window.__acctRefreshAt = 0;
   }
   window.__strategyFeed = null;
   window.__auto = null;
@@ -3766,10 +3926,14 @@ function accountCardHtml(balance){
   const aria = t("tradingAccount") + (held ? ". " + t("taAvailable") + " " + bal + ". " + held : "");
   return `<div class="card glass-sheen" aria-label="${v3Esc(aria)}"><div class="k">${t("taAvailable")}</div><div class="v">${bal}</div>${held ? `<div class="d">${held}</div>` : ""}</div>`;
 }
-// Время денежного события погашения: схема отдаёт только created_at/updated_at операции; created_at не меняется
-// после создания (CLAIM создаётся непосредственно перед подтверждением), updated_at — любая правка.
+// Время ДЕНЕЖНОГО события погашения (владелец 16.10): только неизменяемое время подтверждённого расчёта из учёта —
+// поле `settled_at` (блок квитанции погашения; предложение миграции — backend_proposals.md §4). Создание задания
+// (`created_at`) и правка метаданных (`updated_at`) расчётом не являются и сюда не подставляются; пока поля нет,
+// денежный период считается неполным и подписывается так.
 function claimMoneyTime(o){
-  return (o && o.created_at) || "";
+  if (!o) return "";
+  const v = o.settled_at || (o.result && o.result.settled_at) || "";
+  return Number.isFinite(Date.parse(v)) ? v : "";
 }
 function winrateText(ta){
   if (!ta || ta.settled == null) return {rate:"—", detail:t("taHistoryLimited")};
@@ -3815,11 +3979,13 @@ function tradingAccountStats(state){
   const fullDay = state.historyLoaded === true && (hist.length < 200 || Number.isFinite(oldest) && oldest < dayAgo);
   // v162 (п.3.4): период по времени ДЕНЕЖНОГО события — `created_at` операции CLAIM (неизменяемо),
   // а не `updated_at`, которое сдвигается любым дополнением метаданных и переносило бы старую выплату в новые сутки
-  const pnl24 = fullDay ? claims.filter(o => Date.parse(claimMoneyTime(o)) >= dayAgo)
+  const timed = claims.every(o => claimMoneyTime(o));          // у всех погашений есть подтверждённое время расчёта
+  const pnl24 = fullDay && timed ? claims.filter(o => Date.parse(claimMoneyTime(o)) >= dayAgo)
     .reduce((acc, o) => acc + units(o.realized_pnl_units), 0n).toString() : null;
   return {available: String(a.balance.available_units ?? "0"), reserved: String(a.balance.reserved_units ?? "0"), confirmed: String(a.balance.confirmed_units ?? "0"),
           wins, losses, pushes, settled: fullHistory ? wins + losses : null, unit: "purchases",
-          pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24};
+          pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24,
+          period24Complete: fullDay && timed, claims: claims.length};
 }
 function rerenderDashFromAccount(){
   const rt = window.__renderTop; if (!rt || rt.session !== sessionKey() || !document.getElementById("topCards")) return;
@@ -3848,6 +4014,7 @@ botAccountController.render = state => {
   const privateTrades = personalTradesFromHistory(state);
   window.__privateRealBets = {session:sessionKey(),...privateTrades};
   const betsSig = JSON.stringify([sessionKey(),state.historyLoaded,privateTrades.rows,privateTrades.unknown,privateTrades.pendingNames]);
+  if (state.historyLoaded === true) window.__acctRefreshAt = Date.now();
   if (betsSig !== __privateBetsSig) {
     __privateBetsSig = betsSig;
     if (state.historyLoaded === true) queueMicrotask(() => {

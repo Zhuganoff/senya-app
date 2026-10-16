@@ -19,7 +19,7 @@ const I18N = {
   noPersonalBets: ["нет"], selectedPicks: ["выбрано"], personalOnly: ["вне отбора"],
   realTradeConfirmed: ["Сделка подтверждена"], priceUnavailable: ["Цена недоступна"],
   fillPrice: ["Цена сделки"], forecastOddsLabel: ["коэффициент прогноза"], exactStake: ["Сумма"],
-  payoutAmount: ["Выплата"], costAmount: ["Себестоимость"], resultAmount: ["Результат"],
+  payoutAmount: ["Выплата"], costAmount: ["Потрачено"], resultAmount: ["Результат"],
   taAvailable: ["Доступно"], taReserved: ["удержано"], taTotal: ["на счёте"],
   taHistoryLimited: ["История ещё загружается или неполная"], taNoBets: ["погашенных покупок ещё не было"],
   taPurchaseHint: ["по погашенным покупкам"], taPushes: ["без прибыли и убытка"],
@@ -292,7 +292,7 @@ test("confirmed claims show payout and cost apart from the result", () => {
   const htmlRow = context.dayPickRow(day[0]);
   assert.match(htmlRow, /Выплата получена/);
   assert.match(htmlRow, /Выплата 6,190000 USD/);
-  assert.match(htmlRow, /Себестоимость 3,419470 USD/);
+  assert.match(htmlRow, /Потрачено 3,419470 USD/);
   assert.match(htmlRow, /Результат \+2\.770530 USD/);
   assert.match(htmlRow, /Цена недоступна/);
   assert.match(htmlRow, /коэффициент прогноза 1\.81022/);
@@ -415,7 +415,11 @@ Object.assign(I18N, {
   noPickDay: ["Бот изучил все игры дня и не подобрал ни одной с преимуществом."],
   feedUnavailable: ["Лента отбора сейчас недоступна."], feedStale: ["Лента отбора не обновлялась {h} ч."],
   noMatchesDay: ["На этот игровой день матчей в отборе нет."],
-  reservedLabel: ["Зарезервировано"], spentLabel: ["Потрачено"], feeLabel: ["Комиссия"], sharesLabel: ["Доли"],
+  reservedLabel: ["Первоначальный резерв"], spentLabel: ["Потрачено"], feeLabel: ["Комиссия, уже включена"], sharesLabel: ["Доли"],
+  lastSelection: ["Последний отбор"], newSelectionNotStarted: ["Новый отбор ещё не начался"], dayResult: ["Результат ставок"], allTimeResult: ["За всё время"],
+  awaitingSettle: ["{n} ожидают расчёта"], noDayResult: ["подтверждённых результатов за этот день нет"], period24: ["Погашения за последние 24 часа"],
+  period24Incomplete: ["период неполный"], claimConfirmedAt: ["подтверждено"], claimTimeUnknown: ["время подтверждения в учёте не записано"], claimCreatedAt: ["задание создано"], gameDayLabel: ["игровой день"],
+  restoredSnapshot: ["Снимок ленты от {t} ({m} мин назад)"], moneyMore: ["Подробнее о деньгах"], moneyLess: ["Свернуть"],
   historyPartial: ["показаны последние 200 операций, история неполная"]
 });
 context.v3Num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n.toFixed(d) : "—"; };
@@ -465,7 +469,7 @@ test("dashboard rows face the money result of a redeemed buy and keep the stake 
   assert.match(face(cle), /<b>\+2\.770530 USD<\/b>/);
   assert.match(face(cle), /3,42 USD/);
   assert.match(cle, /Выплата 6,190000 USD/);
-  assert.match(cle, /Себестоимость 3,419470 USD/);
+  assert.match(cle, /Потрачено 3,419470 USD/);
   const roy = context.historyCashRow(rows.find(r => r.operation_id === royals.operation_id));
   assert.match(face(roy), /<b>−3\.597750 USD<\/b>/);
   assert.match(face(roy), /3,60 USD/);
@@ -515,19 +519,42 @@ test("schedule caption names the 06:00 UTC game day and the device zone", () => 
   assert.match(morning, /2026-10-17/);
 });
 // ── v162 (п.3.3/3.4/4.3/4.4): период по времени денежного события, резерв против затрат, неполная история ──
-test("redemption period follows the claim's creation time, not a later metadata update", () => {
+test("the money period uses the confirmed settlement time only; without it the period is incomplete", () => {
   const buy = {kind:"TRADE", state:"CONFIRMED", operation_id:"buy-old", fixture_id:"2026-09-26T23:10:00Z|cleveland guardians@kansas city royals",
     side:"home", amount_units:"3600000", created_at:"2026-09-26T22:43:05Z", sport:"mlb"};
-  const old = {kind:"CLAIM", state:"CONFIRMED", operation_id:"claim-old", realized_pnl_units:"-3597750",
-    created_at:"2026-10-01T10:00:00Z", updated_at:new Date().toISOString(),   // имя/цена дописаны сегодня
-    intent:{resolution:{trades:[{operation_id:"buy-old", cost_units:"3597750", shares_units:"6600000"}]}}};
-  const fresh = {kind:"CLAIM", state:"CONFIRMED", operation_id:"claim-new", realized_pnl_units:"2770530",
-    created_at:new Date(Date.now() - 3600000).toISOString(), updated_at:new Date(Date.now() - 3600000).toISOString(),
-    intent:{resolution:{trades:[{operation_id:"buy-new", cost_units:"3419470", shares_units:"6190000"}]}}};
   const buyNew = Object.assign({}, buy, {operation_id:"buy-new", fixture_id:fixture, amount_units:"3420112", created_at:"2026-10-15T16:31:22Z"});
-  const stats = context.tradingAccountStats(accountState([fresh, old, buyNew, buy]));
+  const mk = (id, op, pnl, cost, extra) => Object.assign({kind:"CLAIM", state:"CONFIRMED", operation_id:id, realized_pnl_units:pnl,
+    created_at:"2026-10-16T05:20:00Z", updated_at:new Date().toISOString(),
+    intent:{resolution:{trades:[{operation_id:op, cost_units:cost, shares_units:"6190000"}]}}}, extra || {});
+  // 1) учёт не хранит время расчёта → период неполный, created_at/updated_at не подставляются
+  let stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy]));
+  assert.equal(stats.pnl24, null);
+  assert.equal(stats.period24Complete, false);
+  assert.equal(context.claimMoneyTime(mk("x", "buy-new", "1", "1")), "");
+  // 2) оба погашения подтверждены в цепи 16.10 05:05Z (блоки 95614536/95614550) — вместе −0,827220 за последние 24 ч
+  const recent = new Date(Date.now() - 2 * 3600000).toISOString();
+  stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470", {settled_at:recent}), mk("c2", "buy-old", "-3597750", "3597750", {settled_at:recent}), buyNew, buy]));
+  assert.equal(stats.pnl24, "-827220");
+  assert.equal(stats.period24Complete, true);
+  // 3) старое погашение расчётом 01.10, позже дописаны метаданные (updated_at сегодня) — в сутки не попадает
+  stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470", {settled_at:recent}), mk("c2", "buy-old", "-3597750", "3597750", {settled_at:"2026-10-01T10:00:00Z"}), buyNew, buy]));
   assert.equal(stats.pnl24, "2770530");
-  assert.equal(context.claimMoneyTime(old), "2026-10-01T10:00:00Z");
+  // результат ИГРОВОГО ДНЯ не зависит от дня погашения: 15.10 → +2,770530; 26.09 → −3,597750
+  load([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy]);
+  const d15 = context.dayMoneyResult("2026-10-15", feed), d26 = context.dayMoneyResult("2026-09-26", feed), d16 = context.dayMoneyResult("2026-10-16", feed);
+  assert.equal(d15.pnlUnits, "2770530"); assert.equal(d15.settled, 1); assert.equal(d15.open, 0);
+  assert.equal(d26.pnlUnits, "-3597750");
+  assert.equal(d16.pnlUnits, null); assert.equal(d16.trades, 0);
+  const details = context.moneyDetailsHtml(feed, accountState([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy]));
+  assert.match(details, /Cleveland Guardians.*игровой день 2026-10-15.*\+2\.770530 USD/);
+  assert.match(details, /Kansas City Royals.*игровой день 2026-09-26.*−3\.597750 USD/);
+  assert.match(details, /Результат \(2\): −0\.827220 USD/);
+  assert.match(details, /период неполный/);
+  assert.match(details, /задание создано/);
+  // открытая ставка без выплаты: день показывает ожидание, итог не объявляется
+  load([buyNew]);
+  const open = context.dayMoneyResult("2026-10-15", feed);
+  assert.equal(open.pnlUnits, null); assert.equal(open.open, 1);
 });
 test("confirmed cost replaces the reserve on the card and the details separate reserve, spent, shares and price", () => {
   const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
@@ -541,9 +568,10 @@ test("confirmed cost replaces the reserve on the card and the details separate r
   assert.equal(row.shares, 6.19);
   assert.equal(row.fill_price, 0.54);        // цена исполнения — отдельно от комиссии (3,419470 / 6,19 = 0,5524 — не цена)
   const htmlRow = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
-  assert.match(htmlRow, /Зарезервировано 3,420112 USD/);
-  assert.match(htmlRow, /Себестоимость 3,419470 USD/);   // фактически потраченное = себестоимость, одной строкой
-  assert.match(htmlRow, /Комиссия 0,076870 USD/);
+  assert.match(htmlRow, /pick-tech">Первоначальный резерв 3,420112 USD/);
+  assert.match(htmlRow, /Потрачено 3,419470 USD/);   // фактически потраченное = себестоимость, одной строкой
+  assert.match(htmlRow, /Комиссия, уже включена 0,076870 USD/);
+  assert.doesNotMatch(htmlRow, /Сумма 3,420112|Себестоимость/);
   assert.match(htmlRow, /Доли 6\.19/);
   assert.match(htmlRow, /Цена сделки 0,54000/);
   assert.doesNotMatch(htmlRow, /0,5524|1\.81022 USD/);
@@ -552,8 +580,8 @@ test("confirmed cost replaces the reserve on the card and the details separate r
   assert.equal(open.stake, 3.420112);
   assert.equal(open.stake_is_cost, false);
   const openHtml = context.historyCashRow(open);
-  assert.match(openHtml, /Зарезервировано 3,420112 USD/);
-  assert.doesNotMatch(openHtml, /Себестоимость/);
+  assert.match(openHtml, /Первоначальный резерв 3,420112 USD/);
+  assert.doesNotMatch(openHtml, /Потрачено/);
 });
 test("a 200-operation history is marked partial in the archive button and gives no share", () => {
   const many = Array.from({length:200}, (_, i) => ({kind:"TRADE", state:"CONFIRMED", operation_id:"op" + i,
@@ -578,4 +606,62 @@ test("dashboard keeps the PAPER selection history behind a collapsed simulation 
   assert.ok(dash.indexOf('id="personalHistory"') < dash.indexOf('id="simToggle"'));
   assert.ok(dash.indexOf('id="simBody"') < dash.indexOf('id="dayBets"'));
   assert.match(html, /data-i18n="secSimulation"/);
+});
+
+// ── 16.10: вечная «Загрузка…», день списка, устойчивые ключи ──
+function fakeBox(){ return {innerHTML:"", querySelectorAll(){ return []; }}; }
+test("regression: rows survive navigation and a repeated identical response (stuck loader on v161)", () => {
+  const box = fakeBox();
+  const rows = '<article class="pickline" data-key="a">row</article>';
+  assert.equal(context.swapListHtml(box, rows), true);
+  // v161: повторный вход писал загрузчик прямо в innerHTML, затем те же данные не перерисовывались
+  box.innerHTML = '<div class="loading">Загрузка…</div>';
+  assert.equal(context.swapListHtml(box, rows), true, "same data after a foreign write must render again");
+  assert.match(box.innerHTML, /<article/);
+  // новая точка входа загрузчика не стирает готовые строки
+  assert.equal(context.swapListHtml(box, '<div class="loading">Загрузка…</div>', {loader:true}), false);
+  assert.match(box.innerHTML, /<article/);
+  // неизменившийся ответ при нетронутом DOM — без перерисовки
+  assert.equal(context.swapListHtml(box, rows), false);
+  // новый ответ — перерисовка; сброс сессии — через resetListBox, после него строки рисуются заново
+  assert.equal(context.swapListHtml(box, rows + '<article data-key="b">b</article>'), true);
+  box.textContent = ""; context.resetListBox(box, "нет");
+  assert.equal(context.swapListHtml(box, rows), true);
+  // пустой контейнер: загрузчик показывается, затем данные его заменяют
+  const fresh = fakeBox();
+  assert.equal(context.swapListHtml(fresh, '<div class="loading">Загрузка…</div>', {loader:true}), true);
+  assert.equal(context.swapListHtml(fresh, rows), true);
+  assert.match(fresh.innerHTML, /<article/);
+});
+test("the bets list keeps the last selection day until the new day's processing starts", () => {
+  load([trade]);
+  const waiting = {mode:"PAPER_ONLY", real_stake:0, bets:[pick], session:{bets_list:[], date:"2026-10-16", matches:0, skipped:0, scheduled:{total:5}}, history:[{date:"2026-10-15", bets:1, bets_list:[pick]}]};
+  let view = context.selectionListDay(waiting);
+  assert.deepEqual([view.date, view.current, view.started], ["2026-10-15", false, false]);
+  let rows = context.daySelectionRows(waiting, view.date);
+  assert.equal(rows.length, 1); assert.match(rows[0].match, /Cleveland/); assert.equal(rows[0]._cash, true);
+  const head = context.dayPickHead(view.date, rows, view);
+  assert.match(head, /Последний отбор · 2026-10-15/); assert.match(head, /Новый отбор ещё не начался/);
+  // обработка началась (matches > 0) — список переходит на новый день, даже если строк пока нет
+  const started = Object.assign({}, waiting, {session:Object.assign({}, waiting.session, {matches:1})});
+  view = context.selectionListDay(started);
+  assert.deepEqual([view.date, view.current], ["2026-10-16", true]);
+  assert.equal(context.daySelectionRows(started, view.date).length, 0);
+  assert.match(context.dayStatusNote(Object.assign({generated_ts:"2026-10-16T18:30:00Z"}, started), Date.parse("2026-10-16T19:00:00Z")), /1 из 5 обработано · 4 ожидают/);
+  // прогноз в новом дне — тоже начало отбора
+  const withPick = Object.assign({}, waiting, {bets:[pick, Object.assign({}, pick, {entry_id:"p16", session_date:"2026-10-16", commence:"2026-10-16T22:00:00+00:00", result:null})]});
+  assert.equal(context.selectionListDay(withPick).date, "2026-10-16");
+  // завершённый отбор без ставок не подменяется старой победой
+  const done = Object.assign({generated_ts:"2026-10-16T22:30:00Z"}, waiting, {session:Object.assign({}, waiting.session, {matches:5, skipped:5})});
+  assert.equal(context.selectionListDay(done).date, "2026-10-16");
+  assert.match(context.dayStatusNote(done, Date.parse("2026-10-16T23:00:00Z")), /не подобрал ни одной/);
+  assert.equal(context.selectionListDay(waiting).date, "2026-10-15");
+});
+test("rows carry a stable data-key so expanded details survive re-render", () => {
+  load([trade]);
+  const row = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
+  assert.match(row, /<article class="pickline [a-z]+" data-key="op-guardians"/);
+  assert.match(row, /class="pickline-row" data-key="op-guardians"/);
+  const forecast = context.dayPickRow({sport:"soccer", _ico:"⚽", match:"Alpha vs Beta", selection:"Alpha", side:"home", session_date:"2026-10-16", _cash:false, result:null});
+  assert.match(forecast, /data-key="soccer\|Alpha vs Beta\|home\|2026-10-16"/);
 });
