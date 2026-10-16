@@ -149,7 +149,10 @@ h1{font-size:19px;font-weight:700;letter-spacing:-.025em;display:flex;align-item
 .grid .card:first-child{grid-column:1/-1;
   background:linear-gradient(150deg,var(--card-2),var(--card) 62%);
   border-color:var(--line-2);padding:var(--s5) var(--s4)}
-.grid .card:first-child .v{font-size:44px;letter-spacing:-.04em;margin:var(--s2) 0 var(--s1)}
+/* v161: на 320 px «71,17278 USD» при 44px переносил USD на вторую строку — размер от ширины экрана, одна строка */
+.grid .card:first-child .v{font-size:clamp(28px,10.5vw,44px);letter-spacing:-.04em;margin:var(--s2) 0 var(--s1);white-space:nowrap}
+/* v161: в двух половинных карточках «−0,827220 USD» при 26px вылезало за край на 320 px — размер от ширины, число не режется */
+.grid .card:not(:first-child):not(:last-child) .v{font-size:clamp(17px,6vw,26px)}
 .grid .card:last-child{grid-column:1/-1}
 .grid .card:last-child .v{font-size:20px}
 
@@ -266,12 +269,26 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
 .pickline .glowbar.red{background:linear-gradient(90deg,#df5a69,#ffa0a4,#d94760)}
 .pickline .glowbar::after{content:"";display:block;width:42%;height:100%;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);
-  transform:translateX(-120%);animation:aisGlowSweep 3.6s ease-in-out infinite}
-@keyframes aisGlowSweep{0%,12%{transform:translateX(-120%)}74%,100%{transform:translateX(350%)}}
+  transform:translateX(-120%);animation:aisGlowSweep 7.5s ease-in-out infinite}
+/* v162 (п.4.5): один мягкий проход блика ~2,7 с и длинная пауза, а не постоянное мерцание */
+@keyframes aisGlowSweep{0%,4%{transform:translateX(-120%)}40%,100%{transform:translateX(350%)}}
 @media (prefers-reduced-motion:reduce){.pickline .glowbar::after{animation:none;transform:translateX(140%)}}
 .pick-more{padding:0 12px 12px 56px}
 .pick-detail{font-size:11px;line-height:1.45;color:var(--txt-2);margin-top:4px}
 .hist-day{padding:10px 12px 2px;font-size:12px;font-weight:800;color:var(--txt-2)}
+.hist-toggle{display:block;width:100%;margin:8px 0 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;
+  background:var(--card-3);color:var(--txt);font:inherit;font-size:12px;font-weight:700;cursor:pointer;min-height:40px}
+.hist-partial{padding:6px 12px 0;color:var(--mut)}
+/* v162: раздел «Отбор · симуляция» — тот же стиль заголовка секции, кнопкой; подсказка справа */
+.sim-toggle{width:100%;justify-content:space-between;border:0;background:transparent;cursor:pointer;font:inherit;
+  font-size:inherit;font-weight:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;min-height:40px}
+.sim-toggle .sim-hint{font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--accent)}
+.sim-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:8px}
+/* v162 (п.4.5): переключение вкладки — короткое появление без сдвига страницы; раскрытие подробностей — 220 мс */
+@keyframes aisPaneIn{from{opacity:.55}to{opacity:1}}
+.pane-glass{animation:aisPaneIn .18s ease-out}
+.pick-more:not([hidden]){animation:aisPaneIn .22s ease-out}
+@media (prefers-reduced-motion:reduce){.pane-glass,.pick-more:not([hidden]){animation:none}}
 .sel-odds{flex:0 1 auto;margin-left:auto;text-align:right;min-width:0}
 .sel-odds b{display:block;font-size:12px;font-variant-numeric:tabular-nums}
 .sel-odds small{display:block;max-width:92px;font-size:9px;font-weight:650;color:var(--mut);line-height:1.25;white-space:normal}
@@ -834,6 +851,13 @@ body.splash-on{overflow:hidden}
 
   <div id="pane-dash" class="pane-glass pane-dash" style="display:none">
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <!-- v161 (владелец 16.10): личные реальные сделки живут на дашборде, не под «сегодняшними играми»;
+       компактно последние, архив по игровым дням — только своя Telegram-сессия -->
+  <div class="section" data-i18n="secRealBets">Последние реальные ставки</div>
+  <div class="bets" id="personalHistory"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <!-- v162 (владелец 16.10, п.4.4): история отбора PAPER — отдельный раскрываемый раздел, деньги с личной историей не смешиваются -->
+  <button type="button" class="section sim-toggle" id="simToggle" aria-expanded="false" aria-controls="simBody"><span data-i18n="secSimulation">Отбор · симуляция</span><span class="sim-hint" data-i18n="showSection">Показать</span></button>
+  <div id="simBody" hidden>
   <div class="section" data-i18n="wrBySport">Винрейт по видам</div>
   <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secDayBets">Ставки за день</div>
@@ -845,14 +869,13 @@ body.splash-on{overflow:hidden}
   </div>
   <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
   <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
+  </div><!-- /simBody -->
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" class="pane-glass pane-sched" style="display:none">
     <div class="sched-hero glass-sheen">
       <div class="sh-t"><span class="sh-dot"></span><span data-i18n="schedHero">Сегодняшние игры в анализе</span></div>
     </div>
-    <div class="section" data-i18n="secPersonal">Личные ставки</div>
-    <div class="bets" id="personalHistory"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div id="schedChips"></div>
     <div class="bets glass-sheen" id="schedList"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="proof" style="margin-top:12px" data-i18n="schedSub">время начала — как на устройстве · кф — живые, на победу первой / второй стороны строки</div>
@@ -1050,7 +1073,7 @@ body.splash-on{overflow:hidden}
 <script src="bot-account.js?v=v160"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v160";
+const BUILD = "v161";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1300,8 +1323,25 @@ const T = {
   taNoBets: ["погашенных покупок ещё не было", "no redeemed buys yet", "暂无已赎回的买入"],
   taPurchaseHint: ["по погашенным покупкам", "among redeemed buys", "按已赎回的买入"],
   taPushes: ["без прибыли и убытка", "break-even", "盈亏相抵"],
-  taProfitAll: ["Прибыль автоставок за всё время", "Auto-bets all-time profit", "自动投注累计盈利"],
-  taProfit24: ["Прибыль автоставок за 24 часа", "Auto-bets profit, last 24h", "自动投注近24小时盈利"],
+  taProfitAll: ["Результат автоставок за всё время", "Auto-bets all-time result", "自动投注累计结果"],
+  // v161 (владелец 16.10): карточка суммирует подтверждённые погашения по времени выплаты, не по дате ставки — подпись точная
+  taClaim24Hint: ["по времени подтверждения выплаты биржей, не по дате ставки", "by the time the exchange confirmed the payout, not by bet date", "按交易所确认派息的时间，而非投注日期"],
+  secRealBets: ["Последние реальные ставки", "Latest real bets", "最近的真实投注"],
+  histArchive: ["Архив · {n}", "Archive · {n}", "历史记录 · {n}"],
+  histCollapse: ["Свернуть архив", "Collapse archive", "收起历史"],
+  v3Processed: ["обработано · {n} ожидают анализа", "processed · {n} awaiting analysis", "已处理 · {n} 场待分析"],
+  awaitAnalysis: ["{k} из {n} обработано · {m} ожидают анализа. Волны проходят за 60 и 30 минут до старта.", "{k} of {n} processed · {m} awaiting analysis. Waves run 60 and 30 minutes before kick-off.", "{n} 场中已处理 {k} 场 · {m} 场待分析。分析在开赛前 60 和 30 分钟进行。"],
+  feedUnavailable: ["Лента отбора сейчас недоступна. Показываем последнее известное состояние.", "The selection feed is unavailable right now. Showing the last known state.", "选场数据源暂不可用，显示最后已知状态。"],
+  feedStale: ["Лента отбора не обновлялась {h} ч. Состояние дня может быть неполным.", "The selection feed has not updated for {h} h. Today's state may be incomplete.", "选场数据已 {h} 小时未更新，今日状态可能不完整。"],
+  noMatchesDay: ["На этот игровой день матчей в отборе нет.", "No games are scheduled for this game day.", "本比赛日没有待分析的比赛。"],
+  reservedLabel: ["Зарезервировано", "Reserved", "已预留"], spentLabel: ["Потрачено", "Spent", "实际支出"],
+  feeLabel: ["Комиссия", "Fee", "手续费"], sharesLabel: ["Доли", "Shares", "份额"],
+  historyPartial: ["показаны последние 200 операций, история неполная", "last 200 operations shown, history incomplete", "仅显示最近 200 条操作，历史不完整"],
+  secSimulation: ["Отбор · симуляция", "Selection · simulation", "选场 · 模拟"],
+  showSection: ["Показать", "Show", "展开"], hideSection: ["Скрыть", "Hide", "收起"],
+  ofWord: ["из", "of", "/"],
+  schedDayNote: ["игровой день {d} (до 06:00 UTC) · время по часам устройства, {tz}", "game day {d} (until 06:00 UTC) · device time, {tz}", "比赛日 {d}（至 06:00 UTC）· 设备时间，{tz}"],
+  taProfit24: ["Результат погашений за 24 часа", "Redemptions result, last 24h", "近24小时赎回结果"],
   taSettledHint: ["по подтверждённым выплатам биржи", "from confirmed exchange payouts", "按交易所已确认的派息"],
   taHistoryLimited: ["История ещё загружается или неполная", "History is loading or incomplete", "历史记录加载中或不完整"],
   taAccountLoading: ["Загружаем торговый счёт", "Loading trading account", "正在加载交易账户"],
@@ -1509,7 +1549,7 @@ const T = {
   priceUnavailable: ["Цена недоступна", "Price unavailable", "价格不可用"],
   fillPrice: ["Цена сделки", "Fill price", "成交价格"],
   payoutAmount: ["Выплата", "Payout", "派彩"],
-  costAmount: ["Себестоимость", "Cost", "成本"],
+  costAmount: ["Себестоимость (потрачено)", "Cost (spent)", "成本（实际支出）"],
   resultAmount: ["Результат", "Result", "结果"],
   forecastOddsLabel: ["коэффициент прогноза", "forecast odds", "预测赔率"],
   exactStake: ["Сумма", "Amount", "金额"],
@@ -2004,13 +2044,14 @@ async function main(){
     const pnlTxt = u => moneyUnits(u, {exact:true, sign:true});
     const tone = u => u == null || String(u) === "0" ? "" : (String(u).startsWith("-") ? "neg" : "pos");
     const hint = u => u == null ? t("taHistoryLimited") : t("taSettledHint");
+    const hint24 = u => u == null ? t("taHistoryLimited") : t("taClaim24Hint");   // v161: период по времени выплаты
     if (ta) {
       const wr = winrateText(ta);
       document.getElementById("topCards").innerHTML = `
     ${card}
     <div class="card"><div class="k">${t("taProfit24")}</div>
       <div class="v ${tone(ta.pnl24)}">${pnlTxt(ta.pnl24)}</div>
-      <div class="d" style="color:var(--mut)">${hint(ta.pnl24)}</div></div>
+      <div class="d" style="color:var(--mut)">${hint24(ta.pnl24)}</div></div>
     <div class="card"><div class="k">${t("taProfitAll")}</div>
       <div class="v ${tone(ta.pnlAll)}">${pnlTxt(ta.pnlAll)}</div>
       <div class="d" style="color:var(--mut)">${hint(ta.pnlAll)}</div></div>
@@ -2097,7 +2138,8 @@ async function initSched(){
   const withGames = SCHED_SPORTS.filter(([sp]) => (!OFFICIAL_PERSONAL_LISTS || sp === "mlb" || sp === "soccer") && __schedRows.some(r => r.sport === sp));
   __schedSport = (withGames[0] || SCHED_SPORTS[0])[0];
   const chips = document.getElementById("schedChips");
-  chips.innerHTML = SCHED_SPORTS.map(([sp, ico, abbr]) => {
+  // v162 (п.4.2): в official чипы только доступных видов — отключённые КХЛ/НХЛ/НФЛ не рекламируются как поддержка
+  chips.innerHTML = SCHED_SPORTS.filter(([sp]) => !OFFICIAL_PERSONAL_LISTS || sp === "mlb" || sp === "soccer").map(([sp, ico, abbr]) => {
     const unavailable = OFFICIAL_PERSONAL_LISTS && sp !== "mlb" && sp !== "soccer";
     const n = unavailable ? 0 : __schedRows.filter(r => r.sport === sp).length;
     return `<button class="spchip${n ? "" : " off"}" data-sp="${sp}" title="${abbr}"${unavailable ? ' disabled aria-disabled="true"' : ""}>
@@ -2118,6 +2160,11 @@ function renderSched(){
   const cf = window.__coreFeed;
   const gts = (cf && cf.generated_ts) ? Date.parse(cf.generated_ts) : NaN;
   const staleNote = (isFinite(gts) && Date.now() - gts > 6 * 3600e3) ? `<div class="loading">${t("schedStale")}</div>` : "";
+  // v161: подпись под расписанием называет игровой день (граница 06:00 UTC) и пояс устройства
+  try {
+    const note = document.querySelector("#pane-sched .proof[data-i18n=\"schedSub\"]");
+    if (note) note.textContent = schedDayNoteText() + " · " + t("schedSub");
+  } catch(e) {}
   if (__schedState === "error") { box.innerHTML = `<div class="loading">${t("schedErr")}</div>`; return; }
   if (!rows.length) { box.innerHTML = staleNote + `<div class="loading">${t("schedEmpty")}</div>`; return; }
   const partOf = iso => {
@@ -2187,8 +2234,20 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
       } else { try { loadLastBets(); } catch(e) {} }
       try { startStatsAutoRefresh(); } catch(e) {}
     }
-    if (t === "sched") {
+    if (t === "dash" && OFFICIAL_PERSONAL_LISTS) {
+      // v161: личные сделки живут на дашборде; сохранённый игровой день отбора — из общей ленты
       try { renderPersonalHistory(); } catch(e) {}
+      try { initSimToggle(); } catch(e) {}
+      try {
+        const bound = sessionKey();
+        strategyFeed(false).then(f => {
+          if (sessionKey() !== bound) return;
+          if (!window.__strategyFeed) window.__strategyFeed = f;
+          renderPersonalHistory(window.__strategyFeed);
+        }).catch(() => {});
+      } catch(e) {}
+    }
+    if (t === "sched") {
       if (!window.__schedInit) { window.__schedInit = true; initSched(); }
       // v107 (C-R1): после ошибки источника — один повтор при возвращении во вкладку, не бесконечный опрос
       else if (__schedState === "error" && !window.__schedRetried) { window.__schedRetried = true; initSched(); }
@@ -2580,11 +2639,11 @@ function loadOfficialSelectionAnalysis(feed){
   const day = feed.session || {}, date = day.date || "";
   const selected = selectedPicks(feed).filter(b => b.session_date === date).length;
   const confirmed = personalTradeRows().filter(b => b.session_date === date && b._realTrade && b.sport !== "soccer").length;
-  const done = Number(day.matches || 0), planned = Number((day.scheduled || {}).total || 0);
+  const decisions = pendingAnalysisLabel(day);   // v161: «0 из 5 · 5 ожидают анализа» вместо «0/5 матчей в анализе»
   box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("selectionAnalysis")}</div>
       <div class="v3sub">${v3Esc(date)} · ${t("selectionAnalysisScope")}</div></div></div>
     <div class="v3metrics">
-      <div class="v3metric"><b>${planned > done ? `${v3Num(done)}/${v3Num(planned)}` : v3Num(done)}</b><span>${t("v3Decisions")}</span></div>
+      <div class="v3metric"><b>${decisions.value}</b><span>${decisions.label}</span></div>
       <div class="v3metric"><b>${selected}</b><span>${t("selectedPicks")}</span></div>
       <div class="v3metric"><b>${confirmed}</b><span>${t("autoBetsPlaced")}</span></div>
       <div class="v3metric"><b>${v3Num(day.skipped)}</b><span>${t("v3Skips")}</span></div>
@@ -2783,6 +2842,11 @@ function mergeDayRow(pick, list){
     claim_confirmed: settled,
     payout: cash ? sumField("payout") : null,
     cost: cash ? sumField("cost") : null,
+    // v162: резерв/комиссия/доли — суммы по реальным покупкам строки; stake_is_cost — все покупки закрыты выплатой
+    reserved: cash ? (() => { const v = real.map(t => Number(t.reserved)).filter(Number.isFinite); return v.length === real.length ? v.reduce((s, n) => s + n, 0) : null; })() : null,
+    fee: cash ? (() => { const v = real.map(t => Number(t.fee)).filter(Number.isFinite); return v.length ? v.reduce((s, n) => s + n, 0) : null; })() : null,
+    shares: cash ? (() => { const v = real.map(t => Number(t.shares)).filter(Number.isFinite); return v.length === real.length ? v.reduce((s, n) => s + n, 0) : null; })() : null,
+    stake_is_cost: cash && settled,
     fill_price: (() => {
       if (!cash) return null;
       const prices = real.map(t => t.fill_price).filter(v => v != null);
@@ -2872,7 +2936,11 @@ function pickDetails(r){
     if (r.result === 1) bits.push(t("paperWin"));
     else if (r.result === 0) bits.push(t("paperLoss"));
   }
-  if (r._cash && r.stake != null) bits.push(t("exactStake") + " " + usdTxt(r.stake, 6));
+  // v162 (п.4.3): в подробностях различаются резерв операции, фактически потраченное, комиссия, доли и цена
+  if (r._cash && r.reserved != null) bits.push(t("reservedLabel") + " " + usdTxt(r.reserved, 6));
+  else if (r._cash && r.stake != null && !r.stake_is_cost) bits.push(t("exactStake") + " " + usdTxt(r.stake, 6));
+  if (r._cash && r.fee != null) bits.push(t("feeLabel") + " " + usdTxt(r.fee, 6));
+  if (r._cash && r.shares != null) bits.push(t("sharesLabel") + " " + Number(r.shares).toFixed(2));
   if (r._cash) bits.push(r.fill_price != null ? t("fillPrice") + " " + priceTxt(r.fill_price) : t("priceUnavailable"));
   if (r.forecast_odds != null && Number.isFinite(Number(r.forecast_odds))) bits.push(t("forecastOddsLabel") + " " + Number(r.forecast_odds).toFixed(5));
   return bits.map(x => `<div class="pick-detail">${x}</div>`).join("");
@@ -2883,10 +2951,14 @@ function dayPickRow(r){
   const sel = v3Esc(String(r.selection || "").replace(/[\[\]]/g, " ").trim());
   const selHtml = (cash && tone === "win") || (!cash && r.result === 1) ? `<span class="winner">${sel}</span>` : sel;
   const date = fmtDay(r.session_date || "");
-  const amount = cash && r.stake != null ? usdTxt(r.stake, 2) : "";
+  // v161: в истории на дашборде лицо погашенной сделки — денежный результат, сумма покупки уходит в подпись
+  const faceResult = cash && r._face === "result" && r.claim_confirmed && r.pnl != null && Number.isFinite(Number(r.pnl));
+  const stakeTxt = cash && r.stake != null ? usdTxt(r.stake, 2) : "";
+  const amount = faceResult ? (r.pnl > 0 ? "+" : r.pnl < 0 ? "−" : "") + claimPnlTxt(r.pnl) + " USD" : stakeTxt;
+  const subBits = [selHtml, date ? v3Esc(date) : "", faceResult && stakeTxt ? v3Esc(stakeTxt) : ""].filter(Boolean);
   const mark = cash && tone === "win" ? "✓" : cash && tone === "lose" ? "×" : "";
   const glow = cash && tone === "win" ? "green" : cash && tone === "lose" ? "red" : "";
-  return `<article class="pickline ${tone}"><button type="button" class="pickline-row" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}"><span class="sport" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${selHtml}${date ? " · " + v3Esc(date) : ""}</small></span><span class="right">${amount ? "<b>" + amount + "</b>" : ""}${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span></button>${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}<div class="pick-more" hidden>${pickDetails(r)}</div></article>`;
+  return `<article class="pickline ${tone}"><button type="button" class="pickline-row" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}"><span class="sport" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${subBits.join(" · ")}</small></span><span class="right">${amount ? "<b>" + amount + "</b>" : ""}${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span></button>${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}<div class="pick-more" hidden>${pickDetails(r)}</div></article>`;
 }
 function selectionHistoryRow(r){
   const won = r.result === 1;
@@ -2902,7 +2974,10 @@ function historyCashRow(r){
     _unknown: r._unknown === true, stake: r._realTrade ? r.stake : null, pnl: r.claim_confirmed ? r.pnl : null,
     result: r.claim_confirmed ? r.result : null, _resolution: r._resolution,
     claim_confirmed: r.claim_confirmed === true, fill_price: r._realTrade ? r.fill_price : null,
-    payout: r.claim_confirmed ? r.payout : null, cost: r.claim_confirmed ? r.cost : null, forecast_odds: null
+    payout: r.claim_confirmed ? r.payout : null, cost: r.claim_confirmed ? r.cost : null, forecast_odds: null,
+    reserved: r._realTrade ? r.reserved : null, fee: r._realTrade ? r.fee : null, shares: r._realTrade ? r.shares : null,
+    stake_is_cost: r.stake_is_cost === true,
+    _face: "result"
   });
 }
 function personalHistoryRows(feed){
@@ -2924,11 +2999,104 @@ function personalHistoryHtml(rows){
     groups.get(d).map(historyCashRow).join("")
   ).join("");
 }
+// v161 (владелец 16.10): блок на дашборде компактный — последние сделки, остальное за кнопкой архива
+// (группировка по игровому дню исходной покупки). Раскрытие помнится на сессию, чужая сессия начинает свёрнутой.
+const HISTORY_COMPACT = 3;
+// `partial` — API отдал первые 200 операций: число в кнопке и архив не притворяются полными (п.4.4)
+function personalHistoryBlockHtml(rows, expanded, partial){
+  const all = rows || [];
+  if (!all.length) return "";
+  const shown = expanded ? all : all.slice(0, HISTORY_COMPACT);
+  const more = all.length > HISTORY_COMPACT;
+  const count = partial ? String(all.length) + "+" : String(all.length);
+  const label = expanded ? t("histCollapse") : t("histArchive").replace("{n}", count);
+  const btn = more ? `<button type="button" class="hist-toggle" data-expanded="${expanded ? "1" : "0"}" aria-expanded="${expanded ? "true" : "false"}">${label}</button>` : "";
+  const note = partial && expanded ? `<div class="pick-detail hist-partial">${t("historyPartial")}</div>` : "";
+  return personalHistoryHtml(shown) + btn + note;
+}
+function personalHistoryPartial(){
+  const p = window.__privateRealBets;
+  return !!(p && p.session === sessionKey() && p.truncated === true);
+}
 function renderPersonalHistory(feed){
   const box = document.getElementById("personalHistory");
   if (!box) return;
   const rows = personalHistoryRows(feed);
-  box.innerHTML = rows.length ? personalHistoryHtml(rows) : `<div class="loading">${personalUnknownTradesHint() || t("noPersonalBets")}</div>`;
+  const expanded = window.__histExpanded === sessionKey();
+  const html = rows.length ? personalHistoryBlockHtml(rows, expanded, personalHistoryPartial()) : `<div class="loading">${personalUnknownTradesHint() || t("noPersonalBets")}</div>`;
+  if (!swapListHtml(box, html)) return;       // ничего не изменилось — обработчики и раскрытия на месте
+  const toggle = box.querySelector(".hist-toggle");
+  if (toggle) toggle.addEventListener("click", () => {
+    window.__histExpanded = expanded ? null : sessionKey();
+    renderPersonalHistory(feed);
+  });
+}
+// v162 (п.4.5): обновление списка при опросе — только если разметка изменилась; раскрытые подробности
+// (aria-expanded по ключу строки) переживают замену. Возвращает true, если DOM был заменён.
+function swapListHtml(box, html){
+  if (!box) return false;
+  if (box.__lastHtml === html) return false;
+  const open = new Set();
+  box.querySelectorAll(".pickline-row[aria-expanded=\"true\"]").forEach(b => open.add(b.getAttribute("aria-label") || ""));
+  box.innerHTML = html;
+  box.__lastHtml = html;
+  if (open.size) box.querySelectorAll(".pickline-row").forEach(b => {
+    if (!open.has(b.getAttribute("aria-label") || "")) return;
+    b.setAttribute("aria-expanded", "true");
+    const more = b.parentElement && b.parentElement.querySelector(".pick-more");
+    if (more) more.hidden = false;
+  });
+  return true;
+}
+// «Ставки»: пока волны T-60/T-30 не дошли до матчей дня, «0/5» — это ожидание, а не сбой; подпись говорит это прямо
+function pendingAnalysisLabel(day){
+  // Контракт издателя (core/publish._session_block): `matches` — число ОБРАБОТАННЫХ матчей дня (уникальные
+  // строки решений), `skipped` — часть этих же обработанных с отказом. Ожидают = запланировано − обработано.
+  const d = day || {};
+  const done = Number(d.matches || 0), planned = Number((d.scheduled || {}).total || 0);
+  const pending = Math.max(planned - done, 0);
+  if (!(planned > done) || pending <= 0) return {value: v3Num(done), label: t("v3Decisions"), pending: 0, planned, done};
+  return {value: `${v3Num(done)} ${t("ofWord")} ${v3Num(planned)}`, label: t("v3Processed").replace("{n}", String(pending)), pending, planned, done};
+}
+// Пустой список дня — четыре разных состояния, не одно «бот всё изучил» (п.3.1):
+//  1) ленты нет / источник ошибся → честный статус недоступности;
+//  2) лента устарела (generated_ts старше 6 ч) → «не обновлялась N ч»;
+//  3) обработка идёт или волны впереди → «k из n обработано · m ожидают»;
+//  4) всё обработано, отбора нет → «подходящих ставок сегодня нет»; матчей в плане нет → «матчей нет».
+const FEED_STALE_MS = 6 * 3600000;
+function dayStatusNote(feed, now){
+  if (!feed || !feed.session) return t("feedUnavailable");
+  const gen = Date.parse(feed.generated_ts || "");
+  const ageMs = Number.isFinite(gen) ? (now || Date.now()) - gen : NaN;
+  if (Number.isFinite(ageMs) && ageMs > FEED_STALE_MS) return t("feedStale").replace("{h}", String(Math.floor(ageMs / 3600000)));
+  const p = pendingAnalysisLabel(feed.session);
+  if (p.pending > 0) return t("awaitAnalysis").replace("{k}", String(p.done)).replace("{n}", String(p.planned)).replace("{m}", String(p.pending));
+  if (p.planned > 0 || p.done > 0) return t("noPickDay");
+  return t("noMatchesDay");
+}
+// «Игры»: игровой день по границе 06:00 UTC и пояс устройства — чтобы «17.10 · 05:00» читалось как сегодняшняя ночная игра
+function deviceTzLabel(date){
+  const off = -(date || new Date()).getTimezoneOffset();
+  const sign = off >= 0 ? "+" : "−", abs = Math.abs(off);
+  return "UTC" + sign + String(Math.floor(abs / 60)).padStart(2, "0") + ":" + String(abs % 60).padStart(2, "0");
+}
+// v162 (п.4.4): раздел «Отбор · симуляция» на дашборде свёрнут по умолчанию; состояние — на вкладку, не на сессию
+function initSimToggle(){
+  const btn = document.getElementById("simToggle"), body = document.getElementById("simBody");
+  if (!btn || !body || btn.__wired) return;
+  btn.__wired = true;
+  const paint = open => {
+    body.hidden = !open;
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    const hint = btn.querySelector(".sim-hint"); if (hint) hint.textContent = open ? t("hideSection") : t("showSection");
+  };
+  paint(window.__simOpen === true);
+  btn.addEventListener("click", () => { window.__simOpen = body.hidden; paint(window.__simOpen); });
+}
+function schedDayNoteText(now){
+  const at = now || new Date();
+  const day = sessionDateFromStart(at.toISOString());
+  return t("schedDayNote").replace("{d}", fmtDay(day)).replace("{tz}", deviceTzLabel(at));
 }
 
 let __betsGen = 0;
@@ -2952,7 +3120,8 @@ async function loadLastBets(quiet){
     if (gen !== __betsGen || session !== sessionKey()) return;
     const st = document.getElementById("lastStat");
     st.innerHTML = dayPickHead(day, rows);
-    box.innerHTML = rows.length ? rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || t("noPickDay")}</div>`;
+    const nextHtml = rows.length ? rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || dayStatusNote(strategy)}</div>`;
+    swapListHtml(box, nextHtml);     // v162 (п.4.5): при фоновом опросе не пересоздавать список без изменений и не терять раскрытые детали
     renderPersonalHistory(strategy);
     return;
   }
@@ -3470,20 +3639,30 @@ function claimPnlTxt(n){
   if (!Number.isFinite(v)) return "—";
   return v.toFixed(6);
 }
+// v162 (владелец 16.10, п.3.2): выплата рынка делится между покупками по ПОГАШЁННЫМ ДОЛЯМ (`shares_units`
+// из resolution исполнителя), а не по себестоимости: две покупки одного токена по разным ценам получают
+// выплату пропорционально долям, результат каждой = её выплата − её себестоимость. Остаток округления —
+// последней покупке, сумма долей выплаты равна выплате до единицы. Нет `shares_units` хотя бы у одной
+// покупки → разбивки нет (null): итог счёта остаётся подтверждённым, деталь по покупке не выдумывается.
 function claimShares(claim){
   const trades = claim && claim.intent && claim.intent.resolution && Array.isArray(claim.intent.resolution.trades)
     ? claim.intent.resolution.trades : null;
   if (!trades || !trades.length || !/^-?[0-9]+$/.test(String(claim.realized_pnl_units))) return null;
-  let costs;
-  try { costs = trades.map(t => BigInt(String(t.cost_units))); }
-  catch (e) { return null; }
-  const total = costs.reduce((acc, cost) => acc + cost, 0n);
-  const payout = BigInt(String(claim.realized_pnl_units)) + total;
+  let costs, shares;
+  try {
+    costs = trades.map(t => BigInt(String(t.cost_units)));
+    shares = trades.map(t => BigInt(String(t.shares_units)));
+  } catch (e) { return null; }
+  if (costs.some(c => c < 0n) || shares.some(s => s <= 0n)) return null;
+  const totalCost = costs.reduce((acc, c) => acc + c, 0n);
+  const totalShares = shares.reduce((acc, s) => acc + s, 0n);
+  const payout = BigInt(String(claim.realized_pnl_units)) + totalCost;
+  if (payout < 0n) return null;
   let used = 0n;
   return trades.map((trade, index) => {
-    const share = index === trades.length - 1 ? payout - used : (total === 0n ? 0n : payout * costs[index] / total);
-    used += share;
-    return {operation_id: trade.operation_id, pnl: share - costs[index], payout: share, cost: costs[index]};
+    const part = index === trades.length - 1 ? payout - used : payout * shares[index] / totalShares;
+    used += part;
+    return {operation_id: trade.operation_id, pnl: part - costs[index], payout: part, cost: costs[index], shares: shares[index]};
   });
 }
 function personalTradesFromHistory(state){
@@ -3504,12 +3683,12 @@ function personalTradesFromHistory(state){
     const match = readableMatch(o.match || o.fixture_id || "");
     const selection = teamForSide(match, o.side);
     const units = o.amount_units;
-    let claim = null, pnlUnits = null, payoutUnits = null, costUnits = null;
+    let claim = null, pnlUnits = null, payoutUnits = null, costUnits = null, sharesUnits = null;
     if (!unknown) {
       for (const candidate of claims) {
         const shares = claimShares(candidate);
         const mine = shares && shares.find(s => s.operation_id === o.operation_id);
-        if (mine) { claim = candidate; pnlUnits = mine.pnl; payoutUnits = mine.payout; costUnits = mine.cost; break; }
+        if (mine) { claim = candidate; pnlUnits = mine.pnl; payoutUnits = mine.payout; costUnits = mine.cost; sharesUnits = mine.shares; break; }
       }
       if (!claim) {
         const legacy = claims.filter(c => !claimShares(c) && c.fixture_id === String(o.fixture_id || "") && String(c.side || "") === String(o.side || ""));
@@ -3522,17 +3701,24 @@ function personalTradesFromHistory(state){
       pnl = Number(pnlUnits) / 1e6;
       result = pnlUnits > 0n ? 1 : pnlUnits < 0n ? 0 : -1;
     }
+    // v162 (п.4.3): сумма на карточке — подтверждённые затраты, когда они доказаны погашением;
+    // до него известен только резерв операции (`amount_units`), и он подписывается как резерв.
+    const reserved = units != null && /^[0-9]+$/.test(String(units)) ? Number(units) / 1e6 : null;
+    const fee = o.fee_units != null && /^[0-9]+$/.test(String(o.fee_units)) ? Number(o.fee_units) / 1e6 : null;
     rows.push({sport: o.sport || "mlb", operation_id: o.operation_id, state: o.state, match, selection,
       fill_price: confirmedFillPrice(o),
-      stake: units != null && /^[0-9]+$/.test(String(units)) ? Number(units) / 1e6 : null,
+      stake: costUnits != null ? Number(costUnits) / 1e6 : reserved,
+      reserved, fee, shares: sharesUnits != null ? Number(sharesUnits) / 1e6 : null,
+      stake_is_cost: costUnits != null,
       stake_pct: null, result, pnl, claim_confirmed: !!claim,
       payout: payoutUnits != null ? Number(payoutUnits) / 1e6 : null,
       cost: costUnits != null ? Number(costUnits) / 1e6 : null,
+      claim_ts: claim ? (claim.created_at || null) : null,
       session_date: sessionDateFromStart(start || o.created_at || ""),
       opened_ts: o.created_at, commence: start, fixture_id: String(o.fixture_id || ""),
       side: String(o.side || ""), _unknown: unknown, _realTrade: !unknown, _wallet: true});
   }
-  return {rows, unknown: pending.length, pendingNames};
+  return {rows, unknown: pending.length, pendingNames, truncated: hist.length >= 200};
 }
 function confirmedFillPrice(o){
   // Только цена подтверждённого исполнения. Коэффициент прогноза и лимит сигнала сюда не подставляются.
@@ -3552,9 +3738,12 @@ function moneyUnits(units, opts){
   const neg = raw.startsWith("-");
   const abs = BigInt(neg ? raw.slice(1) : raw);
   if (abs === 0n) return "0 USD";
-  const whole = (abs / 1000000n).toString();
+  let whole = (abs / 1000000n).toString();
   let frac = (abs % 1000000n).toString().padStart(6, "0");
-  if (!opts || !opts.exact) frac = frac.replace(/0+$/, "");
+  if (opts && opts.decimals === 2) {            // округление до цента по половине вверх, без плавающей точки
+    const cents = (abs + 5000n) / 10000n;
+    whole = (cents / 100n).toString(); frac = (cents % 100n).toString().padStart(2, "0");
+  } else if (!opts || !opts.exact) frac = frac.replace(/0+$/, "");
   let s = whole + (frac ? "." + frac : "");
   if (LANG === "ru") s = s.replace(".", ",");
   const sign = neg ? "−" : (opts && opts.sign ? "+" : "");
@@ -3568,12 +3757,19 @@ function accountHeadline(balance){
     total: digit(balance.confirmed_units) ? String(balance.confirmed_units) : null};
 }
 function accountCardHtml(balance){
+  // v162 (п.4.4): главная цифра — «Доступно» с двумя знаками; точные единицы и полный остаток — строкой ниже
   const head = accountHeadline(balance);
-  const bal = head.available == null ? "—" : moneyUnits(head.available);
-  const held = head.available == null ? "" : t("taReserved") + " " + moneyUnits(head.reserved)
-    + (head.reserved !== "0" && head.total ? " · " + t("taTotal") + " " + moneyUnits(head.total) : "");
+  const bal = head.available == null ? "—" : moneyUnits(head.available, {decimals: 2});
+  const exact = head.available == null ? "" : moneyUnits(head.available, {exact: true});
+  const held = head.available == null ? "" : (head.reserved !== "0" ? t("taReserved") + " " + moneyUnits(head.reserved) + " · " : "")
+    + (head.reserved !== "0" && head.total ? t("taTotal") + " " + moneyUnits(head.total) : exact);
   const aria = t("tradingAccount") + (held ? ". " + t("taAvailable") + " " + bal + ". " + held : "");
   return `<div class="card glass-sheen" aria-label="${v3Esc(aria)}"><div class="k">${t("taAvailable")}</div><div class="v">${bal}</div>${held ? `<div class="d">${held}</div>` : ""}</div>`;
+}
+// Время денежного события погашения: схема отдаёт только created_at/updated_at операции; created_at не меняется
+// после создания (CLAIM создаётся непосредственно перед подтверждением), updated_at — любая правка.
+function claimMoneyTime(o){
+  return (o && o.created_at) || "";
 }
 function winrateText(ta){
   if (!ta || ta.settled == null) return {rate:"—", detail:t("taHistoryLimited")};
@@ -3617,7 +3813,9 @@ function tradingAccountStats(state){
   const fullHistory = state.historyLoaded === true && hist.length < 200 && unresolved === 0;
   const oldest = hist.length && Date.parse(hist[hist.length - 1].created_at || "");
   const fullDay = state.historyLoaded === true && (hist.length < 200 || Number.isFinite(oldest) && oldest < dayAgo);
-  const pnl24 = fullDay ? claims.filter(o => Date.parse(o.updated_at || o.created_at || "") >= dayAgo)
+  // v162 (п.3.4): период по времени ДЕНЕЖНОГО события — `created_at` операции CLAIM (неизменяемо),
+  // а не `updated_at`, которое сдвигается любым дополнением метаданных и переносило бы старую выплату в новые сутки
+  const pnl24 = fullDay ? claims.filter(o => Date.parse(claimMoneyTime(o)) >= dayAgo)
     .reduce((acc, o) => acc + units(o.realized_pnl_units), 0n).toString() : null;
   return {available: String(a.balance.available_units ?? "0"), reserved: String(a.balance.reserved_units ?? "0"), confirmed: String(a.balance.confirmed_units ?? "0"),
           wins, losses, pushes, settled: fullHistory ? wins + losses : null, unit: "purchases",
