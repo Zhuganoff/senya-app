@@ -24,7 +24,10 @@ const I18N = {
   taHistoryLimited: ["История ещё загружается или неполная"], taNoBets: ["погашенных покупок ещё не было"],
   taPurchaseHint: ["по погашенным покупкам"], taPushes: ["без прибыли и убытка"],
   tradingAccount: ["Торговый счёт"],
-  sportMlb: ["Бейсбол MLB"], sportSoccer: ["Футбол"], originPaper: ["прогноз стратегии · PAPER"]
+  sportMlb: ["Бейсбол MLB"], sportSoccer: ["Футбол"], originPaper: ["прогноз стратегии · PAPER"],
+  stakedLabel: ["Поставлено"], profitLabel: ["Прибыль"], lossLabel: ["Убыток"], zeroResultLabel: ["Результат"],
+  inSettlement: ["В расчёте"], reconcilingState: ["Сверяется"], feeIncludedLine: ["Комиссия Polymarket: {x} · включена"], feeTiny: ["<0,01 USD"],
+  listSyncing: ["Личная история обновляется…"], listUpdateFailed: ["Не удалось обновить личную историю"], dataAsOf: ["данные от {t}"]
 };
 const context = {
   APP_PROFILE: "aisports", OFFICIAL_PERSONAL_LISTS: true,
@@ -80,14 +83,11 @@ test("owner sees one Cleveland row for the selection day, without paper profit",
   assert.equal(rows[0].pnl, null);
   assert.equal(rows[0].selection, "Cleveland Guardians");
   const htmlRow = context.dayPickRow(rows[0]);
-  assert.match(htmlRow, /Выиграла · ожидает погашения/);
-  assert.doesNotMatch(face(htmlRow), /Выиграла · ожидает погашения|Автоставка поставлена|Ставка поставлена/);
-  assert.match(face(htmlRow), /3,34 USD/);
+  // v167 (§9.2): до погашения — «В расчёте»; затраты не доказаны исполнением (нет fill_notional_units) → суммы нет, резерв не подставляется
+  assert.match(face(htmlRow), /В расчёте/);
   assert.match(face(htmlRow), /✓/);
-  assert.doesNotMatch(htmlRow, /27\.10|33\.45|2\.85|6\.19|@—/);
-  assert.doesNotMatch(face(htmlRow), /1\.81022/);
-  assert.match(htmlRow, /коэффициент прогноза 1\.81022/);
-  assert.match(htmlRow, /Цена сделки/);
+  assert.doesNotMatch(htmlRow, /Выиграла|Автоставка поставлена|Ставка поставлена|USD|коэффициент прогноза|Цена сделки|pick-more|Выплата/);
+  assert.doesNotMatch(htmlRow, /27\.10|33\.45|2\.85|6\.19|@—|1\.81022/);
 });
 test("empty public selection still shows that day's confirmed trade once", () => {
   load([trade]);
@@ -96,9 +96,8 @@ test("empty public selection still shows that day's confirmed trade once", () =>
   assert.equal(rows.length, 1);
   assert.equal(rows[0].pnl, null);
   const htmlRow = context.dayPickRow(rows[0]);
-  assert.match(htmlRow, /Сделка подтверждена/);
-  assert.doesNotMatch(htmlRow, /ожидает погашения|2\.85|33\.45|@—/);
-  assert.match(face(htmlRow), /3,34 USD/);
+  assert.match(face(htmlRow), /В расчёте/);
+  assert.doesNotMatch(htmlRow, /ожидает погашения|2\.85|33\.45|@—|USD|Сделка подтверждена/);
 });
 test("another session cannot read the purchase", () => {
   load([trade]);
@@ -117,8 +116,8 @@ test("refresh does not duplicate the operation", () => {
 test("UNKNOWN is reconciling and not a placed bet", () => {
   load([unknown]);
   const row = context.historyCashRow(context.personalTradeRows()[0]);
-  assert.match(row, /сверяется/);
-  assert.doesNotMatch(row, /Автоставка поставлена|✓|USD/);
+  assert.match(row, /Сверяется/);
+  assert.doesNotMatch(row, /Автоставка поставлена|✓|USD|pick-more/);
   assert.match(row, /pickline pending/);
 });
 test("paper win is not added to the day total", () => {
@@ -135,9 +134,9 @@ test("confirmed claim on the same fixture is the only pnl", () => {
   assert.equal(row.result, 1);
   assert.ok(Math.abs(row.pnl - 2.8474) < 1e-9);
   const htmlRow = context.dayPickRow(row);
-  assert.match(htmlRow, /Выплата получена/);
-  assert.match(htmlRow, /\+2\.847400 USD/);
-  assert.doesNotMatch(htmlRow, /ожидает погашения|pUSD/);
+  // прежний CLAIM без разбивки по долям: чистый результат известен, затраты — нет → только «Прибыль»
+  assert.match(face(htmlRow), /Прибыль \+2,85 USD/);
+  assert.doesNotMatch(htmlRow, /ожидает погашения|pUSD|Выплата|2\.847400|Поставлено/);
 });
 test("real Cleveland history renders awaiting redemption without paper profit", () => {
   const real = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
@@ -146,13 +145,13 @@ test("real Cleveland history renders awaiting redemption without paper profit", 
     order_id:null, result:"FILLED", realized_pnl_units:null};
   load([real]);
   const shown = context.daySelectionRows(feed, "2026-10-15")[0];
-  assert.equal(shown.stake, 3.420112);
+  assert.equal(shown.stake, 3.420112);          // внутреннее поле: резерв операции
+  assert.equal(shown.staked, null);             // на карточке резерв НЕ подставляется вместо затрат
   assert.equal(shown.pnl, null);
   const htmlRow = context.dayPickRow(shown);
-  assert.match(face(htmlRow), /3,42 USD/);
-  assert.match(htmlRow, /Выиграла · ожидает погашения/);
-  assert.match(htmlRow, /3,420112 USD/);
-  assert.match(htmlRow, /Цена недоступна/);
+  assert.match(face(htmlRow), /В расчёте/);
+  assert.match(face(htmlRow), /✓/);
+  assert.doesNotMatch(htmlRow, /3,42|3,420112|Первоначальный|Цена недоступна|USD|Выиграла/);
   assert.doesNotMatch(face(htmlRow), /1\.81022|@—/);
   assert.doesNotMatch(htmlRow, /33\.45|27\.10|2\.85|6\.19|\+2/);
 });
@@ -165,9 +164,9 @@ test("one market payout is split by redeemed shares and Cleveland is not the gro
   const shown = load([cleveland, claim]).rows[0];
   assert.equal(shown.pnl, 2.77053);
   const htmlRow = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
-  assert.match(htmlRow, /Выплата получена/);
-  assert.match(htmlRow, /\+2\.770530 USD/);
-  assert.doesNotMatch(htmlRow, /2\.85|pUSD/);
+  assert.match(face(htmlRow), /Поставлено 3,42 USD/);
+  assert.match(face(htmlRow), /Прибыль \+2,77 USD/);
+  assert.doesNotMatch(htmlRow, /2\.85|pUSD|Выплата|2\.770530|6,19/);
   const first = {kind:"TRADE", state:"CONFIRMED", operation_id:"buy-1", fixture_id:fixture, side:"home",
     amount_units:"1000000", created_at:"2026-10-15T16:00:00Z", sport:"mlb"};
   const second = Object.assign({}, first, {operation_id:"buy-2", amount_units:"3000000"});
@@ -209,8 +208,8 @@ test("October 15 shows only Cleveland and Royals stay in the September history",
   assert.equal(day.length, 1);
   assert.match(day[0].match, /Cleveland/);
   const block = context.dayPickHead("2026-10-15", day) + day.map(context.dayPickRow).join("");
-  assert.doesNotMatch(block, /Royals|Kansas|7[,.]020112|7[,.]02/);
-  assert.match(block, /3,42 USD/);
+  assert.doesNotMatch(block, /Royals|Kansas|7[,.]020112|7[,.]02|3,42/);
+  assert.match(block, /В расчёте/);
   assert.match(block, /⚾/);
   assert.equal(block.split("<article").length - 1, 1);
   const hist = context.personalHistoryHtml(context.personalTradeRows());
@@ -219,7 +218,9 @@ test("October 15 shows only Cleveland and Royals stay in the September history",
   assert.match(hist, /Kansas City Royals/);
   assert.match(hist, /pickline lose/);
   assert.match(hist, /×/);
-  assert.match(hist, /−3\.597750 USD/);
+  assert.match(hist, /Поставлено 3,60 USD/);
+  assert.match(hist, /Убыток −3,60 USD/);
+  assert.doesNotMatch(hist, /−3\.597750|Выплата/);
   const royalsHtml = hist.slice(hist.indexOf("2026-09-26"));
   assert.doesNotMatch(royalsHtml, /ожидает погашения|Выплата получена/);
   assert.doesNotMatch(hist, /pUSD|@—/);
@@ -293,33 +294,28 @@ test("confirmed claims show payout and cost apart from the result", () => {
   assert.equal(day[0].cost, 3.41947);
   assert.equal(day[0].fill_price, null);
   const htmlRow = context.dayPickRow(day[0]);
-  assert.match(htmlRow, /Выплата получена/);
-  assert.match(htmlRow, /Выплата 6,190000 USD/);
-  assert.match(htmlRow, /Потрачено 3,419470 USD/);
-  assert.match(htmlRow, /Результат \+2\.770530 USD/);
-  assert.match(htmlRow, /Цена недоступна/);
-  assert.match(htmlRow, /коэффициент прогноза 1\.81022/);
-  assert.doesNotMatch(htmlRow, /прибыл|1\.85185|ожидает погашения/);
+  // v167: лицо карточки — только «Поставлено» и чистый результат; выплата/потрачено/цена/коэффициент в карточке не показываются
+  assert.match(face(htmlRow), /Поставлено 3,42 USD/);
+  assert.match(face(htmlRow), /Прибыль \+2,77 USD/);
+  assert.doesNotMatch(htmlRow, /Выплата|Потрачено|Результат \+|Цена|коэффициент|6,19|1\.81022|1\.85185|ожидает погашения|pick-more/);
   const hist = context.personalHistoryRows(feed);
   const royal = hist.find(r => r.operation_id === royals.operation_id);
   assert.equal(royal.pnl, -3.59775);
   assert.equal(royal.payout, 0);
   assert.equal(royal.session_date, "2026-09-26");
   const royalHtml = context.historyCashRow(royal);
-  assert.match(royalHtml, /Выплата 0,000000 USD/);
-  assert.match(royalHtml, /−3\.597750 USD/);
-  assert.doesNotMatch(royalHtml, /ожидает погашения|Выплата получена|1\.81022/);
+  assert.match(face(royalHtml), /Поставлено 3,60 USD/);
+  assert.match(face(royalHtml), /Убыток −3,60 USD/);
+  assert.doesNotMatch(royalHtml, /ожидает погашения|Выплата|0,000000|−3\.597750|1\.81022/);
   assert.ok(Math.abs(day[0].pnl + royal.pnl + 0.82722) < 1e-9);
 });
 test("a paper coefficient is not used as the fill price", () => {
   const priced = Object.assign({}, trade, {average_price:"0.54", odds:1.81022, max_price:"0.55"});
   load([priced]);
   const row = context.daySelectionRows(feed, "2026-10-15")[0];
-  assert.equal(row.fill_price, 0.54);
+  assert.equal(row.fill_price, 0.54);          // данные остаются в учёте/диагностике
   const htmlRow = context.dayPickRow(row);
-  assert.match(htmlRow, /Цена сделки 0,54000/);
-  assert.match(htmlRow, /коэффициент прогноза 1\.81022/);
-  assert.doesNotMatch(htmlRow, /1\.85185/);
+  assert.doesNotMatch(htmlRow, /0,54|1\.81022|1\.85185|Цена/);   // v167: карточка цену и коэффициент не показывает
 });
 test("one redemption of several buys counts each buy, and a short history has no percent", () => {
   const first = {kind:"TRADE", state:"CONFIRMED", operation_id:"buy-1", fixture_id:fixture, side:"home",
@@ -494,28 +490,27 @@ test("dashboard rows face the money result of a redeemed buy and keep the stake 
   load([cleveland, claim, royals, royalsClaim]);
   const rows = context.personalHistoryRows(feed);
   const cle = context.historyCashRow(rows.find(r => r.operation_id === cleveland.operation_id));
-  assert.match(face(cle), /<b>\+2,77 USD<\/b>/);
-  assert.match(face(cle), /ставка 3,42 USD/);
+  // v167 (§9.2): одна короткая карточка — «Поставлено 3,42 USD · Прибыль +2,77 USD», победившая команда жирная
+  assert.match(face(cle), /<b>Поставлено 3,42 USD<\/b>/);
+  assert.match(face(cle), /<b class="pos">Прибыль \+2,77 USD<\/b>/);
+  assert.match(face(cle), /<span class="winner">Cleveland Guardians<\/span>/);
   assert.match(face(cle), /class="pico"/);
-  assert.doesNotMatch(face(cle), /2\.770530|class="sport"/);
-  assert.match(cle, /Выплата 6,190000 USD/);
-  assert.match(cle, /Потрачено 3,419470 USD/);
+  assert.doesNotMatch(cle, /2\.770530|class="sport"|Выплата|Потрачено|ставка 3,42|6,19|pick-more/);
   const roy = context.historyCashRow(rows.find(r => r.operation_id === royals.operation_id));
-  assert.match(face(roy), /<b>−3,60 USD<\/b>/);
-  assert.match(face(roy), /ставка 3,60 USD/);
+  assert.match(face(roy), /<b>Поставлено 3,60 USD<\/b>/);
+  assert.match(face(roy), /<b class="neg">Убыток −3,60 USD<\/b>/);
   assert.match(roy, /pickline lose/);
-  // «Ставки» (отбор дня) — ТА ЖЕ компактная карточка: результат справа, ставка в подписи
+  assert.doesNotMatch(roy, /Выплата|0,00/);
+  // «Ставки» (отбор дня) — ТА ЖЕ карточка
   const dayRow = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
-  assert.match(face(dayRow), /<b>\+2,77 USD<\/b>/);
-  assert.match(face(dayRow), /ставка 3,42 USD/);
-  assert.match(dayRow, /Потрачено 3,419470 USD/);
-  assert.match(dayRow, /Результат \+2\.770530 USD/);
-  assert.doesNotMatch(face(dayRow), /2\.770530/);
-  // не погашенная сделка на дашборде — тоже сумма покупки
+  assert.match(face(dayRow), /Поставлено 3,42 USD/);
+  assert.match(face(dayRow), /Прибыль \+2,77 USD/);
+  assert.doesNotMatch(dayRow, /Потрачено|Результат \+|2\.770530/);
+  // не погашенная сделка без доказанных затрат — «В расчёте» без суммы
   load([cleveland]);
   const open = context.historyCashRow(context.personalHistoryRows(feed)[0]);
-  assert.match(face(open), /<b>3,42 USD<\/b>/);
-  assert.doesNotMatch(open, /\+2|6\.19/);
+  assert.match(face(open), /В расчёте/);
+  assert.doesNotMatch(open, /\+2|6\.19|3,42|USD/);
 });
 test("an untouched day reads as waiting for the waves, not as zero decisions", () => {
   const waiting = context.pendingAnalysisLabel({matches:0, skipped:0, scheduled:{total:5}});
@@ -602,7 +597,7 @@ test("the money period uses the confirmed settlement time only; without it the p
   const open = context.dayMoneyResult("2026-10-15", feed);
   assert.equal(open.pnlUnits, null); assert.equal(open.open, 1);
 });
-test("confirmed cost replaces the reserve on the card and the details separate reserve, spent, shares and price", () => {
+test("the card shows confirmed cost and one fee line; reserve, shares and price stay out of the card", () => {
   const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
     fixture_id:fixture, side:"home", match:"Tampa Bay Rays @ Cleveland Guardians", average_price:"0.54", fee_units:"76870",
     amount_units:"3420112", created_at:"2026-10-15T16:31:22Z", sport:"mlb"};
@@ -612,22 +607,26 @@ test("confirmed cost replaces the reserve on the card and the details separate r
   assert.equal(row.stake, 3.41947);          // подтверждённые затраты, не резерв 3,420112
   assert.equal(row.reserved, 3.420112);
   assert.equal(row.shares, 6.19);
-  assert.equal(row.fill_price, 0.54);        // цена исполнения — отдельно от комиссии (3,419470 / 6,19 = 0,5524 — не цена)
+  assert.equal(row.fill_price, 0.54);        // данные учёта остаются, на карточку не выводятся
   const htmlRow = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
-  assert.match(htmlRow, /pick-tech">Первоначальный резерв 3,420112 USD/);
-  assert.match(htmlRow, /Потрачено 3,419470 USD/);   // фактически потраченное = себестоимость, одной строкой
-  assert.match(htmlRow, /Комиссия, уже включена 0,076870 USD/);
-  assert.doesNotMatch(htmlRow, /Сумма 3,420112|Себестоимость/);
-  assert.match(htmlRow, /Доли 6\.19/);
-  assert.match(htmlRow, /Цена сделки 0,54000/);
-  assert.doesNotMatch(htmlRow, /0,5524|1\.81022 USD/);
-  // без погашения на карточке резерв, в подробностях он так и подписан
+  assert.match(face(htmlRow), /Поставлено 3,42 USD/);
+  assert.match(face(htmlRow), /Прибыль \+2,77 USD/);
+  assert.match(htmlRow, /<button type="button" class="pickline-row"/);         // раскрытие есть — комиссия подтверждена
+  assert.match(htmlRow, /pick-more" hidden><div class="pick-detail">Комиссия Polymarket: 0,08 USD · включена<\/div>/);
+  assert.doesNotMatch(htmlRow, /Первоначальный резерв|Потрачено|Доли|Цена сделки|0,5524|3,420112|Сумма|Выплата|0,076870/);
+  assert.equal(htmlRow.split("pick-detail").length - 1, 1);                    // ровно одна строка в раскрытии
+  // без погашения: затраты не доказаны → суммы нет; с fill_notional_units+fee_units → «Поставлено» и «В расчёте»
   const open = load([cleveland]).rows[0];
-  assert.equal(open.stake, 3.420112);
-  assert.equal(open.stake_is_cost, false);
+  assert.equal(open.staked, undefined); assert.equal(open.cost_known, null);
   const openHtml = context.historyCashRow(open);
-  assert.match(openHtml, /Первоначальный резерв 3,420112 USD/);
-  assert.doesNotMatch(openHtml, /Потрачено/);
+  assert.match(face(openHtml), /В расчёте/);
+  assert.doesNotMatch(openHtml, /Поставлено|3,42|Первоначальный/);
+  const filled = load([Object.assign({}, cleveland, {fill_notional_units:"3342600"})]).rows[0];
+  assert.equal(filled.cost_known, 3.41947);
+  const filledHtml = context.historyCashRow(filled);
+  assert.match(face(filledHtml), /Поставлено 3,42 USD/);
+  assert.match(face(filledHtml), /В расчёте/);
+  assert.doesNotMatch(filledHtml, /Прибыль|Убыток/);
 });
 test("a 200-operation history is marked partial in the archive button and gives no share", () => {
   const many = Array.from({length:200}, (_, i) => ({kind:"TRADE", state:"CONFIRMED", operation_id:"op" + i,
@@ -666,17 +665,57 @@ test("statistics by sport stay open with one heading, a short origin note and co
 });
 test("a forecast before the private history arrives is not declared a non-purchase", () => {
   context.window.__privateRealBets = null;            // история ещё не пришла
+  assert.equal(context.personalHistoryLoading(), true);
   const row = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
-  assert.match(face(row), /сверка с личной историей/);
-  assert.doesNotMatch(face(row), /USD|Прогноз/);
-  assert.match(row, /Личная история ещё загружается/);
+  // v167 (§9.2/9.3): в карточке нет длинных подписей сверки и нет утверждения «реальной ставки нет»; состояние — строкой списка
+  assert.match(face(row), /Прогноз/);
+  assert.doesNotMatch(row, /USD|сверка|Личная история|реальной ставки нет|class="mark"|pick-more/);
   load([]);                                           // история пришла пустой — честный прогноз
+  assert.equal(context.personalHistoryLoading(), false);
   const after = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
   assert.match(face(after), /Прогноз/);
-  assert.doesNotMatch(face(after), /USD/);
-  assert.match(after, /Выбрано · реальной ставки нет/);
+  assert.doesNotMatch(after, /USD|Выбрано|class="mark"/);
 });
-// ── 16.10: вечная «Загрузка…», день списка, устойчивые ключи ──
+// ── v167 (владелец 16.10, §9.2): комиссия без ложного нуля; состояния карточки ──
+test("fee is summed only when every purchase of the card confirms it: [null]→hidden, [0]→0, [x,null]→hidden", () => {
+  const mk = (id, fee) => ({sport:"mlb", operation_id:id, match:"Tampa Bay Rays @ Cleveland Guardians", selection:"Cleveland Guardians", side:"home",
+    session_date:"2026-10-15", state:"CONFIRMED", _realTrade:true, _unknown:false, stake:1, fee, claim_confirmed:true, pnl:0.5, cost:1, payout:1.5, result:1});
+  const merged = list => context.mergeDayRow(pick, list);
+  assert.equal(merged([mk("a", null)]).fee, null);
+  assert.equal(merged([mk("a", 0)]).fee, 0);
+  assert.equal(merged([mk("a", 0.07687)]).fee, 0.07687);
+  assert.equal(merged([mk("a", 0.07687), mk("b", null)]).fee, null, "одна покупка без комиссии — общая комиссия неизвестна");
+  assert.equal(merged([mk("a", 0.07687), mk("b", 0.003)]).fee, 0.07987);
+  assert.equal(context.cardFeeText(merged([mk("a", null)])), "");
+  assert.equal(context.cardFeeText(merged([mk("a", 0)])), "Комиссия Polymarket: 0,00 USD · включена");
+  assert.equal(context.cardFeeText(merged([mk("a", 0.004)])), "Комиссия Polymarket: <0,01 USD · включена");
+  assert.equal(context.cardFeeText(merged([mk("a", 0.07687)])), "Комиссия Polymarket: 0,08 USD · включена");
+  assert.equal(context.cardFeeText(merged([mk("a", 0.07687), mk("b", null)])), "");
+  assert.equal(context.cardFeeText(Object.assign(merged([mk("a", 0.07687)]), {_cash:false})), "", "у прогноза комиссии нет");
+  // раскрытия нет — нет и кнопки
+  const noFee = context.dayPickRow(merged([mk("a", null)]));
+  assert.doesNotMatch(noFee, /<button|pick-more|aria-expanded/);
+  assert.match(noFee, /<div class="pickline-row"/);
+});
+test("card states: loss, zero, unsettled, unknown, forecast — no payout, no price, no odds", () => {
+  const base = {sport:"mlb", match:"Tampa Bay Rays @ Cleveland Guardians", selection:"Cleveland Guardians", side:"home", session_date:"2026-10-15"};
+  const loss = context.dayPickRow(Object.assign({}, base, {_cash:true, claim_confirmed:true, pnl:-3.59775, result:0, staked:3.59775, fee:0.08775}));
+  assert.match(face(loss), /<b>Поставлено 3,60 USD<\/b> · <b class="neg">Убыток −3,60 USD<\/b>/);
+  assert.match(loss, /×/); assert.match(loss, /pickline lose/); assert.match(loss, /Комиссия Polymarket: 0,09 USD · включена/);
+  const zero = context.dayPickRow(Object.assign({}, base, {_cash:true, claim_confirmed:true, pnl:0, result:-1, staked:2}));
+  assert.match(face(zero), /Поставлено 2,00 USD<\/b> · <b class="">Результат 0,00 USD/);
+  assert.doesNotMatch(zero, /Прибыль|Убыток|class="mark"/);
+  const open = context.dayPickRow(Object.assign({}, base, {_cash:true, claim_confirmed:false, pnl:null, staked:3.41947, _resolution:null}));
+  assert.match(face(open), /Поставлено 3,42 USD<\/b> · <span>В расчёте<\/span>/);
+  const unknown = context.dayPickRow(Object.assign({}, base, {_cash:true, _unknown:true}));
+  assert.match(face(unknown), /Сверяется/); assert.doesNotMatch(unknown, /USD|Поставлено/);
+  const forecast = context.dayPickRow(Object.assign({}, base, {_cash:false, result:1, forecast_odds:1.81022}));
+  assert.match(face(forecast), /<span class="winner">Cleveland Guardians<\/span> · 2026-10-15 · Прогноз/);
+  assert.doesNotMatch(forecast, /USD|class="mark"|1\.81022|коэффициент|glowbar/);
+  for (const h of [loss, zero, open, unknown, forecast]) assert.doesNotMatch(h, /Выплата|Цена|Доли|резерв|Потрачено|Сумма|прогноз зашёл|сверка с личной/);
+  // aria: содержимое карточки читается целиком
+  assert.match(loss, /aria-label="Бейсбол MLB\. Tampa Bay Rays @ Cleveland Guardians\. Cleveland Guardians\. Поставлено 3,60 USD\. Убыток −3,60 USD"/);
+});
 function fakeBox(){ return {innerHTML:"", querySelectorAll(){ return []; }}; }
 test("regression: rows survive navigation and a repeated identical response (stuck loader on v161)", () => {
   const box = fakeBox();

@@ -1094,10 +1094,22 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v166"></script>
-<script src="wallet-connect.js?v=v166"></script>
+<script src="bot-account.js?v=v167"></script>
+<script src="wallet-connect.js?v=v167"></script>
 <script>
-const BUILD = "v166";
+// v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
+// обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
+const __safeStorage = (kind) => {
+  try { const st = window[kind]; st.getItem("__aisports_probe"); return st; }
+  catch (e) {
+    const m = new Map();
+    return {getItem: k => (m.has(String(k)) ? m.get(String(k)) : null), setItem: (k, v) => { m.set(String(k), String(v)); }, removeItem: k => { m.delete(String(k)); },
+            clear: () => m.clear(), key: i => Array.from(m.keys())[i] ?? null, get length() { return m.size; }};
+  }
+};
+const localStorage = __safeStorage("localStorage");
+const sessionStorage = __safeStorage("sessionStorage");
+const BUILD = "v167";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1354,6 +1366,15 @@ const T = {
   noRecentBets: ["За последние 24 часа ставок не было", "No bets in the last 24 hours", "近 24 小时没有投注"],
   recentBasisSubmitted: ["по времени отправки ордера на биржу; время исполнения в учёте пока не записано", "by the time the order was sent to the exchange; fill time is not recorded in the ledger yet", "按订单发送到交易所的时间；账本尚未记录成交时间"],
   stakeWord: ["ставка", "stake", "投注"], forecastWord: ["Прогноз", "Forecast", "预测"],
+  // v167 (владелец 16.10, §9.2): одна короткая карточка — «Поставлено» (затраты с комиссией), «Прибыль/Убыток/Результат» (чистый итог),
+  // «В расчёте» до погашения, «Сверяется» для UNKNOWN; единственная необязательная строка — подтверждённая комиссия
+  stakedLabel: ["Поставлено", "Staked", "已投注"], profitLabel: ["Прибыль", "Profit", "盈利"], lossLabel: ["Убыток", "Loss", "亏损"],
+  zeroResultLabel: ["Результат", "Result", "结果"], inSettlement: ["В расчёте", "Settling", "结算中"], reconcilingState: ["Сверяется", "Reconciling", "核对中"],
+  feeIncludedLine: ["Комиссия Polymarket: {x} · включена", "Polymarket fee: {x} · included", "Polymarket 手续费：{x} · 已包含"], feeTiny: ["<0,01 USD", "<0.01 USD", "<0.01 USD"],
+  // §9.3: состояние личной истории — одной компактной строкой на уровне списка, не в каждой карточке
+  listSyncing: ["Личная история обновляется…", "Personal history is updating…", "个人历史更新中…"],
+  listUpdateFailed: ["Не удалось обновить личную историю", "Could not update personal history", "无法更新个人历史"],
+  dataAsOf: ["данные от {t}", "data as of {t}", "数据截至 {t}"],
   historyLoading: ["сверка с личной историей…", "checking personal history…", "正在核对个人历史…"],
   historyLoadingLong: ["Личная история ещё загружается — наличие покупки по этому прогнозу уточняется", "Personal history is still loading — a purchase on this forecast is being checked", "个人历史仍在加载——正在核对该预测是否有购买"],
   statsNote: ["По результатам отбора", "Based on selection results", "按选场结果"],
@@ -1851,10 +1872,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // без автоставки успевает затереть уже пришедшую историю, и ставка
   // видна только после захода в дашборд и возврата в «Ставки».
   const paintBets = () => { try { loadLastBets(); } catch(e) {} };
+  // v167 (§9.3): граница сессии ставится ДО любой предзагрузки — последующий вход в профиль/pageshow того же пользователя
+  // ничего не стирает; затем параллельно: счёт+история+деньги (один общий Promise), лента отбора, расписание
+  try { ensurePrivateSession(); } catch(e) {}
+  try { strategyFeed().catch(() => {}); } catch(e) {}
+  try { if (!window.__schedInit) { window.__schedInit = true; initSched(); } } catch(e) {}
   if (OFFICIAL_PERSONAL_LISTS && wvInit()) {
+    try { restoreAccountSnapshot(); } catch(e) {}
+    paintBets();                                              // структура и всё уже известное — сразу; сеть дорисует
     const pending = botAccountController.refresh();
     if (pending && typeof pending.finally === "function") pending.finally(paintBets);
-    else paintBets();
   } else paintBets();
   try { startStatsAutoRefresh(); } catch(e) {}
   document.querySelectorAll("#themeSel button").forEach(b =>
@@ -2042,6 +2069,9 @@ async function main(){
   // по каждому виду. Всё из bet_log-таблиц напрямую (принцип «всё из базы»).
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   let myBank = null;
+  // v167 (§9.3): публичные ленты не ждут профиль — общий Promise с предзагрузкой DOMContentLoaded
+  const strategyPromise = strategyFeed().catch(() => null);
+  const corePromise = coreFeed().catch(() => null);
   if (u) {
     try {
       const me = await profile(u.id);
@@ -2053,9 +2083,8 @@ async function main(){
   }
   // v71: ЕДИНЫЙ источник — ассет core_feed. Разметка карточек и блоков
   // не менялась: заменён только слой данных (дизайн заморожен, MINI_APP §0).
-  const strategyPromise = strategyFeed().catch(() => null);
   let feed = null;
-  try { feed = await coreFeed(); } catch(e) { feed = null; }
+  try { feed = await corePromise; } catch(e) { feed = null; }
   if (window.__schedInit) { try { renderSched(); } catch(e) {} }   // v107 (C-R2): «Игры» зависят от свежести ленты
   const strategy = await strategyPromise;
   const z = (feed && feed.totals) || {}, fb = (feed && feed.bank) || {},
@@ -2334,7 +2363,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
       window.__statsInit = true;
       // 16.10: счёт и историю не перечитывать при каждом переходе — только если снимок старше 30 с или его нет;
       // список рисуется сразу из памяти, обновление счёта дорисует личные суммы тем же рендером
-      const acctFresh = botAccountController.state.historyLoaded === true && Date.now() - (window.__acctRefreshAt || 0) < ACCOUNT_SNAPSHOT_MS;
+      const acctFresh = accountSnapshotFresh();
       if (OFFICIAL_PERSONAL_LISTS && wvInit() && !botAccountController.state.busy && !acctFresh) {
         try { loadLastBets(); } catch(e) {}
         const pending = botAccountController.refresh();
@@ -2945,8 +2974,9 @@ function mergeDayRow(pick, list){
   const pnl = settled ? claimed.reduce((s, t) => s + Number(t.pnl), 0) : null;
   const result = !settled ? null : pnl > 0 ? 1 : pnl < 0 ? 0 : -1;
   const sumField = (name) => {
-    const vals = claimed.map(t => Number(t[name])).filter(n => Number.isFinite(n));
-    return settled && vals.length === claimed.length ? vals.reduce((s, n) => s + n, 0) : null;
+    // v167: null/отсутствие значения у любой покупки → суммы нет (Number(null)=0 давал ложный ноль)
+    const vals = claimed.map(t => t[name]).filter(v => v != null && Number.isFinite(Number(v)));
+    return settled && vals.length === claimed.length ? vals.reduce((s, v) => s + Number(v), 0) : null;
   };
   const fromTrade = trades.find(t => t._resolution === 1 || t._resolution === 0 || t._resolution === -1);
   const fromPick = pick && (pick.result === 1 || pick.result === 0 || pick.result === -1) ? pick.result : null;
@@ -2967,7 +2997,14 @@ function mergeDayRow(pick, list){
     cost: cash ? sumField("cost") : null,
     // v162: резерв/комиссия/доли — суммы по реальным покупкам строки; stake_is_cost — все покупки закрыты выплатой
     reserved: cash ? (() => { const v = real.map(t => Number(t.reserved)).filter(Number.isFinite); return v.length === real.length ? v.reduce((s, n) => s + n, 0) : null; })() : null,
-    fee: cash ? (() => { const v = real.map(t => Number(t.fee)).filter(Number.isFinite); return v.length ? v.reduce((s, n) => s + n, 0) : null; })() : null,
+    // v167 (§9.2): комиссия карточки — только если подтверждена у КАЖДОЙ покупки (null/отсутствие → строка скрыта, не «0»)
+    fee: cash ? (() => { const v = real.map(t => t.fee); return v.length && v.every(x => x != null && Number.isFinite(Number(x))) ? v.reduce((s, x) => s + Number(x), 0) : null; })() : null,
+    // «Поставлено» — фактические подтверждённые затраты с комиссией: себестоимость погашения, иначе исполнение+комиссия (cost_known);
+    // первоначальный резерв операции сюда не подставляется, даже если округление совпадает
+    staked: cash ? (() => {
+      if (settled) return sumField("cost");
+      const v = real.map(t => t.cost_known); return v.length && v.every(x => x != null && Number.isFinite(Number(x))) ? v.reduce((s, x) => s + Number(x), 0) : null;
+    })() : null,
     shares: cash ? (() => { const v = real.map(t => Number(t.shares)).filter(Number.isFinite); return v.length === real.length ? v.reduce((s, n) => s + n, 0) : null; })() : null,
     stake_is_cost: cash && settled,
     fill_price: (() => {
@@ -3033,46 +3070,39 @@ function dayPickHead(date, rows, view){
   const note = last ? `<div class="daysum" style="margin-top:6px"><span>${t("newSelectionNotStarted")}</span></div>` : "";
   return `<div class="dayhead"><span class="daydate">${title}</span><span class="daydow">${n} ${plBets(n)}</span></div>${note}`;
 }
+function cardMoney(r){
+  // v167 (§9.2): денежная строка карточки — только подтверждённые факты личного счёта.
+  //  unknown → «Сверяется»; покупка без погашения → «В расчёте» (+ «Поставлено», если затраты доказаны исполнением);
+  //  погашена → «Поставлено X» и «Прибыль +Y» / «Убыток −Y» / «Результат 0,00» (выплата − затраты; комиссия второй раз не вычитается)
+  if (!r) return null;
+  if (r._unknown) return {state: t("reconcilingState")};
+  if (r._cash !== true) return null;
+  const staked = r.staked != null && Number.isFinite(Number(r.staked)) ? `${t("stakedLabel")} ${usdTxt(r.staked, 2)}` : "";
+  const settled = r.claim_confirmed === true && r.pnl != null && Number.isFinite(Number(r.pnl));
+  if (!settled) return {state: t("inSettlement"), staked};
+  const p = Number(r.pnl);
+  const result = p > 0 ? `${t("profitLabel")} +${usdTxt(p, 2)}` : p < 0 ? `${t("lossLabel")} ${usdTxt(p, 2)}` : `${t("zeroResultLabel")} ${usdTxt(0, 2)}`;
+  return {staked, result, cls: p > 0 ? "pos" : p < 0 ? "neg" : ""};
+}
+function cardFeeText(r){
+  // единственная необязательная строка: подтверждённая комиссия всех покупок карточки, уже включённая в «Поставлено»;
+  // положительная меньше цента — «<0,01 USD»; настоящая нулевая допустима; нет данных → строки нет
+  if (!r || r._cash !== true || r.fee == null || !Number.isFinite(Number(r.fee)) || Number(r.fee) < 0) return "";
+  const f = Number(r.fee);
+  const x = f === 0 ? usdTxt(0, 2) : f < 0.005 ? t("feeTiny") : usdTxt(f, 2);
+  return t("feeIncludedLine").replace("{x}", x);
+}
 function pickAria(r, tone){
   const sport = r.sport === "soccer" ? t("sportSoccer") : r.sport === "mlb" ? t("sportMlb") : (r.sport || "");
-  const outcome = r._unknown ? t("reconciling")
-    : r._cash && r.claim_confirmed && r.result === 0 ? t("lose")
-    : r._cash && r.claim_confirmed ? t("payoutReceived")
-    : r._cash && r._resolution === 1 ? t("awaitingRedeem")
-    : r._cash && r._resolution === 0 ? t("lose")
-    : r._cash ? t("realTradeConfirmed")
-    : t("selectedNoTrade");
-  const money = r._cash && r.stake != null ? " " + usdTxt(r.stake, 2) : "";
-  return [sport, r.match || "", r.selection || "", money.trim(), outcome].filter(Boolean).join(". ");
+  const m = cardMoney(r);
+  const outcome = m ? [m.staked, m.result, m.state].filter(Boolean).join(". ") : t("forecastWord");
+  return [sport, r.match || "", r.selection || "", outcome].filter(Boolean).join(". ");
 }
 function pickDetails(r){
-  const bits = [];
-  if (r._unknown) bits.push(t("reconciling"));
-  else if (r._cash && r.claim_confirmed && r.pnl != null) {
-    // 16.10 (владелец): «Потрачено» — фактические затраты (комиссия уже включена), «Выплата», «Результат»;
-    // первоначальный резерв операции — только технической строкой ниже, разница резерв−затраты второй раз не списывается
-    bits.push(r.result === 0 ? t("lose") : t("payoutReceived"));
-    if (r.cost != null) bits.push(t("costAmount") + " " + usdTxt(r.cost, 6));
-    if (r.fee != null) bits.push(t("feeLabel") + " " + usdTxt(r.fee, 6));
-    if (r.payout != null) bits.push(t("payoutAmount") + " " + usdTxt(r.payout, 6));
-    const sign = r.pnl > 0 ? "+" : r.pnl < 0 ? "−" : "";
-    bits.push(t("resultAmount") + " " + sign + claimPnlTxt(r.pnl) + " USD");
-  } else if (r._cash && r._resolution === 1) bits.push(t("awaitingRedeem"));
-  else if (r._cash && r._resolution === 0) bits.push(t("lose"));
-  else if (r._cash) bits.push(t("realTradeConfirmed"));
-  else {
-    bits.push(personalHistoryLoading() ? t("historyLoadingLong") : t("selectedNoTrade"));
-    if (r.result === 1) bits.push(t("paperWin"));
-    else if (r.result === 0) bits.push(t("paperLoss"));
-  }
-  if (r._cash && !r.claim_confirmed && r.fee != null) bits.push(t("feeLabel") + " " + usdTxt(r.fee, 6));
-  if (r._cash && r.shares != null) bits.push(t("sharesLabel") + " " + Number(r.shares).toFixed(2));
-  if (r._cash) bits.push(r.fill_price != null ? t("fillPrice") + " " + priceTxt(r.fill_price) : t("priceUnavailable"));
-  if (r.forecast_odds != null && Number.isFinite(Number(r.forecast_odds))) bits.push(t("forecastOddsLabel") + " " + Number(r.forecast_odds).toFixed(5));
-  // техническая строка: заявленная/зарезервированная сумма операции (до погашения она же стоит на карточке)
-  if (r._cash && r.reserved != null) bits.push(`<span class="pick-tech">${t("reservedLabel")} ${usdTxt(r.reserved, 6)}</span>`);
-  else if (r._cash && r.stake != null && !r.stake_is_cost) bits.push(`<span class="pick-tech">${t("reservedLabel")} ${usdTxt(r.stake, 6)}</span>`);
-  return bits.map(x => `<div class="pick-detail">${x}</div>`).join("");
+  // v167 (§9.2): в раскрытии — только подтверждённая комиссия. Выплата, доли, цена, коэффициент прогноза, резерв,
+  // повторы «Потрачено/Результат/Сумма» и подписи ожидания личной истории из карточки убраны.
+  const fee = cardFeeText(r);
+  return fee ? `<div class="pick-detail">${fee}</div>` : "";
 }
 function dayPickRow(r){
   const tone = pickTone(r);
@@ -3080,23 +3110,46 @@ function dayPickRow(r){
   const sel = v3Esc(String(r.selection || "").replace(/[\[\]]/g, " ").trim());
   const selHtml = (cash && tone === "win") || (!cash && r.result === 1) ? `<span class="winner">${sel}</span>` : sel;
   const date = fmtDay(r.session_date || "");
-  // 16.10 (владелец): ОДНА компактная карточка подтверждённой сделки на всех экранах — лицо: результат ±x,xx USD справа,
-  // «ставка 3,42 USD» в подписи; до погашения справа сумма покупки; у прогноза без покупки денег нет — короткое «Прогноз»
-  const settled = cash && r.claim_confirmed && r.pnl != null && Number.isFinite(Number(r.pnl));
-  const stakeTxt = cash && r.stake != null ? usdTxt(r.stake, 2) : "";
-  const amount = settled ? usdTxt(r.pnl, 2).replace(/^(?!−)/, r.pnl > 0 ? "+" : "") : stakeTxt;
-  const loading = !cash && !r._unknown && personalHistoryLoading();
-  const subBits = [selHtml, date ? v3Esc(date) : "", settled && stakeTxt ? t("stakeWord") + " " + v3Esc(stakeTxt) : "",
-    !cash && !r._unknown ? (loading ? t("historyLoading") : t("forecastWord")) : "", r._unknown ? t("reconciling") : ""].filter(Boolean);
+  // v167 (владелец 16.10, §9.2): ОДНА короткая карточка на всех экранах — иконка, «Away — Home», выбранная команда (победившая —
+  // жирная зелёная), дата; строка денег «Поставлено X USD · Прибыль +Y USD» (или «В расчёте» / «Сверяется»); у прогноза без
+  // подтверждённой покупки денег и зелёной отметки покупки нет — короткое «Прогноз». Раскрытие — только при подтверждённой комиссии.
+  const m = cardMoney(r);
+  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : ""].filter(Boolean).join(" · ");
+  const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "", m.state ? `<span>${v3Esc(m.state)}</span>` : ""].filter(Boolean) : [];
+  const sub2 = moneyBits.length ? `<small class="sub">${moneyBits.join(" · ")}</small>` : "";
   const mark = cash && tone === "win" ? "✓" : cash && tone === "lose" ? "×" : "";
   const glow = cash && tone === "win" ? "green" : cash && tone === "lose" ? "red" : "";
   const key = v3Esc(rowKey(r));   // устойчивый ключ строки: раскрытие переживает перерисовку (16.10)
-  return `<article class="pickline ${tone}" data-key="${key}"><button type="button" class="pickline-row" data-key="${key}" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}"><span class="pico" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${subBits.join(" · ")}</small></span><span class="right">${amount ? "<b>" + amount + "</b>" : ""}${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span></button>${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}<div class="pick-more" hidden>${pickDetails(r)}</div></article>`;
+  const more = pickDetails(r);
+  const inner = `<span class="pico" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${sub1}</small>${sub2}</span><span class="right">${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span>`;
+  // раскрывать нечего — обычный блок без кнопочной семантики (ложной интерактивности нет)
+  const row = more
+    ? `<button type="button" class="pickline-row" data-key="${key}" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}">${inner}</button>`
+    : `<div class="pickline-row" data-key="${key}" role="group" aria-label="${v3Esc(pickAria(r, tone))}" style="cursor:default">${inner}</div>`;
+  return `<article class="pickline ${tone}" data-key="${key}">${row}${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}${more ? `<div class="pick-more" hidden>${more}</div>` : ""}</article>`;
 }
 // Приватная история ещё не пришла: отсутствие личной сделки у прогноза не объявляется окончательным
 function personalHistoryLoading(){
   const p = window.__privateRealBets;
-  return !(p && p.session === sessionKey() && p.loaded === true);
+  if (p && p.session === sessionKey() && p.loaded === true) return false;
+  // v167 (§9.3): гость, ошибка чтения, отсутствие/неподключённость счёта — КОНЕЧНЫЕ состояния, а не вечная «сверка»
+  if (typeof wvInit === "function" && !wvInit()) return false;
+  const st = typeof botAccountController !== "undefined" && botAccountController ? botAccountController.state : null;
+  if (st && !st.busy && st.error) return false;
+  if (st && !st.busy && st.status && st.status !== "OK" && !st.account) return false;
+  return true;
+}
+// v167 (§9.3): одна компактная строка состояния личной истории над списком — вместо длинных подписей в каждой карточке
+function personalListNote(){
+  if (!OFFICIAL_PERSONAL_LISTS || typeof wvInit !== "function" || !wvInit()) return "";
+  const sync = window.__acctSync || {};
+  if (sync.session !== sessionKey()) return personalHistoryLoading() ? `<div class="loading" style="padding:6px 12px;font-size:12px">${t("listSyncing")}</div>` : "";
+  if (sync.state === "loading") return `<div class="loading" style="padding:6px 12px;font-size:12px">${t("listSyncing")}</div>`;
+  if (sync.state === "error") {
+    const asOf = sync.dataAt ? ` · ${t("dataAsOf").replace("{t}", v3Esc(new Date(sync.dataAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})))}` : "";
+    return `<div class="loading" style="padding:6px 12px;font-size:12px">${t("listUpdateFailed")}${asOf}</div>`;
+  }
+  return "";
 }
 function rowKey(r){
   const ids = Array.isArray(r.operation_ids) && r.operation_ids.length ? r.operation_ids.slice().sort().join("+") : (r.operation_id || "");
@@ -3119,6 +3172,7 @@ function historyCashRow(r){
     payout: r.claim_confirmed ? r.payout : null, cost: r.claim_confirmed ? r.cost : null, forecast_odds: null,
     reserved: r._realTrade ? r.reserved : null, fee: r._realTrade ? r.fee : null, shares: r._realTrade ? r.shares : null,
     stake_is_cost: r.stake_is_cost === true,
+    staked: r._realTrade ? (r.claim_confirmed ? r.cost : r.cost_known) : null,
     _face: "result"
   });
 }
@@ -3371,7 +3425,7 @@ async function loadLastBets(quiet){
       if (gen !== __betsGen || session !== sessionKey()) return;
       const st = document.getElementById("lastStat");
       if (st) st.innerHTML = dayPickHead(view.date, rows, view);
-      const nextHtml = rows.length ? rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || dayStatusNote(feed)}</div>`;
+      const nextHtml = rows.length ? personalListNote() + rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || dayStatusNote(feed)}</div>`;
       swapListHtml(box, nextHtml);
       renderPersonalHistory(feed);
       rerenderDashFromAccount();                            // карточка «Результат ставок · день» следует за днём списка
@@ -3490,7 +3544,8 @@ function resetPrivateUI(){
 async function initMe(){
   const u = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) || null;
   ensurePrivateSession();                              // v105: до сети, при смене сессии/гостя
-  if (window.__botAccountUI) window.__botAccountUI.refresh();
+  // v167 (§9.3): вход в профиль присоединяется к общему чтению счёта; в пределах свежести снимка новый запрос не нужен
+  if (window.__botAccountUI && !accountSnapshotFresh()) window.__botAccountUI.refresh();
   if(!u){
     document.getElementById("meSub").textContent = t("openFromBot");
     wvShowBlock();                                     // v113: форма адреса видна и гостю (просмотр без сохранения)
@@ -3878,7 +3933,8 @@ const botConnector = AISportsWallet.createConnector({window,polygonRPC:POLYGON_R
 const botWallet = () => botConnector.connect();
 const botAccountController = new AISportsBotAccount.Controller({
   session: wvInit,
-  rpc: async (name, params) => { const r = await wvRpc(name, params); if (!r.server) throw new AISportsBotAccount.ClientError("SOURCE_UNAVAILABLE"); return r.data; },
+  // v167 (§9.3.6): 404 (функции нет на сервере) — отдельный код SOURCE_MISSING: только он разрешает legacy-запрос истории
+  rpc: async (name, params) => { const r = await wvRpc(name, params); if (!r.server) throw new AISportsBotAccount.ClientError("SOURCE_MISSING", name); return r.data; },
   // Включение требует одновременно разрешённого местонахождения пользователя и торгового сервера.
   // Перед каждым ордером сервер дополнительно проверяет свой регион.
   wallet: botWallet, resolveWallet: wvResolve,
@@ -3890,6 +3946,7 @@ const botAccountController = new AISportsBotAccount.Controller({
   }
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
+window.__botAccountController = botAccountController;   // v167: доступ стендов к состоянию/таймауту контроллера (без секретов)
 const botAccountPaint = botAccountController.render;
 function claimPnlTxt(n){
   const v = Math.abs(Number(n));
@@ -3923,7 +3980,7 @@ function claimShares(claim){
   });
 }
 function personalTradesFromHistory(state){
-  if (!state || state.historyLoaded !== true || !Array.isArray(state.history)) return {rows:[],unknown:0,pendingNames:[]};
+  if (!state || state.historyLoaded !== true || !Array.isArray(state.history)) return {rows:[],unknown:0,pendingNames:[],loaded:false};
   const hist = state.history.filter(o => o && typeof o === "object");
   const closed = new Set(["FAILED","REJECTED","CANCELLED","EXPIRED"]);
   const claims = hist.filter(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && o.realized_pnl_units != null && /^-?[0-9]+$/.test(String(o.realized_pnl_units)) && (o.fixture_id || claimShares(o)));
@@ -3968,7 +4025,10 @@ function personalTradesFromHistory(state){
     const execBasis = o.filled_at ? "filled" : o.submitted_at ? "submitted" : null;
     const reserved = units != null && /^[0-9]+$/.test(String(units)) ? Number(units) / 1e6 : null;
     const fee = o.fee_units != null && /^[0-9]+$/.test(String(o.fee_units)) ? Number(o.fee_units) / 1e6 : null;
+    // v167 (§9.2): затраты до погашения доказаны только исполнением — fill_notional_units (сумма исполнений) + fee_units; резерв не годится
+    const notional = o.fill_notional_units != null && /^[0-9]+$/.test(String(o.fill_notional_units)) ? Number(o.fill_notional_units) / 1e6 : null;
     rows.push({sport: o.sport || "mlb", operation_id: o.operation_id, state: o.state, match, selection,
+      cost_known: notional != null && fee != null ? notional + fee : null,
       fill_price: confirmedFillPrice(o),
       stake: costUnits != null ? Number(costUnits) / 1e6 : reserved,
       reserved, fee, shares: sharesUnits != null ? Number(sharesUnits) / 1e6 : null,
@@ -4127,7 +4187,11 @@ botAccountController.render = state => {
   const privateTrades = personalTradesFromHistory(state);
   window.__privateRealBets = {session:sessionKey(),...privateTrades};
   const betsSig = JSON.stringify([sessionKey(),state.historyLoaded,privateTrades.rows,privateTrades.unknown,privateTrades.pendingNames]);
-  if (state.historyLoaded === true) window.__acctRefreshAt = Date.now();
+  // v167 (§9.3): свежесть — время УСПЕШНОГО ответа истории (historyAt контроллера), не момент отрисовки; восстановленный снимок свежим не считается
+  window.__acctRefreshAt = state.historyLoaded === true && !state.restored ? (state.historyAt || 0) : 0;
+  window.__acctSync = {session: sessionKey(), state: state.busy && state.historyLoaded !== true ? "loading" : state.error && !state.busy ? "error" : state.historyLoaded === true ? "ok" : "idle",
+                       dataAt: state.historyAt || (state.restored ? state.restoredAt : 0) || 0, hadData: state.historyLoaded === true};
+  try { saveAccountSnapshot(state); } catch(e) {}
   if (betsSig !== __privateBetsSig) {
     __privateBetsSig = betsSig;
     if (state.historyLoaded === true) queueMicrotask(() => {
@@ -4168,10 +4232,54 @@ document.getElementById("walletChoicePublic").addEventListener("click", () => {
 document.getElementById("verifyWalletOwner").addEventListener("click", openMetaMaskFlow);
 // GET-only recovery on return/refresh. No timer automatically retries a financial mutation or opens a wallet.
 let botLastPoll = 0;
+function accountSnapshotFresh(){
+  const st = botAccountController.state;
+  return st.historyLoaded === true && !st.restored && Date.now() - (st.historyAt || 0) < ACCOUNT_SNAPSHOT_MS;
+}
 function botAccountPoll(){
-  ensurePrivateSession();
-  if (document.hidden || !wvInit() || window.__meInit !== sessionKey() || Date.now()-botLastPoll < 5000 || botAccountController.state.busy) return;
+  if (document.hidden || !wvInit()) return;
+  ensurePrivateSession();                                   // сброс — только при реальной смене пользователя/подписи
+  // v167 (§9.3): фоновое чтение не зависит от визита в «Профиль»; в пределах свежести снимка — ни одного запроса
+  const st = botAccountController.state;
+  if (accountSnapshotFresh() || Date.now()-botLastPoll < 5000 || st.busy) return;
   botLastPoll = Date.now(); window.__botAccountUI.backgroundRefresh();
+}
+// v167 (§9.3.9): небольшой последний успешный снимок счёта/истории/денег — только для подтверждённого пользователя и счёта,
+// без initData/подписей/токенов; чужой, битый, несовместимый или старше суток не показывается; сбой хранилища не ломает RAM и сеть
+const ACCT_SNAPSHOT_KEY = "aisports.account.v1";
+const ACCT_SNAPSHOT_MAX_AGE_MS = 24 * 3600000;
+const ACCT_SNAPSHOT_ROWS = 60;
+function acctSnapshotUser(){
+  const w = window.Telegram && window.Telegram.WebApp;
+  const uid = w && w.initDataUnsafe && w.initDataUnsafe.user && w.initDataUnsafe.user.id;
+  return uid ? String(uid) : "";
+}
+function saveAccountSnapshot(state){
+  const uid = acctSnapshotUser();
+  if (!uid || !state || state.restored || state.historyLoaded !== true || state.busy || !state.account || !state.historyAt) return;
+  if (window.__acctSnapshotSavedAt === state.historyAt) return;
+  window.__acctSnapshotSavedAt = state.historyAt;
+  const snap = {v: 1, uid, accountId: state.account.account_id || null, at: state.historyAt, account: state.account, money: state.money || null,
+                history: (state.history || []).slice(0, ACCT_SNAPSHOT_ROWS)};
+  try { localStorage.setItem(ACCT_SNAPSHOT_KEY, JSON.stringify(snap)); } catch(e) {}
+}
+function readAccountSnapshot(){
+  const uid = acctSnapshotUser();
+  if (!uid) return null;
+  let raw = null;
+  try { raw = localStorage.getItem(ACCT_SNAPSHOT_KEY); } catch(e) { return null; }
+  if (!raw) return null;
+  let snap = null;
+  try { snap = JSON.parse(raw); } catch(e) { snap = null; }
+  const ok = snap && snap.v === 1 && snap.uid === uid && snap.account && typeof snap.account === "object" && Array.isArray(snap.history)
+    && Number.isFinite(Number(snap.at)) && Date.now() - Number(snap.at) >= 0 && Date.now() - Number(snap.at) <= ACCT_SNAPSHOT_MAX_AGE_MS;
+  if (!ok) { try { localStorage.removeItem(ACCT_SNAPSHOT_KEY); } catch(e) {} return null; }
+  return snap;
+}
+function restoreAccountSnapshot(){
+  const snap = readAccountSnapshot();
+  if (!snap || botAccountController.state.historyLoaded === true) return false;
+  return botAccountController.restore({account: snap.account, history: snap.history, money: snap.money, at: Number(snap.at)});
 }
 document.addEventListener("visibilitychange", botAccountPoll);
 window.addEventListener("pageshow", botAccountPoll);

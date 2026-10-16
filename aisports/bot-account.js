@@ -183,7 +183,19 @@
       this.eligibility=eligibility;
       this.epoch = 0; this.auth = null; this.idempotency = new Map(); this.state = {};
     }
-    reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],historyLoaded:false,historyComplete:null,historyHasMore:false,historyCursor:null,historySource:null,money:null,busy:false,error:null}; this.render(this.state); }
+    reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this._refreshing = null; this._historyRpc = null; this._legacyUntil = 0;
+      this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],historyLoaded:false,historyComplete:null,historyHasMore:false,historyCursor:null,historySource:null,
+        historyPages:0,historyAt:0,money:null,moneyAt:0,moneyStale:false,restored:false,restoredAt:0,busy:false,error:null}; this.render(this.state); }
+    // v167 (§9.3.9): восстановление небольшого последнего успешного снимка того же пользователя до первого сетевого ответа.
+    // Снимок помечен restored: свежим не считается, фоновое чтение идёт сразу; первый успешный ответ снимает пометку.
+    restore({account, history, money, at}) {
+      let c; try { c = this.context(); } catch (e) { return false; }
+      if (this.state.historyLoaded === true || this.state.busy) return false;
+      if (!account || typeof account !== "object" || !Array.isArray(history)) return false;
+      this.paint(c,{status:"OK",account,history,historyLoaded:true,historySource:"restored",historyComplete:null,historyHasMore:false,historyCursor:null,historyPages:0,
+        historyAt:0,money:money&&money.status==="OK"?money:null,moneyAt:0,moneyStale:!!money,restored:true,restoredAt:Number(at)||0,error:null});
+      return true;
+    }
     context() {
       if (this.session() !== this.auth) this.reset();
       if (!this.auth) fail("SIGNED_OUT");
@@ -226,7 +238,15 @@
         return null;
       } finally { this._step=null; if (c && this.alive(c) && this._runningContext===c) {this._runningContext=null;this.paint(c,{busy:false});} }
     }
+    // v167 (§9.3): ОДИН выполняющийся Promise чтения — bootstrap, смена вкладки, возврат из фона и ручное обновление присоединяются
+    // к нему; денежные действия (переводы, включение) этим не объединяются — у них свои локи и идемпотентность.
     async refresh() {
+      if (this._refreshing) return this._refreshing;
+      const p = this._refreshRun().finally(() => { if (this._refreshing === p) this._refreshing = null; });
+      this._refreshing = p;
+      return p;
+    }
+    async _refreshRun() {
       return this.run(async c => {
         const r = this.adopt(c,await this.call(c,"bot_account_get"));
         if(r.status==="NOT_CONNECTED") {
@@ -247,11 +267,25 @@
     // still answers the legacy 200-row history, whose completeness is then only "fewer than 200 rows".
     async loadHistoryHead(c) {
       let h = null, source = "page";
-      try {
-        h = await this.call(c,"bot_account_history_page",{p_cursor:null,p_limit:200});
-        if (!Array.isArray(h.operations) || typeof h.has_more !== "boolean") fail("INVALID_HISTORY");
-      } catch (e) {
-        if (!this.alive(c)) throw e;
+      // v167 (§9.3.6): legacy-запрос — ТОЛЬКО при доказанном отсутствии нового RPC (SOURCE_MISSING: HTTP 404 / функции нет);
+      // таймаут, сеть, авторизация, битый ответ не запускают второй полный запрос истории. Совместимость помнится 10 минут
+      // в пределах сессии и перепроверяется после (обновление сервера подхватывается без перезапуска).
+      const useLegacy = this._historyRpc === "legacy" && this.now() < (this._legacyUntil || 0);
+      if (!useLegacy) {
+        try {
+          h = await this.call(c,"bot_account_history_page",{p_cursor:null,p_limit:200});
+          if (!Array.isArray(h.operations) || typeof h.has_more !== "boolean") fail("INVALID_HISTORY");
+          this._historyRpc = "page";
+        } catch (e) {
+          if (!this.alive(c)) throw e;
+          // отсутствие RPC: 404 (SOURCE_MISSING / «rpc 404») или ответ не по контракту курсорной функции (INVALID_HISTORY);
+          // таймаут (SOURCE_TIMEOUT), сеть (SOURCE_UNAVAILABLE), иные HTTP-ошибки — наверх, без второго запроса
+          const code = errorCode(e), missing = code === "SOURCE_MISSING" || code === "INVALID_HISTORY" || (code === "SOURCE_HTTP" && /\b404\b/.test(String(e && e.message || "")));
+          if (!missing) throw e;
+          this._historyRpc = "legacy"; this._legacyUntil = this.now() + 10 * 60000; h = null;
+        }
+      }
+      if (!h) {
         source = "legacy";
         h = await this.call(c,"bot_account_history");
         if (!Array.isArray(h.operations)) fail("INVALID_HISTORY");
@@ -260,9 +294,18 @@
       // Resume only unfinished work. Old refusals belong in the history screen, not the wallet card.
       const current=this.state.operation;
       const more = source === "page" ? h.has_more === true : h.operations.length >= 200;
-      this.paint(c,{history:h.operations,historyLoaded:true,historySource:source,historyHasMore:more,
-        historyCursor:source === "page" && more ? String(h.next_cursor || "") || null : null,
-        historyComplete:!more,operation:unfinished||current||null});
+      // v167 (§9.3.5): операции в памяти по operation_id — новая первая страница обновляет и добавляет, ранее догруженный
+      // архив не уничтожается; курсор/полнота глубже первой страницы сохраняются от последней догруженной страницы
+      const prev = this.state.restored ? [] : (this.state.history || []);
+      const head = h.operations.filter(o => o && o.operation_id);
+      const seen = new Set(head.map(o => o.operation_id));
+      const merged = head.concat(prev.filter(o => o && o.operation_id && !seen.has(o.operation_id)));
+      const deeper = !this.state.restored && (this.state.historyPages || 0) > 1 && this.state.historySource === source;
+      this.paint(c,{history:merged,historyLoaded:true,historySource:source,historyAt:this.now(),restored:false,
+        historyPages:deeper ? this.state.historyPages : 1,
+        historyHasMore:deeper ? this.state.historyHasMore : more,
+        historyCursor:deeper ? this.state.historyCursor : (source === "page" && more ? String(h.next_cursor || "") || null : null),
+        historyComplete:deeper ? this.state.historyComplete : !more,operation:unfinished||current||null});
     }
     // Money aggregates are computed on the server over ALL operations by the proven settlement time; a page of
     // history never vouches for the 24-hour sum. Missing RPC → null (the client then says the period is unknown).
@@ -270,8 +313,8 @@
       try {
         const m = await this.call(c,"bot_account_money",{p_hours:24});
         if (m.status !== "OK" || typeof m.window_complete !== "boolean" || !/^-?[0-9]+$/.test(String(m.settled_window_units))) fail("MONEY_UNAVAILABLE");
-        this.paint(c,{money:m});
-      } catch (e) { if (!this.alive(c)) throw e; this.paint(c,{money:null}); }
+        this.paint(c,{money:m,moneyAt:this.now(),moneyStale:false});
+      } catch (e) { if (!this.alive(c)) throw e; this.paint(c,{moneyStale:true}); }   // v167: ошибка не обнуляет последний удачный итог; он помечен устаревшим
     }
     // Next archive page by composite cursor; rows are appended without duplicates, the head is not re-read here.
     async historyMore() {
@@ -281,7 +324,7 @@
         if (!Array.isArray(h.operations) || typeof h.has_more !== "boolean") fail("INVALID_HISTORY");
         const seen = new Set(this.state.history.map(o=>o.operation_id));
         const merged = this.state.history.concat(h.operations.filter(o=>!seen.has(o.operation_id)));
-        this.paint(c,{history:merged,historyHasMore:h.has_more === true,historyCursor:h.has_more === true ? String(h.next_cursor || "") || null : null,historyComplete:h.has_more !== true});
+        this.paint(c,{history:merged,historyPages:(this.state.historyPages||1)+1,historyHasMore:h.has_more === true,historyCursor:h.has_more === true ? String(h.next_cursor || "") || null : null,historyComplete:h.has_more !== true});
         return h;
       });
     }
