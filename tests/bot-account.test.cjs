@@ -189,3 +189,17 @@ test('a session change during an archive page load paints nothing into the new s
  s.setAuth('telegram-user-B');release({api_version:1,status:'OK',operations:[{operation_id:'foreign',kind:'TRADE',state:'REJECTED'}],has_more:false,next_cursor:null});await pending;
  assert.equal(s.c.state.history.length,0);assert.ok(!s.c.state.history.some(o=>o.operation_id==='foreign'));
 });
+
+// ── 16.10 (владелец): виды автоставок — подмножество {mlb, soccer}; смена состава = обычные настройки + повторное включение ──
+test('policy accepts a chosen subset of sports and rejects unknown, empty or duplicated sets',async()=>{
+ for(const sports of [['mlb'],['soccer'],['mlb','soccer']]){const a=account();a.policy.sports=sports;const s=setup();s.setAccount(a);await s.c.refresh();assert.equal(s.c.state.error,null,JSON.stringify(sports));assert.deepEqual(s.c.state.account.policy.sports,sports);}
+ for(const sports of [[],['nhl'],['mlb','mlb'],'mlb',['mlb','soccer','nhl']]){const a=account();a.policy.sports=sports;const s=setup();s.setAccount(a);await s.c.refresh();assert.equal(s.c.state.error,'POLICY_UNAVAILABLE',JSON.stringify(sports));}
+});
+test('settings send the chosen sports (or keep the current ones) and never widen them silently',async()=>{
+ const s=setup();await s.c.refresh();
+ await s.c.settings('5',['mlb','soccer']);let call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings,{sports:['mlb','soccer'],max_stake_bps:500});
+ await s.c.settings('5');call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings.sports,['mlb'],'без аргумента — текущий состав политики, не расширение');
+ await s.c.settings('5',['soccer','soccer','nhl']);call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings.sports,['soccer'],'дубли и чужие виды отброшены');
+ const before=s.calls.length;await s.c.settings('5',['nhl']);assert.equal(s.calls.length,before,'пустой итоговый состав не отправляется');assert.equal(s.c.state.error,'SPORTS_REQUIRED');
+ assert.equal(s.calls.filter(x=>x.name==='bot_account_settings').length,3,'три отправленных настройки');   // ключ идемпотентности в стенде фиксирован (uuid=const), различие действий проверяется составом p_settings
+});

@@ -14,6 +14,9 @@
   // SUBMITTED and UNKNOWN only wait for the chain; their amounts are held and the rest stays usable.
   const INTERACTIVE = new Set(["PENDING", "CLAIMED", "AWAITING_SIGNATURE"]);
   const SOURCES = ["POLYMARKET", "METAMASK"], MIN_GAS_WEI = 10n ** 16n, SNAPSHOT_MAX_AGE = 120000;
+  // 16.10 (owner): sports a user may allow for auto-bets. Changing the set is an ordinary settings change on the
+  // server (policy version+1, disabled) and the user enables auto-bets again — consent is never rewritten in place.
+  const SPORTS = ["mlb", "soccer"];
   class ClientError extends Error { constructor(code, detail) { super(code); this.code = code; if (detail) this.detail = String(detail).slice(0, 160); } }
   const fail = code => { throw new ClientError(code); };
   const address = x => typeof x === "string" && ADDRESS.test(x) ? x.toLowerCase() : fail("INVALID_ADDRESS");
@@ -65,7 +68,8 @@
     if (a.policy) {
       const p = a.policy;
       if (!Number.isSafeInteger(p.version) || !Number.isSafeInteger(p.max_stake_bps) || p.max_stake_bps < 1 || p.max_stake_bps > 1000 ||
-          !Array.isArray(p.sports) || p.sports.length !== 1 || p.sports[0] !== "mlb" || !Number.isSafeInteger(p.max_open) || p.max_open < 1) fail("POLICY_UNAVAILABLE");
+          !Array.isArray(p.sports) || p.sports.length < 1 || p.sports.length > SPORTS.length || new Set(p.sports).size !== p.sports.length
+          || p.sports.some(x => !SPORTS.includes(x)) || !Number.isSafeInteger(p.max_open) || p.max_open < 1) fail("POLICY_UNAVAILABLE");
     }
     return a;
   }
@@ -308,14 +312,16 @@
         return this.adopt(c,await this.call(c,"bot_account_retry",{p_idempotency_key:this.key("retry:"+a.version)}));
       });
     }
-    async settings(maxPercent) {
+    async settings(maxPercent, sports) {
       return this.run(async c => {
         if (typeof maxPercent !== "string" || !/^(0|[1-9][0-9]?)(\.[0-9]{1,2})?$/.test(maxPercent)) fail("INVALID_POLICY");
         const [w,f=""] = maxPercent.split("."), bps = Number(w)*100 + Number(f.padEnd(2,"0"));
         if (bps < 1 || bps > 1000) fail("INVALID_POLICY");
         const a = accountCheck(this.state.account);
         if (!a.policy) fail("POLICY_UNAVAILABLE");
-        return this.adopt(c,await this.call(c,"bot_account_settings",{p_settings:{sports:["mlb"],max_stake_bps:bps},p_expected_version:a.policy.version,p_idempotency_key:this.key("settings:"+a.policy.version+":"+bps)}));
+        const chosen = Array.isArray(sports) ? sports.filter((x, i, arr) => SPORTS.includes(x) && arr.indexOf(x) === i) : (a.policy.sports || ["mlb"]);
+        if (!chosen.length) fail("SPORTS_REQUIRED");
+        return this.adopt(c,await this.call(c,"bot_account_settings",{p_settings:{sports:chosen,max_stake_bps:bps},p_expected_version:a.policy.version,p_idempotency_key:this.key("settings:"+a.policy.version+":"+bps+":"+chosen.join("+"))}));
       });
     }
     async enable(accepted) {
@@ -537,7 +543,9 @@
     regionOk:["разрешено","allowed","允许"], regionBlocked:["торговля запрещена","trading blocked","禁止交易"], regionUnknown:["ещё не подтверждён","not confirmed yet","尚未确认"],
     fundedOk:["Счёт пополнен","Account funded","账户已充值"],
     noMoneyMoved:["деньги не списаны","no funds were moved","未扣款"],
-    policy:["MLB. Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Максимум открытых позиций:","MLB. The lower of the strategy allocation and your maximum; fees count toward risk. Maximum open positions:","MLB。采用策略比例和您上限中的较低值，费用计入风险。最大未平仓数量："],
+    policy:["Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Лимиты общие для всех видов. Максимум открытых позиций:","The lower of the strategy allocation and your maximum; fees count toward risk. Limits are shared across sports. Maximum open positions:","采用策略比例和您上限中的较低值，费用计入风险。各项目共用限额。最大未平仓数量："],
+    sportsTitle:["Виды автоставок","Auto-bet sports","自动投注项目"], sport_mlb:["Бейсбол MLB","Baseball MLB","棒球 MLB"], sport_soccer:["Футбол (1X2, 90 минут)","Soccer (1X2, 90 minutes)","足球（1X2，90分钟）"],
+    sportsNote:["После смены видов автоставки выключаются до вашего повторного включения с новым правилом.","After changing sports, auto-bets stay off until you enable them again under the updated policy.","更改项目后，自动投注将保持关闭，直到您在新规则下重新开启。"],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
     checked:["Последняя сверка","Last checked","上次核对"], details:["Подробности","Details","详情"], waiting:["Проверяем состояние…","Checking status…","正在检查状态…"],
@@ -790,12 +798,14 @@
   border-radius:22px 22px 0 0;border-bottom:0;padding:20px}}
 .ba-settings-dialog{width:min(360px,calc(100vw - 32px));max-width:none;padding:20px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);background:var(--card-2,#1a2231);color:var(--txt,#fff);box-shadow:0 18px 70px rgba(0,0,0,.45)}
 .ba-settings-dialog::backdrop{background:rgba(2,8,20,.7);backdrop-filter:blur(6px)}
+.ba-sport{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px}.ba-sport input{width:18px;height:18px;margin:0}
 .ba-settings-dialog h3{margin:0 0 12px;font-size:18px}.ba-settings-dialog .ba-settings-actions{display:flex;gap:8px;margin-top:16px}.ba-settings-dialog .ba-settings-actions button{flex:1}
 @media (prefers-reduced-motion:reduce){.ba-pill.live i,.ba-amount.up,.ba-note.ok,.ba-bar::after{animation:none}}
 `;
       doc.head.appendChild(st);
     }
     function el(tag,text,cls) { const n=doc.createElement(tag); if(text!=null)n.textContent=text;if(cls)n.className=cls;return n; }
+    function sportsLabel(list){return (Array.isArray(list)&&list.length?list:["mlb"]).map(sp=>tr("sport_"+sp)).join(" + ");}
     function button(text,fn,disabled=false,primary=false) { const b=el("button",text,primary?"btn":"btn ghost"); b.type="button";b.disabled=disabled;b.style.marginTop="8px";b.onclick=fn;if(primary)b.dataset.primary="true";return b; }
     function line(label,value) { const n=el("div",label+": "+value,"me-sub"); n.style.overflowWrap="anywhere";return n; }
     function copyBtn(text,label) {
@@ -952,8 +962,11 @@
       const dialog=el("dialog",null,"ba-settings-dialog"), label=el("label",tr("maxStake"),"me-sub"),input=el("input",null,"binput"),actions=el("div",null,"ba-settings-actions");
       input.type="text";input.inputMode="decimal";input.value=String(a.policy.max_stake_bps/100);label.append(input);
       dialog.setAttribute("aria-label",tr("settings"));
-      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const r=await controller.settings(input.value);if(r)closeSettings();},false,true);
-      actions.append(cancel,save);dialog.append(el("h3",tr("settings")),label,actions);
+      const sportsBox=el("div",null,"me-sub"),boxes={};sportsBox.append(el("div",tr("sportsTitle")));
+      for(const sp of SPORTS){const l=el("label",null,"ba-sport");const cb=el("input");cb.type="checkbox";cb.checked=(a.policy.sports||["mlb"]).includes(sp);boxes[sp]=cb;l.append(cb,document.createTextNode(" "+tr("sport_"+sp)));sportsBox.append(l);}
+      sportsBox.append(el("div",tr("sportsNote"),"ba-foot"));
+      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked);if(!chosen.length){boxes[SPORTS[0]].focus();return;}const r=await controller.settings(input.value,chosen);if(r)closeSettings();},false,true);
+      actions.append(cancel,save);dialog.append(el("h3",tr("settings")),label,sportsBox,actions);
       dialog.onclose=()=>{dialog.remove();if(settingsDialog===dialog)settingsDialog=null;};
       doc.body.append(dialog);settingsDialog=dialog;dialog.showModal();input.focus();
     }
@@ -1019,7 +1032,7 @@
           enableOpen=true;paint(s);                                     // включение — показать правило и подтвердить
         },blocked,switchIsPrimary));
         if(!on&&enableOpen&&!blocked&&!s.busy) {
-          view.append(el("p",tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"));
+          view.append(el("p",sportsLabel(a.policy.sports)+". "+tr("policy")+" "+a.policy.max_open+".","me-sub"),line(tr("stakeLimit"),a.policy.max_stake_bps/100+"%"),line(tr("sportsTitle"),sportsLabel(a.policy.sports)));
           const g=a.execution_region||{},ok=regionEligibility(a);   // вердикт сервера, не IP устройства
           view.append(line(tr("regionLine"),(g.country?g.country+" · ":"")+tr(ok===true?"regionOk":ok===false?"regionBlocked":"regionUnknown")+(g.checked_at?" · "+new Date(g.checked_at).toLocaleTimeString(lang):"")));
           view.append(button(tr("autoConfirm"),()=>{enableOpen=false;controller.enable(true);},s.busy,true));
@@ -1062,5 +1075,5 @@
     controller.render=paint;controller.reset();
     return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferDialog||settingsDialog?null:controller.refresh(),reset:()=>{closeTransfer();closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
-  return {API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,regionEligibility,stateLabel,mount};
+  return {SPORTS,API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,regionEligibility,stateLabel,mount};
 });

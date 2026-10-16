@@ -421,7 +421,7 @@ Object.assign(I18N, {
   reservedLabel: ["Первоначальный резерв"], spentLabel: ["Потрачено"], feeLabel: ["Комиссия, уже включена"], sharesLabel: ["Доли"],
   lastSelection: ["Последний отбор"], newSelectionNotStarted: ["Новый отбор ещё не начался"], dayResult: ["Результат ставок"], allTimeResult: ["За всё время"],
   awaitingSettle: ["{n} ожидают расчёта"], noDayResult: ["подтверждённых результатов за этот день нет"], period24: ["Погашения за последние 24 часа"],
-  period24Incomplete: ["период неполный"], period24Unknown: ["период неизвестен: сервер не отдал денежный итог суток"], period24Short: ["погашения за 24 ч"],
+  drawSide: ["Ничья"], autoSportsLine: ["виды: {s}"], period24Incomplete: ["период неполный"], period24Unknown: ["период неизвестен: сервер не отдал денежный итог суток"], period24Short: ["погашения за 24 ч"],
   historyMoreNote: ["архив загружен частично — продолжение по кнопке"], histMore: ["Загрузить ещё"], histMoreBusy: ["загрузка…"], claimConfirmedAt: ["подтверждено"], claimTimeUnknown: ["время подтверждения в учёте не записано"], claimCreatedAt: ["задание создано"], gameDayLabel: ["игровой день"],
   restoredSnapshot: ["Снимок ленты от {t} ({m} мин назад)"], moneyMore: ["Подробнее о деньгах"], moneyLess: ["Свернуть"],
   stakeWord: ["ставка"], forecastWord: ["Прогноз"], historyLoading: ["сверка с личной историей…"], historyLoadingLong: ["Личная история ещё загружается"],
@@ -732,4 +732,23 @@ test("rows carry a stable data-key so expanded details survive re-render", () =>
   assert.match(row, /class="pickline-row" data-key="op-guardians"/);
   const forecast = context.dayPickRow({sport:"soccer", _ico:"⚽", match:"Alpha vs Beta", selection:"Alpha", side:"home", session_date:"2026-10-16", _cash:false, result:null});
   assert.match(forecast, /data-key="soccer\|Alpha vs Beta\|home\|2026-10-16"/);
+});
+
+// ── v165 (владелец 16.10): футбол наравне с MLB — реальная покупка счёта по 1X2, ничья как выбор, прогноз остаётся прогнозом ──
+test("a confirmed soccer purchase becomes a money row next to MLB while a soccer forecast stays a forecast", () => {
+  const sfix = "2026-10-16T19:00:00Z|levante@deportivo la coruña";
+  const buy = {kind:"TRADE", state:"CONFIRMED", operation_id:"soccer-op-1", fixture_id:sfix, side:"draw", sport:"soccer",
+    match:"Deportivo La Coruña — Levante", market_family:"1x2", average_price:"0.3100", amount_units:"3000000", created_at:"2026-10-16T18:36:00Z", filled_at:"2026-10-16T18:36:40Z"};
+  const parsed = load([buy]);
+  assert.equal(parsed.rows.length, 1);
+  assert.equal(parsed.rows[0].sport, "soccer");
+  assert.equal(parsed.rows[0].selection, "Ничья");
+  assert.equal(parsed.rows[0]._realTrade, true);
+  assert.equal(context.teamForSide("Deportivo La Coruña — Levante", "home"), "Deportivo La Coruña");
+  assert.equal(context.teamForSide("Deportivo La Coruña — Levante", "away"), "Levante");
+  const merged = context.mergeDayRow({sport:"soccer", match:"Deportivo La Coruña — Levante", selection:"Ничья", side:"draw", session_date:"2026-10-16"}, parsed.rows);
+  assert.equal(merged._cash, true);
+  assert.equal(merged.stake, 3);
+  const forecastOnly = context.mergeDayRow({sport:"soccer", match:"Alpha vs Beta", selection:"Alpha", side:"home", session_date:"2026-10-16"}, []);
+  assert.equal(forecastOnly._cash, false);
 });

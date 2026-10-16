@@ -1094,10 +1094,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v164"></script>
-<script src="wallet-connect.js?v=v164"></script>
+<script src="bot-account.js?v=v165"></script>
+<script src="wallet-connect.js?v=v165"></script>
 <script>
-const BUILD = "v164";
+const BUILD = "v165";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1582,6 +1582,7 @@ const T = {
   secGuide: ["Справка", "Help", "帮助"],
   guideTitle: ["Просмотр кошелька по публичному адресу", "Wallet view by public address", "按公开地址查看钱包"],
   guideBody: ["1️⃣ В «Профиле» вставь публичный адрес (MetaMask или аккаунта Polymarket) и нажми «Подключить» — приложение найдёт аккаунт и покажет остаток pUSD и стоимость позиций по публичным данным.<br><br>2️⃣ Никаких секретов: приватный ключ, сид-фраза и ключи биржи не нужны и не принимаются.<br><br>3️⃣ Если сервер настроек недоступен, адрес действует только на этом устройстве и в профиле не сохранён — так и будет написано.<br><br>4️⃣ Просмотр не подтверждает владение и не разрешает торговлю. Для автоставок подтвердите личный кошелёк и создайте отдельный торговый счёт AISports ниже.", "1️⃣ In Profile, paste a public address (MetaMask or Polymarket account) and tap Connect — the app finds the account and shows the pUSD balance and positions value from public data.<br><br>2️⃣ No secrets: private key, seed phrase and exchange keys are not needed and not accepted.<br><br>3️⃣ If the settings server is unavailable, the address works on this device only and is not saved to the profile — the status says so.<br><br>4️⃣ Viewing does not prove ownership or authorize trading. For auto-bets, verify your personal wallet and create a separate AISports trading account below.", "1️⃣ 在「个人资料」中粘贴公开地址（MetaMask 或 Polymarket 账户）并点击「连接」——应用会找到账户并按公开数据显示 pUSD 余额和持仓价值。<br><br>2️⃣ 无需任何秘密：不需要也不接受私钥、助记词和交易所密钥。<br><br>3️⃣ 若设置服务器不可用，地址仅在本设备生效且未保存到个人资料——状态会如实显示。<br><br>4️⃣ 查看不证明地址所有权，也不授权交易。自动投注需要验证个人钱包并在下方创建独立的 AISports 交易账户。"],
+  drawSide: ["Ничья", "Draw", "平局"], autoSportsLine: ["виды: {s}", "sports: {s}", "项目：{s}"],
   sportMlb: ["Бейсбол MLB", "Baseball MLB", "棒球 MLB"], sportTennis: ["Теннис", "Tennis", "网球"], sportSoccer: ["Футбол", "Soccer", "足球"],
   sportKhl: ["Хоккей КХЛ", "Ice hockey KHL", "冰球 KHL"], sportNhl: ["Хоккей НХЛ", "Ice hockey NHL", "冰球 NHL"], sportNba: ["Баскетбол НБА", "Basketball NBA", "篮球 NBA"],
   dimVirtual: ["виртуально · копится", "virtual · accruing", "虚拟 · 累计中"],
@@ -2746,7 +2747,7 @@ function loadOfficialSelectionAnalysis(feed){
   if (!feed) { box.innerHTML = `<div class="v3empty">${t("selectionSourceUnavailable")}</div>`; return; }
   const day = feed.session || {}, date = day.date || "";
   const selected = selectedPicks(feed).filter(b => b.session_date === date).length;
-  const confirmed = personalTradeRows().filter(b => b.session_date === date && b._realTrade && b.sport !== "soccer").length;
+  const confirmed = personalTradeRows().filter(b => b.session_date === date && b._realTrade).length;
   const decisions = pendingAnalysisLabel(day);   // v161: «0 из 5 · 5 ожидают анализа» вместо «0/5 матчей в анализе»
   box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("selectionAnalysis")}</div>
       <div class="v3sub">${v3Esc(date)} · ${t("selectionAnalysisScope")}</div></div></div>
@@ -2899,6 +2900,7 @@ function teamForSide(match, side){
   const teams = src.split(" — ");
   if (side === "home") return (teams[0] || "").trim();
   if (side === "away") return (teams[teams.length - 1] || "").trim();
+  if (side === "draw") return t("drawSide");
   return String(side || "");
 }
 function usdTxt(n, digits){
@@ -2933,8 +2935,10 @@ function mergeDayRow(pick, list){
   const trade = trades[0] || null;
   const sport = (pick && pick.sport) || (trade && trade.sport) || "";
   const real = trades.filter(t => t._realTrade === true);
-  const cash = sport !== "soccer" && real.length > 0;
-  const unknown = sport !== "soccer" && !cash && trades.some(t => t._unknown === true);
+  // v165 (владелец 16.10): футбол наравне с MLB — деньги показываются только по подтверждённой покупке личного счёта
+  // (`_realTrade`), PAPER-прогноз футбола денежной строкой не становится
+  const cash = real.length > 0;
+  const unknown = !cash && trades.some(t => t._unknown === true);
   const stakes = real.map(t => Number(t.stake)).filter(n => Number.isFinite(n));
   const claimed = real.filter(t => t.claim_confirmed && t.pnl != null && Number.isFinite(Number(t.pnl)));
   const settled = cash && real.length > 0 && claimed.length === real.length;
@@ -4109,7 +4113,9 @@ function paintAutoWallet(state){
   const paused = on && a.runtime_ready !== true;
   const st = paused ? (LANG==="ru"?"приостановлены":LANG==="zh"?"已暂停":"paused") : on ? (LANG==="ru"?"включены":LANG==="zh"?"已开启":"on") : (LANG==="ru"?"выключены":LANG==="zh"?"已关闭":"off");
   el.classList.toggle("paused",paused);
-  const sub = document.createElement("span"); sub.className = "aw-sub"; sub.textContent = `${label} · ${st}`;
+  const names = {mlb: t("sportMlb"), soccer: t("sportSoccer")};
+  const sports = (a.policy && Array.isArray(a.policy.sports) ? a.policy.sports : ["mlb"]).map(x => names[x] || x).join(" + ");
+  const sub = document.createElement("span"); sub.className = "aw-sub"; sub.textContent = `${label} · ${st} · ${t("autoSportsLine").replace("{s}", sports)}`;
   const addr = document.createElement("span"); addr.className = "aw-addr"; addr.textContent = wvShortAddr(a.bot_deposit_wallet); addr.title = a.bot_deposit_wallet;
   addr.setAttribute("role","button"); addr.setAttribute("aria-label", (LANG==="ru"?"Скопировать адрес счёта автоставок ":"Copy auto-bets account address ") + a.bot_deposit_wallet);
   addr.onclick = async () => { try { await navigator.clipboard.writeText(a.bot_deposit_wallet); addr.textContent = LANG==="ru"?"скопировано":LANG==="zh"?"已复制":"copied"; setTimeout(()=>{ addr.textContent = wvShortAddr(a.bot_deposit_wallet); }, 1200); } catch(e) {} };
