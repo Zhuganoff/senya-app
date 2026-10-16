@@ -1047,10 +1047,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v159"></script>
+<script src="bot-account.js?v=v160"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v159";
+const BUILD = "v160";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1294,10 +1294,11 @@ const T = {
   accruing: ["копится", "accruing", "累计中"],
   myWallet: ["💰 Кошелёк Polymarket", "💰 Polymarket wallet", "💰 Polymarket 钱包"],
   tradingAccount: ["💼 Торговый счёт AISports", "💼 AISports trading account", "💼 AISports 交易账户"],
-  taAvailable: ["свободно", "available", "可用"], taReserved: ["зарезервировано", "reserved", "已预留"], taTotal: ["на счёте", "in account", "账户内"],
+  taAvailable: ["Доступно", "Available", "可用"], taReserved: ["удержано", "Held", "已冻结"], taTotal: ["на счёте", "on the account", "账户内"],
   taViewWallet: ["Кошелёк Polymarket (просмотр)", "Polymarket wallet (view)", "Polymarket 钱包（查看）"],
-  taWinrate: ["Доля прибыльных расчётов", "Profitable settlements", "盈利结算占比"],
-  taNoBets: ["расчётов ещё не было", "no settlements yet", "暂无结算"],
+  taWinrate: ["Доля прибыльных покупок", "Share of profitable buys", "盈利买入占比"],
+  taNoBets: ["погашенных покупок ещё не было", "no redeemed buys yet", "暂无已赎回的买入"],
+  taPurchaseHint: ["по погашенным покупкам", "among redeemed buys", "按已赎回的买入"],
   taPushes: ["без прибыли и убытка", "break-even", "盈亏相抵"],
   taProfitAll: ["Прибыль автоставок за всё время", "Auto-bets all-time profit", "自动投注累计盈利"],
   taProfit24: ["Прибыль автоставок за 24 часа", "Auto-bets profit, last 24h", "自动投注近24小时盈利"],
@@ -1507,6 +1508,9 @@ const T = {
   payoutReceived: ["Выплата получена", "Payout received", "兑付已到账"],
   priceUnavailable: ["Цена недоступна", "Price unavailable", "价格不可用"],
   fillPrice: ["Цена сделки", "Fill price", "成交价格"],
+  payoutAmount: ["Выплата", "Payout", "派彩"],
+  costAmount: ["Себестоимость", "Cost", "成本"],
+  resultAmount: ["Результат", "Result", "结果"],
   forecastOddsLabel: ["коэффициент прогноза", "forecast odds", "预测赔率"],
   exactStake: ["Сумма", "Amount", "金额"],
   secPersonal: ["Личные ставки", "Personal bets", "个人投注"],
@@ -1996,20 +2000,14 @@ async function main(){
     window.__lastDashMoney = money;
     const ta = tradingAccountStats(botAccountController.state);
     const account = botAccountController.state && botAccountController.state.account;
-    const rawBal = account && account.balance ? account.balance.available_units : null;
-    const bal = /^[0-9]+$/.test(String(rawBal == null ? "" : rawBal)) ? AISportsBotAccount.formatUnits(rawBal) + " USD" : "—";
-    const pnlTxt = u => {
-      if (u == null || !/^-?[0-9]+$/.test(String(u))) return "—";
-      if (String(u) === "0") return "0 USD";
-      const neg = String(u).startsWith("-");
-      return (neg ? "−" : "+") + AISportsBotAccount.formatUnits(String(u).replace(/^-/, "")) + " USD";
-    };
+    const card = accountCardHtml(account && account.balance);
+    const pnlTxt = u => moneyUnits(u, {exact:true, sign:true});
     const tone = u => u == null || String(u) === "0" ? "" : (String(u).startsWith("-") ? "neg" : "pos");
-    const rate = ta && ta.settled ? (100 * ta.wins / ta.settled).toFixed(0) + "%" : "—";
     const hint = u => u == null ? t("taHistoryLimited") : t("taSettledHint");
     if (ta) {
+      const wr = winrateText(ta);
       document.getElementById("topCards").innerHTML = `
-    <div class="card glass-sheen" aria-label="${t("tradingAccount")}"><div class="v">${bal}</div></div>
+    ${card}
     <div class="card"><div class="k">${t("taProfit24")}</div>
       <div class="v ${tone(ta.pnl24)}">${pnlTxt(ta.pnl24)}</div>
       <div class="d" style="color:var(--mut)">${hint(ta.pnl24)}</div></div>
@@ -2017,12 +2015,12 @@ async function main(){
       <div class="v ${tone(ta.pnlAll)}">${pnlTxt(ta.pnlAll)}</div>
       <div class="d" style="color:var(--mut)">${hint(ta.pnlAll)}</div></div>
     <div class="card"><div class="k">${t("taWinrate")}</div>
-      <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${rate}</div>
-      <div class="d" style="color:var(--mut)">${ta.settled === null ? t("taHistoryLimited") : ta.settled ? `${ta.wins}W · ${ta.losses}L${ta.pushes ? ` · ${ta.pushes} ${t("taPushes")}` : ""}` : t("taNoBets")}</div></div>`;
+      <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${wr.rate}</div>
+      <div class="d" style="color:var(--mut)">${wr.detail}</div></div>`;
       return;
     }
     document.getElementById("topCards").innerHTML = `
-    <div class="card glass-sheen" aria-label="${t("tradingAccount")}"><div class="v">${bal}</div></div>
+    ${card}
     <div class="card"><div class="k">${t("taProfit24")}</div><div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>
     <div class="card"><div class="k">${t("taProfitAll")}</div><div class="v">—</div>
@@ -2764,6 +2762,10 @@ function mergeDayRow(pick, list){
   const settled = cash && real.length > 0 && claimed.length === real.length;
   const pnl = settled ? claimed.reduce((s, t) => s + Number(t.pnl), 0) : null;
   const result = !settled ? null : pnl > 0 ? 1 : pnl < 0 ? 0 : -1;
+  const sumField = (name) => {
+    const vals = claimed.map(t => Number(t[name])).filter(n => Number.isFinite(n));
+    return settled && vals.length === claimed.length ? vals.reduce((s, n) => s + n, 0) : null;
+  };
   const fromTrade = trades.find(t => t._resolution === 1 || t._resolution === 0 || t._resolution === -1);
   const fromPick = pick && (pick.result === 1 || pick.result === 0 || pick.result === -1) ? pick.result : null;
   return {
@@ -2779,15 +2781,41 @@ function mergeDayRow(pick, list){
     result: cash ? result : (pick ? pick.result : null),
     _resolution: fromTrade ? fromTrade._resolution : fromPick,
     claim_confirmed: settled,
-    odds: cash ? (real.map(t => t.odds).find(v => v != null) ?? null) : null,
+    payout: cash ? sumField("payout") : null,
+    cost: cash ? sumField("cost") : null,
+    fill_price: (() => {
+      if (!cash) return null;
+      const prices = real.map(t => t.fill_price).filter(v => v != null);
+      return prices.length && prices.every(v => v === prices[0]) ? prices[0] : null;
+    })(),
     forecast_odds: pick ? (pick.best_odds ?? pick.odds ?? null) : null,
     operation_ids: trades.map(t => t.operation_id).filter(Boolean)
   };
 }
+function sessionDateFromStart(value){
+  // То же правило, что session_day.session_date: граница 06:00 UTC, без перехода на зимнее время США.
+  const t = Date.parse(String(value || ""));
+  if (!Number.isFinite(t)) return "";
+  return new Date(t - 6 * 3600000).toISOString().slice(0, 10);
+}
+function savedSessionByKey(feed){
+  const out = new Map();
+  selectionDisplayRows(feed).forEach(p => {
+    const key = tradeKey(p);
+    if (key && p.session_date && !out.has(key)) out.set(key, String(p.session_date).slice(0, 10));
+  });
+  return out;
+}
+function rowGameDay(row, saved){
+  const key = tradeKey(row);
+  if (key && saved && saved.has(key)) return saved.get(key);
+  return (row && row.session_date) || "";
+}
 function daySelectionRows(feed, date){
   const day = date || ((feed && feed.session && feed.session.date) || "");
+  const saved = savedSessionByKey(feed);
   const picks = selectionDisplayRows(feed).filter(r => (r.session_date || "") === day);
-  const trades = withResolution(personalTradeRows(), feed).filter(r => (r.session_date || "") === day);
+  const trades = withResolution(personalTradeRows(), feed).filter(r => rowGameDay(r, saved) === day);
   const buckets = new Map();
   for (const trade of trades) {
     const key = tradeKey(trade) || ("op:" + trade.operation_id);
@@ -2832,8 +2860,10 @@ function pickDetails(r){
   if (r._unknown) bits.push(t("reconciling"));
   else if (r._cash && r.claim_confirmed && r.pnl != null) {
     bits.push(r.result === 0 ? t("lose") : t("payoutReceived"));
+    if (r.payout != null) bits.push(t("payoutAmount") + " " + usdTxt(r.payout, 6));
+    if (r.cost != null) bits.push(t("costAmount") + " " + usdTxt(r.cost, 6));
     const sign = r.pnl > 0 ? "+" : r.pnl < 0 ? "−" : "";
-    bits.push(sign + claimPnlTxt(r.pnl) + " USD");
+    bits.push(t("resultAmount") + " " + sign + claimPnlTxt(r.pnl) + " USD");
   } else if (r._cash && r._resolution === 1) bits.push(t("awaitingRedeem"));
   else if (r._cash && r._resolution === 0) bits.push(t("lose"));
   else if (r._cash) bits.push(t("realTradeConfirmed"));
@@ -2843,7 +2873,7 @@ function pickDetails(r){
     else if (r.result === 0) bits.push(t("paperLoss"));
   }
   if (r._cash && r.stake != null) bits.push(t("exactStake") + " " + usdTxt(r.stake, 6));
-  if (r._cash) bits.push(r.odds != null ? t("fillPrice") + " " + Number(r.odds).toFixed(5) : t("priceUnavailable"));
+  if (r._cash) bits.push(r.fill_price != null ? t("fillPrice") + " " + priceTxt(r.fill_price) : t("priceUnavailable"));
   if (r.forecast_odds != null && Number.isFinite(Number(r.forecast_odds))) bits.push(t("forecastOddsLabel") + " " + Number(r.forecast_odds).toFixed(5));
   return bits.map(x => `<div class="pick-detail">${x}</div>`).join("");
 }
@@ -2871,8 +2901,16 @@ function historyCashRow(r){
     _cash: r._realTrade === true || r._unknown === true,
     _unknown: r._unknown === true, stake: r._realTrade ? r.stake : null, pnl: r.claim_confirmed ? r.pnl : null,
     result: r.claim_confirmed ? r.result : null, _resolution: r._resolution,
-    claim_confirmed: r.claim_confirmed === true, odds: r._realTrade ? r.odds : null, forecast_odds: null
+    claim_confirmed: r.claim_confirmed === true, fill_price: r._realTrade ? r.fill_price : null,
+    payout: r.claim_confirmed ? r.payout : null, cost: r.claim_confirmed ? r.cost : null, forecast_odds: null
   });
+}
+function personalHistoryRows(feed){
+  const source = feed || window.__strategyFeed || null;
+  const saved = savedSessionByKey(source);
+  return withResolution(personalTradeRows(), source)
+    .map(r => Object.assign({}, r, {session_date: rowGameDay(r, saved)}))
+    .sort((a, b) => String(b.opened_ts || "").localeCompare(String(a.opened_ts || "")));
 }
 function personalHistoryHtml(rows){
   const groups = new Map();
@@ -2889,8 +2927,7 @@ function personalHistoryHtml(rows){
 function renderPersonalHistory(feed){
   const box = document.getElementById("personalHistory");
   if (!box) return;
-  const rows = withResolution(personalTradeRows(), feed || window.__strategyFeed || null)
-    .sort((a, b) => String(b.opened_ts || "").localeCompare(String(a.opened_ts || "")));
+  const rows = personalHistoryRows(feed);
   box.innerHTML = rows.length ? personalHistoryHtml(rows) : `<div class="loading">${personalUnknownTradesHint() || t("noPersonalBets")}</div>`;
 }
 
@@ -3446,7 +3483,7 @@ function claimShares(claim){
   return trades.map((trade, index) => {
     const share = index === trades.length - 1 ? payout - used : (total === 0n ? 0n : payout * costs[index] / total);
     used += share;
-    return {operation_id: trade.operation_id, pnl: share - costs[index]};
+    return {operation_id: trade.operation_id, pnl: share - costs[index], payout: share, cost: costs[index]};
   });
 }
 function personalTradesFromHistory(state){
@@ -3466,14 +3503,13 @@ function personalTradesFromHistory(state){
     const date = Date.parse(start || o.created_at || "");
     const match = readableMatch(o.match || o.fixture_id || "");
     const selection = teamForSide(match, o.side);
-    const price = Number(o.average_price);
     const units = o.amount_units;
-    let claim = null, pnlUnits = null;
+    let claim = null, pnlUnits = null, payoutUnits = null, costUnits = null;
     if (!unknown) {
       for (const candidate of claims) {
         const shares = claimShares(candidate);
         const mine = shares && shares.find(s => s.operation_id === o.operation_id);
-        if (mine) { claim = candidate; pnlUnits = mine.pnl; break; }
+        if (mine) { claim = candidate; pnlUnits = mine.pnl; payoutUnits = mine.payout; costUnits = mine.cost; break; }
       }
       if (!claim) {
         const legacy = claims.filter(c => !claimShares(c) && c.fixture_id === String(o.fixture_id || "") && String(c.side || "") === String(o.side || ""));
@@ -3487,33 +3523,104 @@ function personalTradesFromHistory(state){
       result = pnlUnits > 0n ? 1 : pnlUnits < 0n ? 0 : -1;
     }
     rows.push({sport: o.sport || "mlb", operation_id: o.operation_id, state: o.state, match, selection,
-      odds: Number.isFinite(price) && price > 0 && price < 1 ? Number((1 / price).toFixed(5)) : null,
+      fill_price: confirmedFillPrice(o),
       stake: units != null && /^[0-9]+$/.test(String(units)) ? Number(units) / 1e6 : null,
       stake_pct: null, result, pnl, claim_confirmed: !!claim,
-      session_date: Number.isFinite(date) ? new Date(date - 6 * 3600000).toISOString().slice(0, 10) : "",
+      payout: payoutUnits != null ? Number(payoutUnits) / 1e6 : null,
+      cost: costUnits != null ? Number(costUnits) / 1e6 : null,
+      session_date: sessionDateFromStart(start || o.created_at || ""),
       opened_ts: o.created_at, commence: start, fixture_id: String(o.fixture_id || ""),
       side: String(o.side || ""), _unknown: unknown, _realTrade: !unknown, _wallet: true});
   }
   return {rows, unknown: pending.length, pendingNames};
 }
-// Статистика торгового счёта: баланс сервера и подтверждённые расчёты из приватной истории.
-// История ограничена 200 операциями; неполные выборки не выдаём за статистику за всё время.
+function confirmedFillPrice(o){
+  // Только цена подтверждённого исполнения. Коэффициент прогноза и лимит сигнала сюда не подставляются.
+  if (!o || o.state !== "CONFIRMED") return null;
+  const price = Number(o.average_price);
+  if (!Number.isFinite(price) || !(price > 0) || !(price < 1)) return null;
+  return Number(price.toFixed(5));
+}
+function priceTxt(n){
+  let s = Number(n).toFixed(5);
+  if (LANG === "ru") s = s.replace(".", ",");
+  return s;
+}
+function moneyUnits(units, opts){
+  const raw = String(units == null ? "" : units);
+  if (!/^-?[0-9]+$/.test(raw)) return "—";
+  const neg = raw.startsWith("-");
+  const abs = BigInt(neg ? raw.slice(1) : raw);
+  if (abs === 0n) return "0 USD";
+  const whole = (abs / 1000000n).toString();
+  let frac = (abs % 1000000n).toString().padStart(6, "0");
+  if (!opts || !opts.exact) frac = frac.replace(/0+$/, "");
+  let s = whole + (frac ? "." + frac : "");
+  if (LANG === "ru") s = s.replace(".", ",");
+  const sign = neg ? "−" : (opts && opts.sign ? "+" : "");
+  return sign + s + " USD";
+}
+function accountHeadline(balance){
+  const digit = v => v != null && /^[0-9]+$/.test(String(v));
+  if (!balance || !digit(balance.available_units)) return {available:null, reserved:null, total:null};
+  return {available: String(balance.available_units),
+    reserved: digit(balance.reserved_units) ? String(balance.reserved_units) : "0",
+    total: digit(balance.confirmed_units) ? String(balance.confirmed_units) : null};
+}
+function accountCardHtml(balance){
+  const head = accountHeadline(balance);
+  const bal = head.available == null ? "—" : moneyUnits(head.available);
+  const held = head.available == null ? "" : t("taReserved") + " " + moneyUnits(head.reserved)
+    + (head.reserved !== "0" && head.total ? " · " + t("taTotal") + " " + moneyUnits(head.total) : "");
+  const aria = t("tradingAccount") + (held ? ". " + t("taAvailable") + " " + bal + ". " + held : "");
+  return `<div class="card glass-sheen" aria-label="${v3Esc(aria)}"><div class="k">${t("taAvailable")}</div><div class="v">${bal}</div>${held ? `<div class="d">${held}</div>` : ""}</div>`;
+}
+function winrateText(ta){
+  if (!ta || ta.settled == null) return {rate:"—", detail:t("taHistoryLimited")};
+  if (!(ta.settled > 0)) return {rate:"—", detail:t("taNoBets")};
+  const pushes = ta.pushes ? ` · ${ta.pushes} ${t("taPushes")}` : "";
+  return {rate:(100 * ta.wins / ta.settled).toFixed(0) + "%",
+    detail:`${ta.wins}W · ${ta.losses}L${pushes} · ${t("taPurchaseHint")}`};
+}
+// Доля считается по покупкам: одна выплата может закрыть несколько.
+// История ограничена 200 операциями; неполную выборку не показываем как долю за всё время.
 function tradingAccountStats(state){
   const a = state && state.account; if (!a || !a.bot_deposit_wallet || !a.balance) return null;
   const hist = Array.isArray(state.history) ? state.history : [];
   const units = v => v != null && /^-?[0-9]+$/.test(String(v)) ? BigInt(v) : null;
   const claims = hist.filter(o => o.kind === "CLAIM" && o.state === "CONFIRMED" && units(o.realized_pnl_units) != null);
-  const wins = claims.filter(o => units(o.realized_pnl_units) > 0n).length;
-  const losses = claims.filter(o => units(o.realized_pnl_units) < 0n).length;
-  const pushes = claims.filter(o => units(o.realized_pnl_units) === 0n).length;
+  const trades = hist.filter(o => o.kind === "TRADE" && o.state === "CONFIRMED" && o.operation_id);
+  const seen = new Set();
+  const purchases = [];
+  let unresolved = 0;
+  for (const claim of claims) {
+    const shares = claimShares(claim);
+    if (shares) {
+      let linked = 0;
+      for (const share of shares) {
+        const id = String(share.operation_id || "");
+        if (!id || seen.has(id)) continue;
+        seen.add(id); linked++;
+        purchases.push(share.pnl);
+      }
+      if (!linked) unresolved++;
+      continue;
+    }
+    const same = trades.filter(t => !seen.has(t.operation_id) && String(t.fixture_id || "") === String(claim.fixture_id || "") && String(t.side || "") === String(claim.side || ""));
+    if (same.length === 1) { seen.add(same[0].operation_id); purchases.push(units(claim.realized_pnl_units)); }
+    else unresolved++;
+  }
+  const wins = purchases.filter(n => n > 0n).length;
+  const losses = purchases.filter(n => n < 0n).length;
+  const pushes = purchases.filter(n => n === 0n).length;
   const dayAgo = Date.now() - 86400000;
-  const fullHistory = state.historyLoaded === true && hist.length < 200;
+  const fullHistory = state.historyLoaded === true && hist.length < 200 && unresolved === 0;
   const oldest = hist.length && Date.parse(hist[hist.length - 1].created_at || "");
   const fullDay = state.historyLoaded === true && (hist.length < 200 || Number.isFinite(oldest) && oldest < dayAgo);
   const pnl24 = fullDay ? claims.filter(o => Date.parse(o.updated_at || o.created_at || "") >= dayAgo)
     .reduce((acc, o) => acc + units(o.realized_pnl_units), 0n).toString() : null;
   return {available: String(a.balance.available_units ?? "0"), reserved: String(a.balance.reserved_units ?? "0"), confirmed: String(a.balance.confirmed_units ?? "0"),
-          wins, losses, pushes, settled: fullHistory ? wins + losses : null,
+          wins, losses, pushes, settled: fullHistory ? wins + losses : null, unit: "purchases",
           pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24};
 }
 function rerenderDashFromAccount(){
