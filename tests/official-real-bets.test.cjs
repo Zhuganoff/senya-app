@@ -264,11 +264,14 @@ test("dashboard selection history labels the forecast price and skips personal m
   assert.match(row, /⚾/);
   assert.doesNotMatch(row, /USD|33\.45|pUSD|@—/);
 });
-function accountState(history, balance){
-  return {historyLoaded:true, history, account:{bot_deposit_wallet:"0x" + "11".repeat(20), balance:Object.assign({
+function accountState(history, balance, extra){
+  return Object.assign({historyLoaded:true, history, account:{bot_deposit_wallet:"0x" + "11".repeat(20), balance:Object.assign({
     available_units:"71172780", reserved_units:"0", confirmed_units:"71172780", realized_pnl_units:"-827220"
-  }, balance || {})}};
+  }, balance || {})}}, extra || {});
 }
+// v164: денежный итог суток приходит с сервера (bot_account_money) — полнота окна не выводится из страницы истории
+const money = (units, count, complete, missing) => ({status:"OK", hours:24, settled_window_units:String(units), settled_window_count:count,
+  window_complete:complete !== false, claims_without_settled_at:missing || 0, realized_all_units:"-827220", claims_total:2});
 test("confirmed claims show payout and cost apart from the result", () => {
   const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
     fixture_id:fixture, side:"home", match:"Tampa Bay Rays @ Cleveland Guardians",
@@ -418,7 +421,8 @@ Object.assign(I18N, {
   reservedLabel: ["Первоначальный резерв"], spentLabel: ["Потрачено"], feeLabel: ["Комиссия, уже включена"], sharesLabel: ["Доли"],
   lastSelection: ["Последний отбор"], newSelectionNotStarted: ["Новый отбор ещё не начался"], dayResult: ["Результат ставок"], allTimeResult: ["За всё время"],
   awaitingSettle: ["{n} ожидают расчёта"], noDayResult: ["подтверждённых результатов за этот день нет"], period24: ["Погашения за последние 24 часа"],
-  period24Incomplete: ["период неполный"], claimConfirmedAt: ["подтверждено"], claimTimeUnknown: ["время подтверждения в учёте не записано"], claimCreatedAt: ["задание создано"], gameDayLabel: ["игровой день"],
+  period24Incomplete: ["период неполный"], period24Unknown: ["период неизвестен: сервер не отдал денежный итог суток"], period24Short: ["погашения за 24 ч"],
+  historyMoreNote: ["архив загружен частично — продолжение по кнопке"], histMore: ["Загрузить ещё"], histMoreBusy: ["загрузка…"], claimConfirmedAt: ["подтверждено"], claimTimeUnknown: ["время подтверждения в учёте не записано"], claimCreatedAt: ["задание создано"], gameDayLabel: ["игровой день"],
   restoredSnapshot: ["Снимок ленты от {t} ({m} мин назад)"], moneyMore: ["Подробнее о деньгах"], moneyLess: ["Свернуть"],
   stakeWord: ["ставка"], forecastWord: ["Прогноз"], historyLoading: ["сверка с личной историей…"], historyLoadingLong: ["Личная история ещё загружается"],
   noRecentBets: ["За последние 24 часа ставок не было"], recentBasisSubmitted: ["по времени отправки ордера"],
@@ -555,19 +559,30 @@ test("the money period uses the confirmed settlement time only; without it the p
   const mk = (id, op, pnl, cost, extra) => Object.assign({kind:"CLAIM", state:"CONFIRMED", operation_id:id, realized_pnl_units:pnl,
     created_at:"2026-10-16T05:20:00Z", updated_at:new Date().toISOString(),
     intent:{resolution:{trades:[{operation_id:op, cost_units:cost, shares_units:"6190000"}]}}}, extra || {});
-  // 1) учёт не хранит время расчёта → период неполный, created_at/updated_at не подставляются
+  // 1) сервер не отдал денежный итог (старый сервер / сбой) → период неизвестен; created_at/updated_at не подставляются
   let stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy]));
   assert.equal(stats.pnl24, null);
   assert.equal(stats.period24Complete, false);
+  assert.equal(stats.period24Known, false);
   assert.equal(context.claimMoneyTime(mk("x", "buy-new", "1", "1")), "");
-  // 2) оба погашения подтверждены в цепи 16.10 05:05Z (блоки 95614536/95614550) — вместе −0,827220 за последние 24 ч
-  const recent = new Date(Date.now() - 2 * 3600000).toISOString();
-  stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470", {settled_at:recent}), mk("c2", "buy-old", "-3597750", "3597750", {settled_at:recent}), buyNew, buy]));
+  // 2) сервер: оба погашения подтверждены в цепи 16.10 05:05Z (блоки 95614536/95614550) — вместе −0,827220 за последние 24 ч
+  stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy], null, {money: money(-827220, 2, true)}));
   assert.equal(stats.pnl24, "-827220");
   assert.equal(stats.period24Complete, true);
-  // 3) старое погашение расчётом 01.10, позже дописаны метаданные (updated_at сегодня) — в сутки не попадает
-  stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470", {settled_at:recent}), mk("c2", "buy-old", "-3597750", "3597750", {settled_at:"2026-10-01T10:00:00Z"}), buyNew, buy]));
-  assert.equal(stats.pnl24, "2770530");
+  assert.equal(stats.pnl24Count, 2);
+  // 3) сервер знает про CLAIM без доказанного времени → окно неполное, сумма не объявляется
+  stats = context.tradingAccountStats(accountState([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy], null, {money: money(2770530, 1, false, 1)}));
+  assert.equal(stats.pnl24, null); assert.equal(stats.period24Complete, false); assert.equal(stats.period24Known, true); assert.equal(stats.claimsWithoutTime, 1);
+  // 4) контрпример владельца: первая страница — 200 свежих операций, старый CLAIM с сегодняшним расчётом в ней отсутствует;
+  //    клиент НЕ объявляет полноту по created_at последней строки — сумму суток даёт только сервер
+  const flood = Array.from({length: 200}, (_, i) => ({kind:"TRADE", state:"REJECTED", operation_id:"flood-" + i, created_at:new Date(Date.now() - i * 60000).toISOString()}));
+  stats = context.tradingAccountStats(accountState(flood, null, {historyComplete:false, historyHasMore:true}));
+  assert.equal(stats.pnl24, null); assert.equal(stats.period24Known, false); assert.equal(stats.settled, null);
+  stats = context.tradingAccountStats(accountState(flood, null, {historyComplete:false, historyHasMore:true, money: money(-827220, 2, true)}));
+  assert.equal(stats.pnl24, "-827220");                                           // старый CLAIM учтён сервером, хотя его нет на странице
+  assert.equal(context.personalTradesFromHistory(accountState(flood, null, {historyComplete:false})).truncated, true);
+  assert.equal(context.personalTradesFromHistory(accountState(flood, null, {historyComplete:true})).truncated, false);  // полнота — явный признак сервера
+  assert.equal(context.personalTradesFromHistory(accountState(flood.slice(0, 3))).truncated, false);                     // старый сервер: меньше 200 строк
   // результат ИГРОВОГО ДНЯ не зависит от дня погашения: 15.10 → +2,770530; 26.09 → −3,597750
   load([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy]);
   const d15 = context.dayMoneyResult("2026-10-15", feed), d26 = context.dayMoneyResult("2026-09-26", feed), d16 = context.dayMoneyResult("2026-10-16", feed);
@@ -578,8 +593,10 @@ test("the money period uses the confirmed settlement time only; without it the p
   assert.match(details, /Cleveland Guardians.*игровой день 2026-10-15.*\+2\.770530 USD/);
   assert.match(details, /Kansas City Royals.*игровой день 2026-09-26.*−3\.597750 USD/);
   assert.match(details, /Результат \(2\): −0\.827220 USD/);
-  assert.match(details, /период неполный/);
+  assert.match(details, /период неизвестен/);
   assert.match(details, /задание создано/);
+  const known = context.moneyDetailsHtml(feed, accountState([mk("c1", "buy-new", "2770530", "3419470"), mk("c2", "buy-old", "-3597750", "3597750"), buyNew, buy], null, {money: money(-827220, 2, true)}));
+  assert.match(known, /Погашения за последние 24 часа: −0[.,]827220 USD \(2\)/);
   // открытая ставка без выплаты: день показывает ожидание, итог не объявляется
   load([buyNew]);
   const open = context.dayMoneyResult("2026-10-15", feed);

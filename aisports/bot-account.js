@@ -176,7 +176,7 @@
       this.eligibility=eligibility;
       this.epoch = 0; this.auth = null; this.idempotency = new Map(); this.state = {};
     }
-    reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],historyLoaded:false,busy:false,error:null}; this.render(this.state); }
+    reset() { this.epoch++; this.auth = this.session(); this.idempotency.clear(); this.state = {status:"SIGNED_OUT",account:null,operation:null,history:[],historyLoaded:false,historyComplete:null,historyHasMore:false,historyCursor:null,historySource:null,money:null,busy:false,error:null}; this.render(this.state); }
     context() {
       if (this.session() !== this.auth) this.reset();
       if (!this.auth) fail("SIGNED_OUT");
@@ -227,17 +227,55 @@
           if(proof&&["PENDING","VERIFYING"].includes(proof.state))this.paint(c,{status:"OWNERSHIP_PENDING"});
         }
         if (r.account) {
-          const h = await this.call(c,"bot_account_history");
-          if (!Array.isArray(h.operations)) fail("INVALID_HISTORY");
-          const unfinished=h.operations.find(o=>!TERMINAL.has(o.state));
-          // Resume only unfinished work. Old refusals belong in the future history screen, not the wallet card.
-          const current=this.state.operation;
-          this.paint(c,{history:h.operations,historyLoaded:true,operation:unfinished||current||null});
+          await this.loadHistoryHead(c);
           if (this.state.operation && !TERMINAL.has(this.state.operation.state)) {
             this.adopt(c,await this.call(c,"bot_account_operation",{p_operation_id:this.state.operation.operation_id}));
           }
+          await this.loadMoney(c);
         }
         return r;
+      });
+    }
+    // 16.10 (owner): the first page comes from the cursor RPC (explicit has_more/next_cursor); an older server without it
+    // still answers the legacy 200-row history, whose completeness is then only "fewer than 200 rows".
+    async loadHistoryHead(c) {
+      let h = null, source = "page";
+      try {
+        h = await this.call(c,"bot_account_history_page",{p_cursor:null,p_limit:200});
+        if (!Array.isArray(h.operations) || typeof h.has_more !== "boolean") fail("INVALID_HISTORY");
+      } catch (e) {
+        if (!this.alive(c)) throw e;
+        source = "legacy";
+        h = await this.call(c,"bot_account_history");
+        if (!Array.isArray(h.operations)) fail("INVALID_HISTORY");
+      }
+      const unfinished=h.operations.find(o=>!TERMINAL.has(o.state));
+      // Resume only unfinished work. Old refusals belong in the history screen, not the wallet card.
+      const current=this.state.operation;
+      const more = source === "page" ? h.has_more === true : h.operations.length >= 200;
+      this.paint(c,{history:h.operations,historyLoaded:true,historySource:source,historyHasMore:more,
+        historyCursor:source === "page" && more ? String(h.next_cursor || "") || null : null,
+        historyComplete:!more,operation:unfinished||current||null});
+    }
+    // Money aggregates are computed on the server over ALL operations by the proven settlement time; a page of
+    // history never vouches for the 24-hour sum. Missing RPC → null (the client then says the period is unknown).
+    async loadMoney(c) {
+      try {
+        const m = await this.call(c,"bot_account_money",{p_hours:24});
+        if (m.status !== "OK" || typeof m.window_complete !== "boolean" || !/^-?[0-9]+$/.test(String(m.settled_window_units))) fail("MONEY_UNAVAILABLE");
+        this.paint(c,{money:m});
+      } catch (e) { if (!this.alive(c)) throw e; this.paint(c,{money:null}); }
+    }
+    // Next archive page by composite cursor; rows are appended without duplicates, the head is not re-read here.
+    async historyMore() {
+      return this.run(async c => {
+        if (this.state.historySource !== "page" || !this.state.historyHasMore || !this.state.historyCursor) return null;
+        const h = await this.call(c,"bot_account_history_page",{p_cursor:this.state.historyCursor,p_limit:200});
+        if (!Array.isArray(h.operations) || typeof h.has_more !== "boolean") fail("INVALID_HISTORY");
+        const seen = new Set(this.state.history.map(o=>o.operation_id));
+        const merged = this.state.history.concat(h.operations.filter(o=>!seen.has(o.operation_id)));
+        this.paint(c,{history:merged,historyHasMore:h.has_more === true,historyCursor:h.has_more === true ? String(h.next_cursor || "") || null : null,historyComplete:h.has_more !== true});
+        return h;
       });
     }
     async pollOperation(id) {

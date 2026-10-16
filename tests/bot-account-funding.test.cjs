@@ -129,7 +129,7 @@ test('refresh on PENDING / WALLET_PENDING / UNKNOWN / REJECTED only reads and ne
  for(const state of ['PENDING','WALLET_PENDING','UNKNOWN','REJECTED','AWAITING_SIGNATURE']){
   const o={...mmOperation('10000000',state),...(state==='AWAITING_SIGNATURE'?{}:{challenge:null})};
   const s=setup({op:o});await s.c.refresh();await s.c.refresh();
-  assert.ok(s.names().every(n=>['bot_account_get','bot_account_history','bot_account_operation'].includes(n)),state);
+  assert.ok(s.names().every(n=>['bot_account_get','bot_account_history','bot_account_history_page','bot_account_money','bot_account_operation'].includes(n)),state);   // v164: страница архива и денежный итог — тоже только чтение
   assert.deepEqual(s.walletCalls,[]);
   assert.equal(s.c.state.operation?.state||null,state==='REJECTED'?null:state);
  }

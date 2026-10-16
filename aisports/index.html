@@ -1094,10 +1094,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v160"></script>
-<script src="wallet-connect.js?v=v152"></script>
+<script src="bot-account.js?v=v164"></script>
+<script src="wallet-connect.js?v=v164"></script>
 <script>
-const BUILD = "v163";
+const BUILD = "v164";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1379,11 +1379,15 @@ const T = {
   noDayResult: ["подтверждённых результатов за этот день нет", "no confirmed results for this day", "该日暂无已确认结果"],
   moneyMore: ["Подробнее о деньгах", "Money details", "资金明细"], moneyLess: ["Свернуть", "Collapse", "收起"],
   period24: ["Погашения за последние 24 часа", "Redemptions in the last 24 hours", "近 24 小时赎回"],
-  period24Incomplete: ["период неполный: учёт не хранит время подтверждения выплаты, показано время создания задания", "period incomplete: the ledger does not store the payout confirmation time, task creation time shown", "周期不完整：账本未记录派息确认时间，显示的是任务创建时间"],
+  period24Incomplete: ["период неполный: не у всех погашений записано подтверждённое время расчёта", "period incomplete: not every redemption has a proven settlement time", "周期不完整：并非所有赎回都记录了已证实的结算时间"],
   claimConfirmedAt: ["подтверждено", "confirmed", "已确认"], claimTimeUnknown: ["время подтверждения в учёте не записано", "confirmation time not recorded in the ledger", "账本未记录确认时间"],
   claimCreatedAt: ["задание создано", "task created", "任务创建于"], gameDayLabel: ["игровой день", "game day", "比赛日"],
   restoredSnapshot: ["Снимок ленты от {t} ({m} мин назад), обновление не удалось.", "Feed snapshot from {t} ({m} min ago), refresh failed.", "数据快照来自 {t}（{m} 分钟前），刷新失败。"],
   historyPartial: ["показаны последние 200 операций, история неполная", "last 200 operations shown, history incomplete", "仅显示最近 200 条操作，历史不完整"],
+  historyMoreNote: ["архив загружен частично — продолжение по кнопке", "archive partially loaded — continue with the button", "存档仅部分加载，点击按钮继续"],
+  histMore: ["Загрузить ещё", "Load more", "加载更多"], histMoreBusy: ["загрузка…", "loading…", "加载中…"],
+  period24Short: ["погашения за 24 ч", "redemptions 24h", "24小时赎回"],
+  period24Unknown: ["период неизвестен: сервер не отдал денежный итог суток", "period unknown: the server did not return the 24-hour total", "周期未知：服务器未返回 24 小时结果"],
   secSimulation: ["Отбор · симуляция", "Selection · simulation", "选场 · 模拟"],
   showSection: ["Показать", "Show", "展开"], hideSection: ["Скрыть", "Hide", "收起"],
   ofWord: ["из", "of", "/"],
@@ -2126,7 +2130,12 @@ async function main(){
     const dm = view.date ? dayMoneyResult(view.date, feed) : null;
     const dayTitle = `${t("dayResult")}${view.date ? " · " + fmtDay(view.date) : ""}`;
     const dayVal = dm && dm.pnlUnits != null ? shortTxt(dm.pnlUnits) : "—";
-    const dayHint = dm && dm.open > 0 ? t("awaitingSettle").replace("{n}", String(dm.open)) : dm && dm.settled ? t("dayResultHint") : t("noDayResult");
+    const dayHintBase = dm && dm.open > 0 ? t("awaitingSettle").replace("{n}", String(dm.open)) : dm && dm.settled ? t("dayResultHint") : t("noDayResult");
+    // v164: три показателя раздельно — результат игрового дня (карточка), погашения за 24 ч по времени расчёта
+    // (серверный итог, строкой ниже), «За всё время» (учёт счёта, соседняя карточка)
+    const p24line = ta && ta.period24Complete ? `${t("period24Short")}: ${moneyUnits(ta.pnl24, {decimals: 2, sign: true})}`
+      : ta && ta.period24Known ? `${t("period24Short")}: — · ${t("period24Incomplete")}` : `${t("period24Short")}: —`;
+    const dayHint = `${dayHintBase}<br>${p24line}`;
     const more = `<button type="button" class="money-more" id="moneyMore" aria-expanded="false" aria-controls="moneyDetails">${t("moneyMore")}</button>`;
     if (ta) {
       const wr = winrateText(ta);
@@ -3144,8 +3153,10 @@ function personalHistoryBlockHtml(rows, expanded, partial, now){
   if (!all.length) return "";
   const count = partial ? String(all.length) + "+" : String(all.length);
   if (expanded) {
-    const note = partial ? `<div class="pick-detail hist-partial">${t("historyPartial")}</div>` : "";
-    return personalHistoryHtml(all) + `<button type="button" class="hist-toggle" data-expanded="1" aria-expanded="true">${t("histCollapse")}</button>` + note;
+    const more = partial && historyCanLoadMore();
+    const note = partial ? `<div class="pick-detail hist-partial">${t(more ? "historyMoreNote" : "historyPartial")}</div>` : "";
+    const moreBtn = more ? `<button type="button" class="hist-toggle hist-more">${t("histMore")}</button>` : "";
+    return personalHistoryHtml(all) + moreBtn + `<button type="button" class="hist-toggle" data-expanded="1" aria-expanded="true">${t("histCollapse")}</button>` + note;
   }
   const recent = recentTradeRows(all, now);
   const basisNote = recent.length && recent.every(r => r.exec_basis === "submitted") ? `<div class="pick-detail hist-partial">${t("recentBasisSubmitted")}</div>` : "";
@@ -3156,6 +3167,10 @@ function personalHistoryPartial(){
   const p = window.__privateRealBets;
   return !!(p && p.session === sessionKey() && p.truncated === true);
 }
+function historyCanLoadMore(){
+  const st = typeof botAccountController !== "undefined" && botAccountController ? botAccountController.state : null;
+  return !!(st && st.historySource === "page" && st.historyHasMore === true && st.historyCursor);
+}
 function renderPersonalHistory(feed){
   const box = document.getElementById("personalHistory");
   if (!box) return;
@@ -3163,10 +3178,16 @@ function renderPersonalHistory(feed){
   const expanded = window.__histExpanded === sessionKey();
   const html = rows.length ? personalHistoryBlockHtml(rows, expanded, personalHistoryPartial()) : `<div class="loading">${personalUnknownTradesHint() || t("noPersonalBets")}</div>`;
   if (!swapListHtml(box, html)) return;       // ничего не изменилось — обработчики и раскрытия на месте
-  const toggle = box.querySelector(".hist-toggle");
+  const toggle = box.querySelector(".hist-toggle[data-expanded]");
   if (toggle) toggle.addEventListener("click", () => {
     window.__histExpanded = expanded ? null : sessionKey();
     renderPersonalHistory(feed);
+  });
+  const more = box.querySelector(".hist-more");
+  if (more) more.addEventListener("click", async () => {
+    more.disabled = true; more.textContent = t("histMoreBusy");
+    try { await botAccountController.historyMore(); } catch (e) {}
+    renderPersonalHistory(feed);                 // новые строки дорисует рендер контроллера; здесь — снять занятость
   });
 }
 // v162 (п.4.5), переписано 16.10 (дефект «вечная Загрузка…»): ЕДИНСТВЕННАЯ точка записи в контейнеры списков.
@@ -3237,8 +3258,8 @@ function moneyDetailsHtml(feed, state){
   const total = rows.reduce((acc, r) => acc + Math.round(Number(r.pnl) * 1e6), 0);
   const sign = total > 0 ? "+" : total < 0 ? "−" : "";
   const ta = tradingAccountStats(state);
-  const p24 = ta && ta.period24Complete && ta.pnl24 != null ? `${t("period24")}: ${moneyUnits(ta.pnl24, {exact:true, sign:true})}`
-    : `${t("period24")}: — · ${t("period24Incomplete")}`;
+  const p24 = ta && ta.period24Complete && ta.pnl24 != null ? `${t("period24")}: ${moneyUnits(ta.pnl24, {exact:true, sign:true})}${ta.pnl24Count != null ? ` (${ta.pnl24Count})` : ""}`
+    : ta && ta.period24Known ? `${t("period24")}: — · ${t("period24Incomplete")}` : `${t("period24")}: — · ${t("period24Unknown")}`;
   return rows.sort((a, b) => String(b.session_date).localeCompare(String(a.session_date))).map(line).join("")
     + `<div class="pick-detail"><b>${t("resultAmount")} (${rows.length}): ${sign}${claimPnlTxt(total / 1e6)} USD</b></div>`
     + `<div class="pick-detail">${p24}</div>`;
@@ -3957,7 +3978,7 @@ function personalTradesFromHistory(state){
       opened_ts: o.created_at, commence: start, fixture_id: String(o.fixture_id || ""),
       side: String(o.side || ""), _unknown: unknown, _realTrade: !unknown, _wallet: true});
   }
-  return {rows, unknown: pending.length, pendingNames, truncated: hist.length >= 200, loaded: true};
+  return {rows, unknown: pending.length, pendingNames, truncated: !historyIsComplete(state), loaded: true};
 }
 function confirmedFillPrice(o){
   // Только цена подтверждённого исполнения. Коэффициент прогноза и лимит сигнала сюда не подставляются.
@@ -4052,19 +4073,26 @@ function tradingAccountStats(state){
   const wins = purchases.filter(n => n > 0n).length;
   const losses = purchases.filter(n => n < 0n).length;
   const pushes = purchases.filter(n => n === 0n).length;
-  const dayAgo = Date.now() - 86400000;
-  const fullHistory = state.historyLoaded === true && hist.length < 200 && unresolved === 0;
-  const oldest = hist.length && Date.parse(hist[hist.length - 1].created_at || "");
-  const fullDay = state.historyLoaded === true && (hist.length < 200 || Number.isFinite(oldest) && oldest < dayAgo);
-  // v162 (п.3.4): период по времени ДЕНЕЖНОГО события — `created_at` операции CLAIM (неизменяемо),
-  // а не `updated_at`, которое сдвигается любым дополнением метаданных и переносило бы старую выплату в новые сутки
-  const timed = claims.every(o => claimMoneyTime(o));          // у всех погашений есть подтверждённое время расчёта
-  const pnl24 = fullDay && timed ? claims.filter(o => Date.parse(claimMoneyTime(o)) >= dayAgo)
-    .reduce((acc, o) => acc + units(o.realized_pnl_units), 0n).toString() : null;
+  // v164 (владелец, п.4): полнота истории — ТОЛЬКО явный признак сервера (`has_more` курсорной страницы; у старого
+  // сервера без курсора — «меньше 200 строк»). Длина страницы и created_at последней строки полноту не доказывают:
+  // старый CLAIM, подтверждённый сегодня, может лежать за 200 новыми операциями.
+  const complete = historyIsComplete(state);
+  const fullHistory = state.historyLoaded === true && complete && unresolved === 0;
+  // Денежный итог суток считает сервер по `settled_at` всех операций счёта (`bot_account_money`): клиент его не
+  // выводит из страницы истории и не подставляет created_at/updated_at. Нет ответа → период неизвестен.
+  const money = state.money && state.money.status === "OK" ? state.money : null;
+  const pnl24 = money && money.window_complete === true && /^-?[0-9]+$/.test(String(money.settled_window_units)) ? String(money.settled_window_units) : null;
   return {available: String(a.balance.available_units ?? "0"), reserved: String(a.balance.reserved_units ?? "0"), confirmed: String(a.balance.confirmed_units ?? "0"),
           wins, losses, pushes, settled: fullHistory ? wins + losses : null, unit: "purchases",
           pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24,
-          period24Complete: fullDay && timed, claims: claims.length};
+          period24Complete: pnl24 != null, period24Known: !!money, pnl24Count: money ? money.settled_window_count : null,
+          claimsWithoutTime: money ? money.claims_without_settled_at : null, claims: claims.length};
+}
+function historyIsComplete(state){
+  if (!state || state.historyLoaded !== true) return false;
+  if (typeof state.historyComplete === "boolean") return state.historyComplete;
+  const hist = Array.isArray(state.history) ? state.history : [];
+  return hist.length < 200;
 }
 function rerenderDashFromAccount(){
   const rt = window.__renderTop; if (!rt || rt.session !== sessionKey() || !document.getElementById("topCards")) return;

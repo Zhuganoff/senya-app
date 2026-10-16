@@ -151,3 +151,41 @@ test('the trading server verdict is fresh and typed; the browser also checks the
  assert.equal(regionEligibility({execution_region:{country:'kz',blocked:false,checked_at:at}},NOW),null);          // malformed country
  assert.equal(regionEligibility({},NOW),null);assert.equal(regionEligibility(null,NOW),null);
 });
+
+// ── v164 (владелец 16.10, п.4–5): курсорный архив, откат на старый RPC, денежные агрегаты сервера ──
+function pageServer(total, pageSize=200){
+ const ops=Array.from({length:total},(_,i)=>({operation_id:'00000000-0000-4000-8000-'+String(i).padStart(12,'0'),kind:'TRADE',state:'REJECTED',created_at:new Date(NOW-i*60000).toISOString()}));
+ return (name,p)=>{
+  if(name==='bot_account_history_page'){
+   const start=p.p_cursor?Number(p.p_cursor.split('|')[1]):0; const lim=Math.min(p.p_limit||100,pageSize); const slice=ops.slice(start,start+lim); const more=start+lim<total;
+   return {api_version:1,status:'OK',operations:slice,page_limit:lim,has_more:more,next_cursor:more?'cursor|'+(start+lim):null};
+  }
+  if(name==='bot_account_money')return {api_version:1,status:'OK',hours:24,settled_window_units:'-827220',settled_window_count:2,window_complete:true,claims_without_settled_at:0,realized_all_units:'-827220',claims_total:2};
+ };
+}
+test('refresh reads the first archive page by cursor and keeps has_more/next_cursor from the server',async()=>{
+ const s=setup({mutate:pageServer(450)});await s.c.refresh();
+ const page=s.calls.filter(x=>x.name==='bot_account_history_page');assert.equal(page.length,1);assert.deepEqual(Object.keys(page[0].p).sort(),['p_cursor','p_init_data','p_limit']);assert.equal(page[0].p.p_cursor,null);
+ assert.ok(!s.calls.some(x=>x.name==='bot_account_history'));
+ assert.equal(s.c.state.history.length,200);assert.equal(s.c.state.historyHasMore,true);assert.equal(s.c.state.historyComplete,false);assert.equal(s.c.state.historySource,'page');assert.equal(s.c.state.historyCursor,'cursor|200');
+ assert.equal(s.c.state.money.settled_window_units,'-827220');assert.equal(s.c.state.money.window_complete,true);
+ await s.c.historyMore();assert.equal(s.c.state.history.length,400);assert.equal(s.c.state.historyHasMore,true);
+ await s.c.historyMore();assert.equal(s.c.state.history.length,450);assert.equal(s.c.state.historyHasMore,false);assert.equal(s.c.state.historyComplete,true);assert.equal(s.c.state.historyCursor,null);
+ assert.equal(new Set(s.c.state.history.map(o=>o.operation_id)).size,450,'без дублей');
+ const before=s.calls.length;await s.c.historyMore();assert.equal(s.calls.length,before,'без страниц больше не ходит в сеть');
+ const cursors=s.calls.filter(x=>x.name==='bot_account_history_page').map(x=>x.p.p_cursor);assert.deepEqual(cursors,[null,'cursor|200','cursor|400']);
+});
+test('a server without the cursor RPC falls back to the legacy 200-row history and reports money as unknown',async()=>{
+ let legacy=0;const s=setup({mutate:(n)=>{if(n==='bot_account_history_page')throw Error('rpc 404');if(n==='bot_account_money')throw Error('rpc 404');if(n==='bot_account_history'){legacy++;return {api_version:1,status:'OK',operations:Array.from({length:200},(_,i)=>({operation_id:'op'+i,kind:'TRADE',state:'REJECTED'}))};}}});
+ await s.c.refresh();assert.equal(legacy,1);assert.equal(s.c.state.historySource,'legacy');assert.equal(s.c.state.history.length,200);
+ assert.equal(s.c.state.historyComplete,false,'ровно 200 строк старого RPC не считаются полной историей');assert.equal(s.c.state.money,null);assert.equal(s.c.state.error,null);
+ await s.c.historyMore();assert.ok(!s.calls.some(x=>x.name==='bot_account_history_page'&&x.p.p_cursor),'без курсора догрузки нет');
+ const short=setup({mutate:(n)=>{if(n==='bot_account_history_page')throw Error('rpc 404');if(n==='bot_account_money')return {api_version:1,status:'OK',window_complete:false,settled_window_units:'0',settled_window_count:0,claims_without_settled_at:1};}});
+ await short.c.refresh();assert.equal(short.c.state.historyComplete,true,'меньше 200 строк — полная');assert.equal(short.c.state.money.window_complete,false);
+});
+test('a session change during an archive page load paints nothing into the new session',async()=>{
+ let release;const s=setup({mutate:(n,p)=>{if(n==='bot_account_history_page'&&p.p_cursor)return new Promise(r=>{release=r;});return pageServer(300)(n,p);}});
+ await s.c.refresh();const pending=s.c.historyMore();while(!release)await new Promise(r=>setImmediate(r));
+ s.setAuth('telegram-user-B');release({api_version:1,status:'OK',operations:[{operation_id:'foreign',kind:'TRADE',state:'REJECTED'}],has_more:false,next_cursor:null});await pending;
+ assert.equal(s.c.state.history.length,0);assert.ok(!s.c.state.history.some(o=>o.operation_id==='foreign'));
+});
