@@ -1009,10 +1009,10 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v156"></script>
+<script src="bot-account.js?v=v157"></script>
 <script src="wallet-connect.js?v=v152"></script>
 <script>
-const BUILD = "v156";
+const BUILD = "v157";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2606,7 +2606,8 @@ function personalTradeRows(){
 function selectionDisplayRows(feed){
   // Отбор MLB и футбола остаётся отдельным списком, без личной суммы и без зелёной отметки.
   return selectedPicks(feed).map(b => Object.assign({}, forecastRow(b), {
-    stake: null, stake_pct: null, pnl: null, _wallet: false, _realTrade: false
+    stake: null, stake_pct: null, pnl: null, _wallet: false, _realTrade: false,
+    session_date: b.session_date || ""
   }));
 }
 function resolutionByKey(feed){

@@ -81,6 +81,7 @@ test("owner sees confirmed purchase when public selection exists", () => {
   assert.doesNotMatch(htmlRow, /Автоставка поставлена|выигрыш|\+2\.|27\.10|33\.45|2\.85/);
   const picks = context.selectionDisplayRows(feed);
   assert.equal(picks.length, 1);
+  assert.equal(picks[0].session_date, "2026-10-15");
   assert.equal(picks[0]._wallet, false);
   assert.equal(picks[0].pnl, null);
   assert.match(context.betRow(picks[0]), /прогноз зашёл/);
