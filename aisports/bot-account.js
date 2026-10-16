@@ -17,6 +17,9 @@
   // 16.10 (owner): sports a user may allow for auto-bets. Changing the set is an ordinary settings change on the
   // server (policy version+1, disabled) and the user enables auto-bets again — consent is never rewritten in place.
   const SPORTS = ["mlb", "soccer"];
+  // Виды, которые сервер действительно исполняет: policy.sports_available (16.10). Старый сервер поля не отдаёт → только MLB:
+  // клиент не предлагает включить то, чего на сервере ещё нет, и не получает ошибку RPC при сохранении.
+  const availableSports = a => Array.isArray(a && a.policy && a.policy.sports_available) ? SPORTS.filter(x => a.policy.sports_available.includes(x)) : ["mlb"];
   class ClientError extends Error { constructor(code, detail) { super(code); this.code = code; if (detail) this.detail = String(detail).slice(0, 160); } }
   const fail = code => { throw new ClientError(code); };
   const address = x => typeof x === "string" && ADDRESS.test(x) ? x.toLowerCase() : fail("INVALID_ADDRESS");
@@ -319,7 +322,8 @@
         if (bps < 1 || bps > 1000) fail("INVALID_POLICY");
         const a = accountCheck(this.state.account);
         if (!a.policy) fail("POLICY_UNAVAILABLE");
-        const chosen = Array.isArray(sports) ? sports.filter((x, i, arr) => SPORTS.includes(x) && arr.indexOf(x) === i) : (a.policy.sports || ["mlb"]);
+        const avail = availableSports(a);
+        const chosen = Array.isArray(sports) ? sports.filter((x, i, arr) => avail.includes(x) && arr.indexOf(x) === i) : (a.policy.sports || ["mlb"]).filter(x => avail.includes(x));
         if (!chosen.length) fail("SPORTS_REQUIRED");
         return this.adopt(c,await this.call(c,"bot_account_settings",{p_settings:{sports:chosen,max_stake_bps:bps},p_expected_version:a.policy.version,p_idempotency_key:this.key("settings:"+a.policy.version+":"+bps+":"+chosen.join("+"))}));
       });
@@ -545,6 +549,7 @@
     noMoneyMoved:["деньги не списаны","no funds were moved","未扣款"],
     policy:["Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Лимиты общие для всех видов. Максимум открытых позиций:","The lower of the strategy allocation and your maximum; fees count toward risk. Limits are shared across sports. Maximum open positions:","采用策略比例和您上限中的较低值，费用计入风险。各项目共用限额。最大未平仓数量："],
     sportsTitle:["Виды автоставок","Auto-bet sports","自动投注项目"], sport_mlb:["Бейсбол MLB","Baseball MLB","棒球 MLB"], sport_soccer:["Футбол (1X2, 90 минут)","Soccer (1X2, 90 minutes)","足球（1X2，90分钟）"],
+    sportNotOnServer:["на сервере пока недоступно","not available on the server yet","服务器暂不支持"],
     sportsNote:["После смены видов автоставки выключаются до вашего повторного включения с новым правилом.","After changing sports, auto-bets stay off until you enable them again under the updated policy.","更改项目后，自动投注将保持关闭，直到您在新规则下重新开启。"],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
@@ -963,9 +968,11 @@
       input.type="text";input.inputMode="decimal";input.value=String(a.policy.max_stake_bps/100);label.append(input);
       dialog.setAttribute("aria-label",tr("settings"));
       const sportsBox=el("div",null,"me-sub"),boxes={};sportsBox.append(el("div",tr("sportsTitle")));
-      for(const sp of SPORTS){const l=el("label",null,"ba-sport");const cb=el("input");cb.type="checkbox";cb.checked=(a.policy.sports||["mlb"]).includes(sp);boxes[sp]=cb;l.append(cb,document.createTextNode(" "+tr("sport_"+sp)));sportsBox.append(l);}
+      const avail=availableSports(a);
+      for(const sp of SPORTS){const l=el("label",null,"ba-sport");const cb=el("input");cb.type="checkbox";cb.checked=(a.policy.sports||["mlb"]).includes(sp);cb.disabled=!avail.includes(sp);boxes[sp]=cb;
+        l.append(cb,document.createTextNode(" "+tr("sport_"+sp)+(avail.includes(sp)?"":" — "+tr("sportNotOnServer"))));sportsBox.append(l);}
       sportsBox.append(el("div",tr("sportsNote"),"ba-foot"));
-      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked);if(!chosen.length){boxes[SPORTS[0]].focus();return;}const r=await controller.settings(input.value,chosen);if(r)closeSettings();},false,true);
+      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked&&avail.includes(sp));if(!chosen.length){boxes[SPORTS[0]].focus();return;}const r=await controller.settings(input.value,chosen);if(r)closeSettings();},false,true);
       actions.append(cancel,save);dialog.append(el("h3",tr("settings")),label,sportsBox,actions);
       dialog.onclose=()=>{dialog.remove();if(settingsDialog===dialog)settingsDialog=null;};
       doc.body.append(dialog);settingsDialog=dialog;dialog.showModal();input.focus();
@@ -1075,5 +1082,5 @@
     controller.render=paint;controller.reset();
     return {refresh:()=>controller.refresh(),backgroundRefresh:()=>transferDialog||settingsDialog?null:controller.refresh(),reset:()=>{closeTransfer();closeSettings();enableOpen=false;lastAccount=null;controller.reset();},controller};
   }
-  return {SPORTS,API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,regionEligibility,stateLabel,mount};
+  return {SPORTS,availableSports,API_VERSION,PUSD,Controller,ClientError,parseUnits,formatUnits,accountCheck,validateTransfer,validateWalletTransfer,fundingCheck,sourceOf,opStateKey,checkEligibility,regionEligibility,stateLabel,mount};
 });

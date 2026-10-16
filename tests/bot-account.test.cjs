@@ -196,10 +196,20 @@ test('policy accepts a chosen subset of sports and rejects unknown, empty or dup
  for(const sports of [[],['nhl'],['mlb','mlb'],'mlb',['mlb','soccer','nhl']]){const a=account();a.policy.sports=sports;const s=setup();s.setAccount(a);await s.c.refresh();assert.equal(s.c.state.error,'POLICY_UNAVAILABLE',JSON.stringify(sports));}
 });
 test('settings send the chosen sports (or keep the current ones) and never widen them silently',async()=>{
- const s=setup();await s.c.refresh();
+ const s=setup();const acc=account();acc.policy.sports_available=['mlb','soccer'];s.setAccount(acc);await s.c.refresh();   // сервер объявил оба вида
  await s.c.settings('5',['mlb','soccer']);let call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings,{sports:['mlb','soccer'],max_stake_bps:500});
  await s.c.settings('5');call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings.sports,['mlb'],'без аргумента — текущий состав политики, не расширение');
  await s.c.settings('5',['soccer','soccer','nhl']);call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings.sports,['soccer'],'дубли и чужие виды отброшены');
  const before=s.calls.length;await s.c.settings('5',['nhl']);assert.equal(s.calls.length,before,'пустой итоговый состав не отправляется');assert.equal(s.c.state.error,'SPORTS_REQUIRED');
  assert.equal(s.calls.filter(x=>x.name==='bot_account_settings').length,3,'три отправленных настройки');   // ключ идемпотентности в стенде фиксирован (uuid=const), различие действий проверяется составом p_settings
+});
+
+test('soccer is offered only when the server declares it available; an old server keeps MLB-only settings without RPC errors',async()=>{
+ const {availableSports}=api;
+ assert.deepEqual(availableSports(account()),['mlb'],'старый сервер без sports_available → только MLB');
+ const a=account();a.policy.sports_available=['mlb','soccer'];assert.deepEqual(availableSports(a),['mlb','soccer']);
+ const s=setup();await s.c.refresh();await s.c.settings('5',['mlb','soccer']);
+ let call=s.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings.sports,['mlb'],'без признака сервера футбол не отправляется → SETTINGS_INVALID у пользователя не возникает');
+ const n=setup();n.setAccount(a);await n.c.refresh();await n.c.settings('5',['mlb','soccer']);
+ call=n.calls.filter(x=>x.name==='bot_account_settings').pop();assert.deepEqual(call.p.p_settings.sports,['mlb','soccer']);
 });
