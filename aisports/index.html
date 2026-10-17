@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v168"></script>
-<script src="wallet-connect.js?v=v168"></script>
+<script src="bot-account.js?v=v169"></script>
+<script src="wallet-connect.js?v=v169"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v168";
+const BUILD = "v169";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1615,7 +1615,7 @@ const T = {
   selectedPicks: ["выбрано", "selected", "已选"],
   selectedNoTrade: ["Выбрано · реальной ставки нет", "Selected · no real bet", "已选 · 无真实投注"],
   selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
-  selectionAnalysisScope: ["Отбор MLB и футбола · реальные автоставки пока только MLB", "MLB and soccer selections · real auto-bets currently MLB only", "MLB 和足球选场 · 真实自动投注目前仅限 MLB"],
+  selectionAnalysisScope: ["Отбор MLB и футбола · автоставки по вашим настройкам", "MLB and soccer selections · auto-bets follow your settings", "MLB 和足球选场 · 自动投注按你的设置执行"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
   awaitingRedeem: ["Выиграла · ожидает погашения", "Won · awaiting redemption", "已赢 · 等待兑付"],
   payoutReceived: ["Выплата получена", "Payout received", "兑付已到账"],
