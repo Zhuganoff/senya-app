@@ -577,7 +577,8 @@
     available:["Свободно","Available","可用"], reserved:["Зарезервировано","Reserved","预留"], positions:["Стоимость открытых позиций","Open position value","未平仓持仓价值"], pnl:["Подтверждённый результат","Realized result","已实现盈亏"],
     source:["Откуда","From","来源"], recipient:["Куда","To","目标"], fees:["Комиссия","Fee","费用"], unverifiedFee:["Уточняется — будет показана до подписи","Pending — shown before signing","待确认，将在签名前显示"],
     history:["Мои операции и ставки","My transactions and bets","我的交易与投注"], empty:["Операций пока нет","No transactions yet","暂无交易"],
-    maxStake:["Максимум одной ставки, % свободного банка (не более 10)","Maximum stake, % of available funds (up to 10)","单注上限：可用资金百分比（不超过10）"],
+    maxStake:["Лимит одной ставки","Single-bet limit","单注上限"],
+    maxStakeHint:["От свободного банка · не более 10%","Of available funds · up to 10%","可用资金的比例 · 最高 10%"],
     stakeLimit:["Лимит одной ставки","Stake limit","单注上限"],
     save:["Сохранить настройки","Save settings","保存设置"], policyAccept:["Принимаю показанное правило ставок","I accept this betting policy","我接受此投注规则"],
     autoSwitch:["Автоставки","Auto-bets","自动投注"],
@@ -593,7 +594,7 @@
     policy:["Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Лимиты общие для всех видов. Максимум открытых позиций:","The lower of the strategy allocation and your maximum; fees count toward risk. Limits are shared across sports. Maximum open positions:","采用策略比例和您上限中的较低值，费用计入风险。各项目共用限额。最大未平仓数量："],
     sportsTitle:["Виды автоставок","Auto-bet sports","自动投注项目"], sport_mlb:["Бейсбол MLB","Baseball MLB","棒球 MLB"], sport_soccer:["Футбол (1X2, 90 минут)","Soccer (1X2, 90 minutes)","足球（1X2，90分钟）"],
     sportNotOnServer:["на сервере пока недоступно","not available on the server yet","服务器暂不支持"],
-    sportsNote:["После смены видов автоставки выключаются до вашего повторного включения с новым правилом.","After changing sports, auto-bets stay off until you enable them again under the updated policy.","更改项目后，自动投注将保持关闭，直到您在新规则下重新开启。"],
+    sportsNote:["После смены видов подтвердите новое правило автоставок.","After changing sports, confirm the new auto-bet policy.","更改项目后，请确认新的自动投注规则。"],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
     separate:["Личный счёт Polymarket остаётся отдельным. Прежние деньги сюда автоматически не переносятся.","Your personal Polymarket account remains separate. Existing funds are not moved automatically.","您的个人 Polymarket 账户保持独立，现有资金不会自动转入。"],
     checked:["Последняя сверка","Last checked","上次核对"], details:["Подробности","Details","详情"], waiting:["Проверяем состояние…","Checking status…","正在检查状态…"],
@@ -641,8 +642,10 @@
     FAILED:["Операция не выполнена","Transaction failed","交易失败"], REJECTED:["Операция отклонена","Transaction rejected","交易被拒绝"], CANCELLED:["Операция отменена","Transaction cancelled","交易已取消"], EXPIRED:["Срок подтверждения истёк","Confirmation expired","确认已过期"]
   };
   const errors = {
-    GEOBLOCKED:["Polymarket не разрешает торговлю в вашем регионе или регионе сервера. Автоставки не включены.","Polymarket does not allow trading in your or the server's region. Auto-bets were not enabled.","Polymarket 不允许在您或服务器所在地区交易，自动投注未启用。"],
-    GEOBLOCK_UNVERIFIED:["Сервер ещё не подтвердил регион исполнения (проверка идёт каждые ~20 с). Повторите через минуту.","The trading server has not confirmed its region yet (it re-checks every ~20 s). Retry in a minute.","交易服务器尚未确认执行地区（约每 20 秒复核一次）。请一分钟后重试。"],
+    GEOBLOCKED:["Polymarket не разрешает открывать ставки в вашем регионе или регионе сервера. Автоставки не включены.","Polymarket does not allow opening bets in your or the server's region. Auto-bets were not enabled.","Polymarket 不允许在您或服务器所在地区开仓，自动投注未启用。"],
+    DEVICE_GEOBLOCKED:["В регионе вашего устройства Polymarket не разрешает открывать новые ставки. Сервер в другой стране не снимает это ограничение. Баланс и история доступны.","Polymarket does not allow new bets from your device's region. A server elsewhere does not remove this restriction. Your balance and history remain available.","Polymarket 不允许在您设备所在地区开新投注。其他地区的服务器不能解除此限制。您仍可查看余额和历史。"],
+    EXECUTION_GEOBLOCKED:["Регион торгового сервера не разрешён Polymarket. Новые ставки не включены.","Polymarket does not allow trading from the server's region. New bets were not enabled.","Polymarket 不允许从交易服务器所在地区开仓，自动投注未启用。"],
+    GEOBLOCK_UNVERIFIED:["Не удалось подтвердить доступность торговли для устройства и сервера. Автоставки не включены; проверьте соединение и повторите позже.","Trading eligibility for the device and server could not be confirmed. Auto-bets were not enabled; check your connection and try again later.","无法确认设备和服务器是否允许交易。自动投注未启用；请检查网络后重试。"],
     NOT_READY:["Счёт или исполнитель ещё не готовы. Обновите состояние.","The account or execution service is not ready. Refresh status.","账户或交易服务尚未就绪，请刷新。"],
     VERSION_CONFLICT:["Настройки изменились на другом устройстве. Обновите и проверьте их.","Settings changed on another device. Refresh and review them.","设置已在其他设备修改，请刷新并检查。"],
     BALANCE_STALE:["Нужна свежая сверка баланса. Ожидаем подтверждения.","A fresh balance check is required. Awaiting confirmation.","需要重新核对余额，正在等待确认。"],
@@ -844,10 +847,20 @@
 .ba-transfer-status button{border:0;background:transparent;color:var(--accent,#38bdf8);font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 @media(max-width:600px){.ba-transfer-dialog{width:100vw;max-height:calc(100dvh - 16px);margin:auto auto 0;
   border-radius:22px 22px 0 0;border-bottom:0;padding:20px}}
-.ba-settings-dialog{width:min(360px,calc(100vw - 32px));max-width:none;padding:20px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);background:var(--card-2,#1a2231);color:var(--txt,#fff);box-shadow:0 18px 70px rgba(0,0,0,.45)}
+.ba-settings-dialog{box-sizing:border-box;width:min(380px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);margin:auto;overflow:auto;padding:20px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);background:var(--card-2,#1a2231);color:var(--txt,#fff);box-shadow:0 18px 70px rgba(0,0,0,.45);font-family:inherit;font-size:14px;line-height:1.35}
 .ba-settings-dialog::backdrop{background:rgba(2,8,20,.7);backdrop-filter:blur(6px)}
-.ba-sport{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px}.ba-sport input{width:18px;height:18px;margin:0}
-.ba-settings-dialog h3{margin:0 0 12px;font-size:18px}.ba-settings-dialog .ba-settings-actions{display:flex;gap:8px;margin-top:16px}.ba-settings-dialog .ba-settings-actions button{flex:1}
+.ba-settings-dialog h3{margin:0 0 18px;font-size:20px;line-height:1.2}
+.ba-settings-label{display:block;color:var(--txt,#fff);font-size:14px;font-weight:700}
+.ba-settings-hint{color:var(--mut,#7d8eaa);font-size:12px;margin:2px 0 8px}
+.ba-settings-input{position:relative}.ba-settings-input .binput{box-sizing:border-box;width:100%;padding:10px 38px 10px 12px;font-size:21px}
+.ba-settings-input span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;font-weight:700;color:var(--mut,#7d8eaa);pointer-events:none}
+.ba-settings-sports{margin-top:18px}.ba-settings-sports .ba-settings-label{margin-bottom:6px}
+.ba-sport{display:flex;gap:10px;align-items:center;min-height:42px;margin:0;font-size:14px;line-height:1.3;color:var(--txt,#fff);cursor:pointer}
+.ba-sport input{width:19px;height:19px;margin:0;flex:none;accent-color:var(--accent,#38bdf8)}
+.ba-settings-note{color:var(--mut,#7d8eaa);font-size:12px;line-height:1.4;margin-top:9px}
+.ba-settings-feedback{color:var(--bad,#ff8b8b);font-size:12px;line-height:1.4;margin-top:12px}
+.ba-settings-actions{display:grid;gap:8px;margin-top:16px}.ba-settings-actions button{margin:0;min-height:44px}
+.ba-settings-actions .ghost{background:transparent;border:0;min-height:36px}
 @media (prefers-reduced-motion:reduce){.ba-pill.live i,.ba-amount.up,.ba-note.ok,.ba-bar::after{animation:none}}
 `;
       doc.head.appendChild(st);
@@ -1007,16 +1020,18 @@
     }
     function openSettings(a){
       closeSettings();
-      const dialog=el("dialog",null,"ba-settings-dialog"), label=el("label",tr("maxStake"),"me-sub"),input=el("input",null,"binput"),actions=el("div",null,"ba-settings-actions");
-      input.type="text";input.inputMode="decimal";input.value=String(a.policy.max_stake_bps/100);label.append(input);
+      const dialog=el("dialog",null,"ba-settings-dialog"),field=el("div",null,"ba-settings-field"),label=el("label",tr("maxStake"),"ba-settings-label"),input=el("input",null,"binput"),inputRow=el("div",null,"ba-settings-input"),actions=el("div",null,"ba-settings-actions"),feedback=el("div",null,"ba-settings-feedback");
+      input.type="text";input.inputMode="decimal";input.id="ba-settings-max-stake";input.value=String(a.policy.max_stake_bps/100);label.htmlFor=input.id;
+      inputRow.append(input,el("span","%"));field.append(label,el("div",tr("maxStakeHint"),"ba-settings-hint"),inputRow);
       dialog.setAttribute("aria-label",tr("settings"));
-      const sportsBox=el("div",null,"me-sub"),boxes={};sportsBox.append(el("div",tr("sportsTitle")));
+      const sportsBox=el("div",null,"ba-settings-sports"),boxes={};sportsBox.append(el("div",tr("sportsTitle"),"ba-settings-label"));
       const avail=availableSports(a);
       for(const sp of SPORTS){const l=el("label",null,"ba-sport");const cb=el("input");cb.type="checkbox";cb.checked=(a.policy.sports||["mlb"]).includes(sp);cb.disabled=!avail.includes(sp);boxes[sp]=cb;
         l.append(cb,document.createTextNode(" "+tr("sport_"+sp)+(avail.includes(sp)?"":" — "+tr("sportNotOnServer"))));sportsBox.append(l);}
-      sportsBox.append(el("div",tr("sportsNote"),"ba-foot"));
-      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked&&avail.includes(sp));if(!chosen.length){boxes[SPORTS[0]].focus();return;}const r=await controller.settings(input.value,chosen);if(r)closeSettings();},false,true);
-      actions.append(cancel,save);dialog.append(el("h3",tr("settings")),label,sportsBox,actions);
+      sportsBox.append(el("div",tr("sportsNote"),"ba-settings-note"));
+      feedback.hidden=true;feedback.setAttribute("role","alert");
+      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked&&avail.includes(sp));if(!chosen.length){boxes[SPORTS[0]].focus();return;}feedback.hidden=true;const r=await controller.settings(input.value,chosen);if(r)closeSettings();else if(settingsDialog===dialog){feedback.textContent=textFor(errors,controller.state.error,lang);feedback.hidden=false;}},false,true);
+      actions.append(save,cancel);dialog.append(el("h3",tr("settings")),field,sportsBox,feedback,actions);
       dialog.onclose=()=>{dialog.remove();if(settingsDialog===dialog)settingsDialog=null;};
       doc.body.append(dialog);settingsDialog=dialog;dialog.showModal();input.focus();
     }

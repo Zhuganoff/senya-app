@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v169"></script>
-<script src="wallet-connect.js?v=v169"></script>
+<script src="bot-account.js?v=v170"></script>
+<script src="wallet-connect.js?v=v170"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v169";
+const BUILD = "v170";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1196,7 +1196,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "16.10.2026";
+const BUILD_DATE = "17.10.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -3953,9 +3953,11 @@ const botAccountController = new AISportsBotAccount.Controller({
   wallet: botWallet, resolveWallet: wvResolve,
   eligibility: async () => {
     const deviceAllowed = await AISportsBotAccount.checkEligibility(fetch);
-    if (!deviceAllowed) return false;
+    if (!deviceAllowed) throw new AISportsBotAccount.ClientError("DEVICE_GEOBLOCKED");
     const r = await wvRpc("bot_account_get", {p_init_data: wvInit()});
-    return r.server ? AISportsBotAccount.regionEligibility(r.data && r.data.account) : null;
+    const serverAllowed = r.server ? AISportsBotAccount.regionEligibility(r.data && r.data.account) : null;
+    if (serverAllowed === false) throw new AISportsBotAccount.ClientError("EXECUTION_GEOBLOCKED");
+    return serverAllowed;
   }
 });
 window.__botAccountUI = AISportsBotAccount.mount({root:document.getElementById("botAccountBox"),controller:botAccountController,lang:LANG});
