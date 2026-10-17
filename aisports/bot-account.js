@@ -571,10 +571,11 @@
     settings:["Настройки","Settings","设置"], close:["Закрыть","Close","关闭"], stop:["Остановить новые ставки","Stop new bets","停止新投注"], enable:["Включить автоставки","Enable auto-bets","启用自动投注"],
     transferStepAmount:["Шаг 1 · Сумма","Step 1 · Amount","第 1 步 · 金额"], transferStepReview:["Шаг 2 · Проверка","Step 2 · Review","第 2 步 · 核对"],
     transferStepStatus:["Статус перевода","Transfer status","转账状态"], transferOpen:["Открыть","Open","打开"],
-    amount:["Сумма pUSD","Amount in pUSD","pUSD 金额"], prepare:["Проверить перевод","Review transfer","检查转账"], sign:["Подтвердить в кошельке","Confirm in wallet","在钱包中确认"],
+    amount:["Сумма, USD","Amount, USD","金额，USD"], prepare:["Проверить перевод","Review transfer","检查转账"], sign:["Подтвердить в кошельке","Confirm in wallet","在钱包中确认"],
     transferAccept:["Проверил сумму и оба счёта. Подпись разрешает движение денег.","I checked the amount and both accounts. This signature authorizes moving funds.","我已核对金额与两个账户，此签名授权资金转移。"],
     transferSigning:["Вы подписываете сообщение. Сетевую транзакцию отправляет сервис.","You sign a message. The service submits the network transaction.","您签署消息，由服务提交链上交易。"],
     available:["Свободно","Available","可用"], reserved:["Зарезервировано","Reserved","预留"], positions:["Стоимость открытых позиций","Open position value","未平仓持仓价值"], pnl:["Подтверждённый результат","Realized result","已实现盈亏"],
+    reserveShort:["Резерв","Reserved","预留"], positionsShort:["Позиции","Positions","持仓"], pnlShort:["Результат","Result","结果"],
     source:["Откуда","From","来源"], recipient:["Куда","To","目标"], fees:["Комиссия","Fee","费用"], unverifiedFee:["Уточняется — будет показана до подписи","Pending — shown before signing","待确认，将在签名前显示"],
     history:["Мои операции и ставки","My transactions and bets","我的交易与投注"], empty:["Операций пока нет","No transactions yet","暂无交易"],
     maxStake:["Лимит одной ставки","Single-bet limit","单注上限"],
@@ -592,7 +593,9 @@
     fundedOk:["Счёт пополнен","Account funded","账户已充值"],
     noMoneyMoved:["деньги не списаны","no funds were moved","未扣款"],
     policy:["Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Лимиты общие для всех видов. Максимум открытых позиций:","The lower of the strategy allocation and your maximum; fees count toward risk. Limits are shared across sports. Maximum open positions:","采用策略比例和您上限中的较低值，费用计入风险。各项目共用限额。最大未平仓数量："],
-    sportsTitle:["Виды автоставок","Auto-bet sports","自动投注项目"], sport_mlb:["Бейсбол MLB","Baseball MLB","棒球 MLB"], sport_soccer:["Футбол (1X2, 90 минут)","Soccer (1X2, 90 minutes)","足球（1X2，90分钟）"],
+    sportsTitle:["Виды автоставок","Auto-bet sports","自动投注项目"], sport_mlb:["Бейсбол MLB","Baseball MLB","棒球 MLB"], sport_soccer:["Футбол","Soccer","足球"],
+    sport_mlb_scope:["Победитель матча","Match winner","比赛胜者"],
+    sport_soccer_scope:["Победы 1X2 · тоталы и форы пока только прогнозы","1X2 winners · totals and spreads are forecasts only","1X2 胜负 · 大小球和让球暂仅预测"],
     sportNotOnServer:["на сервере пока недоступно","not available on the server yet","服务器暂不支持"],
     sportsNote:["После смены видов подтвердите новое правило автоставок.","After changing sports, confirm the new auto-bet policy.","更改项目后，请确认新的自动投注规则。"],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],
@@ -614,8 +617,8 @@
     gasFee:["Газ в POL с вашего адреса — точную сумму покажет MetaMask","Gas in POL from your address — MetaMask shows the exact amount","由您的地址支付 POL gas，具体金额由 MetaMask 显示"],
     txSending:["Вы отправляете перевод pUSD со своего адреса MetaMask. Разрешение approve не запрашивается.","You send a pUSD transfer from your MetaMask address. No approve is requested.","您从 MetaMask 地址发送 pUSD 转账，不请求 approve。"],
     sendTx:["Отправить из MetaMask","Send from MetaMask","从 MetaMask 发送"], cancel:["Отменить перевод","Cancel transfer","取消转账"],
-    failedFunding:["Пополнение {a} pUSD не выполнено.","Funding of {a} pUSD was not completed.","{a} pUSD 充值未完成。"],
-    srcAtCheck:["На исходном кошельке {b} pUSD на момент проверки {t}.","The source wallet held {b} pUSD at the check {t}.","核对时（{t}）来源钱包余额为 {b} pUSD。"],
+    failedFunding:["Пополнение {a} USD не выполнено.","Funding of {a} USD was not completed.","{a} USD 充值未完成。"],
+    srcAtCheck:["На исходном кошельке {b} USD на момент проверки {t}.","The source wallet held {b} USD at the check {t}.","核对时（{t}）来源钱包余额为 {b} USD。"],
     srcAtCheckNone:["Остаток исходного кошелька сейчас не подтверждён.","The source wallet balance is not confirmed right now.","来源钱包余额暂未确认。"],
     notDebited:["Деньги не списаны. Выберите меньшую сумму или пополните исходный кошелёк.","No funds were debited. Choose a smaller amount or top up the source wallet.","未扣款。请选择较小金额或为来源钱包充值。"],
     shortfall:["Недостаточно pUSD на исходном кошельке: доступно {v}, нужно {n}. Перевод не отправлен, деньги не списаны.","Not enough pUSD in the source wallet: {v} available, {n} needed. Nothing was sent; no funds moved.","来源钱包 pUSD 不足：可用 {v}，需要 {n}。未发送，未扣款。"]
@@ -767,6 +770,13 @@
 .ba-amount.up{animation:ba-up .6s cubic-bezier(.2,.9,.2,1)}
 @keyframes ba-up{0%{transform:translateY(6px) scale(.98);opacity:.4;color:var(--green,#22c55e)}60%{color:var(--green,#22c55e)}100%{transform:none;opacity:1}}
 .ba-cap{font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--mut,#7d8eaa)}
+.ba-balance .ba-amount{font-size:30px;margin:8px 0 2px}
+.ba-balance-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.ba-balance-chip{display:inline-flex;align-items:baseline;gap:5px;padding:6px 9px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:10px;background:var(--card-2,#1a2231);font-variant-numeric:tabular-nums}
+.ba-balance-chip .l{font-size:11px;color:var(--mut,#7d8eaa)}
+.ba-balance-chip .r{font-size:12px;font-weight:700;white-space:nowrap}
+.ba-balance-chip .r.pos{color:var(--green,#22c55e)}
+.ba-balance-chip .r.neg{color:var(--red,#f43f5e)}
 .ba-rows{margin-top:var(--s3,12px);border-top:1px solid var(--line,rgba(255,255,255,.07))}
 .ba-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3,12px);
   padding:9px 0;border-bottom:1px solid var(--line,rgba(255,255,255,.07))}
@@ -849,14 +859,23 @@
   border-radius:22px 22px 0 0;border-bottom:0;padding:20px}}
 .ba-settings-dialog{box-sizing:border-box;width:min(380px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);margin:auto;overflow:auto;padding:20px;border:1px solid var(--line,rgba(255,255,255,.07));border-radius:var(--r-l,18px);background:var(--card-2,#1a2231);color:var(--txt,#fff);box-shadow:0 18px 70px rgba(0,0,0,.45);font-family:inherit;font-size:14px;line-height:1.35}
 .ba-settings-dialog::backdrop{background:rgba(2,8,20,.7);backdrop-filter:blur(6px)}
-.ba-settings-dialog h3{margin:0 0 18px;font-size:20px;line-height:1.2}
+.ba-settings-head{display:flex;align-items:center;gap:10px;margin-bottom:17px}
+.ba-settings-head .ico{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--tint1,rgba(56,189,248,.12));font-size:18px}
+.ba-settings-dialog h3{margin:0;font-size:20px;line-height:1.2;flex:1}
+.ba-settings-x{display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--line,rgba(255,255,255,.08));border-radius:50%;background:transparent;color:inherit;font:inherit;font-size:19px;cursor:pointer}
 .ba-settings-label{display:block;color:var(--txt,#fff);font-size:14px;font-weight:700}
 .ba-settings-hint{color:var(--mut,#7d8eaa);font-size:12px;margin:2px 0 8px}
 .ba-settings-input{position:relative}.ba-settings-input .binput{box-sizing:border-box;width:100%;padding:10px 38px 10px 12px;font-size:21px}
 .ba-settings-input span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:15px;font-weight:700;color:var(--mut,#7d8eaa);pointer-events:none}
 .ba-settings-sports{margin-top:18px}.ba-settings-sports .ba-settings-label{margin-bottom:6px}
-.ba-sport{display:flex;gap:10px;align-items:center;min-height:42px;margin:0;font-size:14px;line-height:1.3;color:var(--txt,#fff);cursor:pointer}
-.ba-sport input{width:19px;height:19px;margin:0;flex:none;accent-color:var(--accent,#38bdf8)}
+.ba-sport{display:flex;gap:10px;align-items:center;min-height:58px;margin:6px 0 0;padding:8px 10px;border:1px solid var(--line,rgba(255,255,255,.08));border-radius:13px;background:var(--card-3,#212b3d);color:var(--txt,#fff);cursor:pointer;transition:border-color .18s,background .18s}
+.ba-sport:has(input:checked){border-color:color-mix(in srgb,var(--accent,#38bdf8) 50%,transparent);background:var(--tint1,rgba(56,189,248,.12))}
+.ba-sport:has(input:disabled){opacity:.55;cursor:not-allowed}
+.ba-sport-icon{display:grid;place-items:center;flex:0 0 35px;width:35px;height:35px;border-radius:11px;background:rgba(255,255,255,.07);font-size:21px;line-height:1}
+.ba-sport-text{display:grid;gap:2px;min-width:0;flex:1}
+.ba-sport-text strong{font-size:14px;line-height:1.2}
+.ba-sport-text small{font-size:11px;line-height:1.25;color:var(--mut,#7d8eaa)}
+.ba-sport input{width:20px;height:20px;margin:0;flex:none;accent-color:var(--accent,#38bdf8)}
 .ba-settings-note{color:var(--mut,#7d8eaa);font-size:12px;line-height:1.4;margin-top:9px}
 .ba-settings-feedback{color:var(--bad,#ff8b8b);font-size:12px;line-height:1.4;margin-top:12px}
 .ba-settings-actions{display:grid;gap:8px;margin-top:16px}.ba-settings-actions button{margin:0;min-height:44px}
@@ -886,17 +905,19 @@
       return box;
     }
     function balanceCard(a,grew) {
-      const bal=a.balance||{}, box=el("div");
+      const bal=a.balance||{}, box=el("div",null,"ba-balance");
       const amount=el("div",null,"ba-amount"+(grew?" up":""));
-      amount.append(doc.createTextNode(formatUnits(bal.available_units)), el("span"," pUSD"));
+      amount.append(doc.createTextNode(formatUnits(bal.available_units)), el("span"," USD"));
       box.append(amount, el("div",tr("available"),"ba-cap"));
-      const rows=el("div",null,"ba-rows");
-      const add=(l,v)=>{const r=el("div",null,"ba-row");r.append(el("div",l,"l"),el("div",v,"r"));rows.append(r);};
-      add(tr("reserved"),formatUnits(bal.reserved_units)+" pUSD");
-      add(tr("positions"),formatUnits(bal.position_value_units)+" pUSD");
-      add(tr("pnl"),signedUnits(bal.realized_pnl_units)+" pUSD");
-      if(bal.checked_at)rows.title=tr("checked")+": "+new Date(bal.checked_at).toLocaleString(lang);
-      box.append(rows); return box;
+      const meta=el("div",null,"ba-balance-meta");
+      const add=(short,full,value,tone)=>{const chip=el("div",null,"ba-balance-chip");chip.title=full;
+        chip.append(el("span",short,"l"),el("strong",value,"r"+(tone?" "+tone:"")));meta.append(chip);};
+      add(tr("reserveShort"),tr("reserved"),formatUnits(bal.reserved_units)+" USD");
+      if(bal.position_value_units!=null&&formatUnits(bal.position_value_units)!=="—")add(tr("positionsShort"),tr("positions"),formatUnits(bal.position_value_units)+" USD");
+      const pnl=signedUnits(bal.realized_pnl_units);
+      add(tr("pnlShort"),tr("pnl"),pnl+" USD",pnl.startsWith("−")?"neg":pnl.startsWith("+")?"pos":"");
+      if(bal.checked_at)meta.title=tr("checked")+": "+new Date(bal.checked_at).toLocaleString(lang);
+      box.append(meta); return box;
     }
     function statePill(text,tone,live) {
       const pill=el("span",null,"ba-pill"+(tone?" "+tone:"")+(live?" live":""));
@@ -948,7 +969,7 @@
       header.append(heading,close);body.append(header);
       transferDialog.setAttribute("aria-label",kind?tr(kind==="FUNDING"?"fund":"withdraw"):tr("details"));
       const fc=s.fundingCheck;
-      if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)body.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" pUSD",n:formatUnits(fc.needed_units)+" pUSD"}),"bad"));
+      if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)body.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" USD",n:formatUnits(fc.needed_units)+" USD"}),"bad"));
       else if(s.error)body.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped"))+(s.errorDetail?"<br><small>"+escapeHtml(s.errorDetail)+"</small>":""),"bad"));
       if(draft){
         if(transferKind==="FUNDING"){
@@ -957,14 +978,14 @@
           const selectedName=tr(fundingSource==="POLYMARKET"?"srcPolymarket":"srcMetaMask");
           const toggle=el("button",null,"ba-picker-toggle");toggle.type="button";toggle.setAttribute("aria-expanded",String(sourceMenuOpen));
           toggle.setAttribute("aria-label",tr("srcChoose"));
-          toggle.append(el("strong",selectedName+"  ⌄"),el("span",chosen?tr("availableSrc")+": "+formatUnits(chosen.available_units)+" pUSD":tr("srcUnchecked")));
+          toggle.append(el("strong",selectedName+"  ⌄"),el("span",chosen?tr("availableSrc")+": "+formatUnits(chosen.available_units)+" USD":tr("srcUnchecked")));
           toggle.onclick=()=>{sourceMenuOpen=!sourceMenuOpen;paintTransfer(s);};picker.append(toggle);
           if(sourceMenuOpen){
             const menu=el("div",null,"ba-picker-menu");menu.setAttribute("role","listbox");menu.setAttribute("aria-label",tr("srcChoose"));
             for(const source of SOURCES){
               const snap=sourceOf(a,source),option=el("button",null,"ba-picker-option");option.type="button";option.setAttribute("role","option");
               option.setAttribute("aria-selected",String(fundingSource===source));
-              option.append(doc.createTextNode(tr(source==="POLYMARKET"?"srcPolymarket":"srcMetaMask")),el("small",snap?tr("availableSrc")+": "+formatUnits(snap.available_units)+" pUSD":tr("srcUnchecked")));
+              option.append(doc.createTextNode(tr(source==="POLYMARKET"?"srcPolymarket":"srcMetaMask")),el("small",snap?tr("availableSrc")+": "+formatUnits(snap.available_units)+" USD":tr("srcUnchecked")));
               option.onclick=()=>{fundingSource=source;sourceMenuOpen=false;paintTransfer(s);};menu.append(option);
             }
             picker.append(menu);
@@ -977,7 +998,7 @@
               fundingSource==="POLYMARKET"&&chosen.owner_ok===false?tr("srcOwner"):null;
             if(warning)body.append(note(warning,"wait"));
           }
-        }else body.append(el("div",tr("available")+": "+formatUnits(a.balance&&a.balance.available_units)+" pUSD","ba-cap"));
+        }else body.append(el("div",tr("available")+": "+formatUnits(a.balance&&a.balance.available_units)+" USD","ba-cap"));
         const label=el("label",tr("amount"),"ba-transfer-input ba-cap"),input=el("input",null,"binput");
         input.type="text";input.inputMode="decimal";input.autocomplete="off";input.value=inputAmount;input.oninput=()=>{inputAmount=input.value;};label.append(input);body.append(label);
         const actions=el("div",null,"ba-transfer-actions");
@@ -990,8 +1011,8 @@
         body.append(statePill(stateText(opStateKey(o))+waitingLabel(o,lang),o.state==="CONFIRMED"?"on":o.state==="REJECTED"?"bad":"warn",!TERMINAL.has(o.state)));
         if(opStateKey(o)==="CHECKING")body.append(el("div",tr("checkingHint"),"ba-foot"));
         if(o.intent&&!TERMINAL.has(o.state)){
-          const amt=el("div",null,"ba-amount");amt.append(doc.createTextNode(formatUnits(o.amount_units)),el("span"," pUSD"));
-          body.append(amt,el("div",tr("amount").replace(/\s*pUSD\s*$/i,""),"ba-cap"));
+          const amt=el("div",null,"ba-amount");amt.append(doc.createTextNode(formatUnits(o.amount_units)),el("span"," USD"));
+          body.append(amt,el("div",tr("amount").replace(/,?\s*USD\s*$/i,""),"ba-cap"));
           const rows=el("div",null,"ba-rows");
           const addr=(label,value)=>{const row=el("div",null,"ba-wal"),left=el("div");
             left.append(el("div",label,"n"),el("div",value||"—","ba-review-address"));row.append(left);
@@ -1000,7 +1021,7 @@
           const pair=(label,value)=>{const row=el("div",null,"ba-row");row.append(el("div",label,"l"),el("div",value,"r"));rows.append(row);};
           pair(lang==="ru"?"Сеть":lang==="zh"?"网络":"Network","Polygon · pUSD");
           if(o.kind==="FUNDING")pair(tr("actionType"),tr(viaWallet?"actionTx":"actionSign"));
-          pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" pUSD");
+          pair(tr("fees"),viaWallet?tr("gasFee"):o.fee_units==null?tr("unverifiedFee"):formatUnits(o.fee_units)+" USD");
           body.append(rows);
         }
         if(o.state==="AWAITING_SIGNATURE"&&s.busy)body.append(note(tr("signInWallet"),"wait"));   // подпись запрошена: подтвердить в кошельке (на телефоне — открыть MetaMask)
@@ -1026,12 +1047,16 @@
       dialog.setAttribute("aria-label",tr("settings"));
       const sportsBox=el("div",null,"ba-settings-sports"),boxes={};sportsBox.append(el("div",tr("sportsTitle"),"ba-settings-label"));
       const avail=availableSports(a);
-      for(const sp of SPORTS){const l=el("label",null,"ba-sport");const cb=el("input");cb.type="checkbox";cb.checked=(a.policy.sports||["mlb"]).includes(sp);cb.disabled=!avail.includes(sp);boxes[sp]=cb;
-        l.append(cb,document.createTextNode(" "+tr("sport_"+sp)+(avail.includes(sp)?"":" — "+tr("sportNotOnServer"))));sportsBox.append(l);}
+      for(const sp of SPORTS){const l=el("label",null,"ba-sport"),icon=el("span",sp==="mlb"?"⚾":"⚽","ba-sport-icon"),text=el("span",null,"ba-sport-text");icon.setAttribute("aria-hidden","true");
+        const cb=el("input");cb.type="checkbox";cb.checked=(a.policy.sports||["mlb"]).includes(sp);cb.disabled=!avail.includes(sp);boxes[sp]=cb;
+        text.append(el("strong",tr("sport_"+sp)),el("small",tr("sport_"+sp+"_scope")+(avail.includes(sp)?"":" · "+tr("sportNotOnServer"))));
+        l.append(icon,text,cb);sportsBox.append(l);}
       sportsBox.append(el("div",tr("sportsNote"),"ba-settings-note"));
       feedback.hidden=true;feedback.setAttribute("role","alert");
-      const cancel=button(tr("close"),()=>closeSettings()),save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked&&avail.includes(sp));if(!chosen.length){boxes[SPORTS[0]].focus();return;}feedback.hidden=true;const r=await controller.settings(input.value,chosen);if(r)closeSettings();else if(settingsDialog===dialog){feedback.textContent=textFor(errors,controller.state.error,lang);feedback.hidden=false;}},false,true);
-      actions.append(save,cancel);dialog.append(el("h3",tr("settings")),field,sportsBox,feedback,actions);
+      const save=button(tr("save"),async()=>{const chosen=SPORTS.filter(sp=>boxes[sp].checked&&avail.includes(sp));if(!chosen.length){boxes[SPORTS[0]].focus();return;}feedback.hidden=true;const r=await controller.settings(input.value,chosen);if(r)closeSettings();else if(settingsDialog===dialog){feedback.textContent=textFor(errors,controller.state.error,lang);feedback.hidden=false;}},false,true);
+      const head=el("div",null,"ba-settings-head"),dismiss=el("button","×","ba-settings-x");dismiss.type="button";dismiss.setAttribute("aria-label",tr("close"));dismiss.onclick=closeSettings;
+      head.append(el("span","⚙","ico"),el("h3",tr("settings")),dismiss);
+      actions.append(save);dialog.append(head,field,sportsBox,feedback,actions);
       dialog.onclose=()=>{dialog.remove();if(settingsDialog===dialog)settingsDialog=null;};
       doc.body.append(dialog);settingsDialog=dialog;dialog.showModal();input.focus();
     }
@@ -1047,7 +1072,7 @@
       if (s.status === "SIGNED_OUT") {view.append(el("p",stateText("SIGNED_OUT"),"me-sub"));return;}
       const progress=el("div",null,"ba-progress");if(s.busy)progress.append(el("div",null,"ba-bar"));view.append(progress);
       const fc=s.fundingCheck;
-      if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)view.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" pUSD",n:formatUnits(fc.needed_units)+" pUSD"}),"bad"));
+      if(s.error==="INSUFFICIENT_BALANCE"&&fc&&fc.available_units!=null)view.append(note(fill(tr("shortfall"),{v:formatUnits(fc.available_units)+" USD",n:formatUnits(fc.needed_units)+" USD"}),"bad"));
       else if(s.error)view.append(note(textFor(errors,s.error,lang)+(errors[s.error]?"":" · "+(lang==="ru"?"Действие остановлено":"Action stopped"))+(s.errorDetail?"<br><small>"+escapeHtml(s.errorDetail)+"</small>":""),"bad"));
       const a=s.account;
       if(!a) {

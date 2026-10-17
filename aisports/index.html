@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v170"></script>
-<script src="wallet-connect.js?v=v170"></script>
+<script src="bot-account.js?v=v171"></script>
+<script src="wallet-connect.js?v=v171"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v170";
+const BUILD = "v171";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -2442,7 +2442,7 @@ function betRow(r){
   const wallet = r._wallet === true;
   const hideMoney = HIDE_MONEY && !wallet;
   const pctS = wallet ? "" : ((!hideMoney && sh) ? `${(sh*100).toFixed(1)}${t("ofBank")}` : "");
-  const money = wallet && r.stake != null ? `${pusdTxt(r.stake)} pUSD`
+  const money = wallet && r.stake != null ? `${pusdTxt(r.stake)} USD`
               : hideMoney ? ""
               : r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
@@ -2468,8 +2468,8 @@ function betRow(r){
   const scoreS = ms && ms.final_score ? `<span class="bscore">${v3Esc(ms.final_score)}</span>` : "";
   const msAttr = ms ? ` data-ms="${v3Esc(`${ms.sport}|${r.match||""}|${ms.match_date}`)}"` : "";
   const pnlBit = r.pnl == null ? ""
-    : wallet && r.claim_confirmed ? ` · ${r.pnl>=0?"+":"−"}${claimPnlTxt(r.pnl)} pUSD`
-    : wallet ? ` · ${r.pnl>=0?"+":"−"}${pusdTxt(r.pnl)} pUSD`
+    : wallet && r.claim_confirmed ? ` · ${r.pnl>=0?"+":"−"}${claimPnlTxt(r.pnl)} USD`
+    : wallet ? ` · ${r.pnl>=0?"+":"−"}${pusdTxt(r.pnl)} USD`
     : (!hideMoney ? ` · ${r.pnl>=0?"+":"−"}$${Math.abs(r.pnl).toFixed(2)}` : "");
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
@@ -2905,11 +2905,11 @@ function walletDayCard(date, rows){
   const turn = placed.reduce((s,r) => s + (Number(r.stake) || 0), 0);
   const pnl = claimed.reduce((s,r) => s + (Number(r.pnl) || 0), 0);
   const record = claimed.length ? `${w}W-${l}L` : `${placed.length} ${t("autoBetsPlaced")}`;
-  const pnlBit = claimed.length ? ` · ${pnl>=0?"+":"−"}${pusdTxt(pnl)} pUSD` : "";
+  const pnlBit = claimed.length ? ` · ${pnl>=0?"+":"−"}${pusdTxt(pnl)} USD` : "";
   return `<div class="dayhead"><span class="daydate">${fmtDay(date||"")}</span>
         <span class="daydow">${mine.length} ${plBets(mine.length)}</span></div>
       <div class="daysum" style="margin-top:6px;justify-content:space-between;align-items:center;width:100%"><span><b class="${w+l && w/(w+l)>=0.5?"pos":"neg"}" style="font-size:16px">${record}${pnlBit}</b></span>
-        <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${placed.length ? `${t("baStaked")}: ${pusdTxt(turn)} pUSD` : ""}</span></div>`;
+        <span style="font-size:15px;font-weight:800;color:#3b82f6;font-variant-numeric:tabular-nums">${placed.length ? `${t("baStaked")}: ${pusdTxt(turn)} USD` : ""}</span></div>`;
 }
 
 function chosenSide(pick, trade){
@@ -3834,7 +3834,7 @@ async function wvBalance(addr){
 function wvMoneyLine(value, bal){
   // Владелец 24.09: в строке только остаток и стоимость позиций. Нулевые USDC/USDC.e, номер блока и время сверки —
   // не на экран: время уходит в подсказку (title) у строки, номер блока не показывается.
-  const avail = bal && bal.ok ? `${Number(bal.pusd).toFixed(2)} pUSD` : `${t("wvPusdLabel")}: ${t("wvUnavailable")}`;
+  const avail = bal && bal.ok ? `${Number(bal.pusd).toFixed(2)} USD` : `${t("wvPusdLabel")}: ${t("wvUnavailable")}`;
   const pos = value == null ? "" : ` · ${t("wvPositions")} $${Number(value).toFixed(2)}`;
   return `${avail}${pos}`;
 }
@@ -4194,7 +4194,7 @@ function paintAutoWallet(state){
   const addr = document.createElement("span"); addr.className = "aw-addr"; addr.textContent = wvShortAddr(a.bot_deposit_wallet); addr.title = a.bot_deposit_wallet;
   addr.setAttribute("role","button"); addr.setAttribute("aria-label", (LANG==="ru"?"Скопировать адрес счёта автоставок ":"Copy auto-bets account address ") + a.bot_deposit_wallet);
   addr.onclick = async () => { try { await navigator.clipboard.writeText(a.bot_deposit_wallet); addr.textContent = LANG==="ru"?"скопировано":LANG==="zh"?"已复制":"copied"; setTimeout(()=>{ addr.textContent = wvShortAddr(a.bot_deposit_wallet); }, 1200); } catch(e) {} };
-  el.replaceChildren(sub, addr, document.createTextNode(` · ${bal} pUSD`));
+  el.replaceChildren(sub, addr, document.createTextNode(` · ${bal} USD`));
 }
 let __dashAcctSig = null;
 let __privateBetsSig = null;
