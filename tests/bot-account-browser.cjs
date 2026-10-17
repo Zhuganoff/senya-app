@@ -60,7 +60,7 @@ let mode='NOT_CREATED',operation=null,geoBlocked=true;const calls=[],errors=[];
  await box.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'01-create-mobile.png'),fullPage:true});
  await box.locator('input[type=checkbox]').check();await box.getByRole('button',{name:'Создать торговый счёт',exact:true}).click();
  await box.getByRole('button',{name:'Пополнить',exact:true}).waitFor();await box.scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,'02-ready-mobile.png'),fullPage:true});
- assert.equal(await page.evaluate(()=>botAccountController.eligibility()),false,'blocked device cannot enable through an allowed server');
+ await assert.rejects(page.evaluate(()=>botAccountController.eligibility()),/DEVICE_GEOBLOCKED/,'blocked device cannot enable through an allowed server');
  geoBlocked=false;
  assert.equal(await page.evaluate(()=>botAccountController.eligibility()),true,'both device and server must allow trading');
  await box.evaluate(el=>window.scrollTo(0,el.getBoundingClientRect().top+scrollY-24));await page.screenshot({path:path.join(out,'06-account-mobile-viewport.png')});
