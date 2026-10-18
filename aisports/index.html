@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v173"></script>
-<script src="wallet-connect.js?v=v173"></script>
+<script src="bot-account.js?v=v174"></script>
+<script src="wallet-connect.js?v=v174"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v173";
+const BUILD = "v174";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1364,6 +1364,8 @@ const T = {
   taClaim24Hint: ["по времени подтверждения выплаты биржей, не по дате ставки", "by the time the exchange confirmed the payout, not by bet date", "按交易所确认派息的时间，而非投注日期"],
   secRealBets: ["Ставки за 24 часа", "Bets in the last 24 hours", "近 24 小时投注"],
   noRecentBets: ["За последние 24 часа ставок не было", "No bets in the last 24 hours", "近 24 小时没有投注"],
+  // v174 (владелец 18.10): блок дашборда — отбор за сутки по всем видам, архив — только «История прогнозов»
+  noRecentPicks: ["За последние 24 часа отбора не было", "No selections in the last 24 hours", "近 24 小时没有精选"],
   recentBasisSubmitted: ["по времени отправки ордера на биржу; время исполнения в учёте пока не записано", "by the time the order was sent to the exchange; fill time is not recorded in the ledger yet", "按订单发送到交易所的时间；账本尚未记录成交时间"],
   stakeWord: ["ставка", "stake", "投注"], forecastWord: ["Прогноз", "Forecast", "预测"],
   // v172 (владелец 18.10): у рассчитанного прогноза — отметка исхода, как у реальной покупки: ✓/× и слово
@@ -2712,13 +2714,14 @@ async function loadDay(d){
   try { strategy = await strategyFeed(); } catch(e) { error = e; }
   if (session !== sessionKey()) return;
   if (OFFICIAL_PERSONAL_LISTS) {
-    const picks = selectionDisplayRows(strategy).filter(r => r.session_date === d)
-      .sort((a,b) => String(b.ts || "").localeCompare(String(a.ts || "")));
-    await loadMatchStats(picks.map(r => r.match_date).concat([d]));
+    // v174 (владелец 18.10): архив по дням — ТА ЖЕ карточка, что на «Ставках» и в суточном блоке (команда, исход, деньги покупки)
+    const picks = daySelectionRows(strategy, d)
+      .sort((a,b) => String(b.ts || b.commence || "").localeCompare(String(a.ts || a.commence || "")));
+    await loadMatchStats([d]);
     if (session !== sessionKey()) return;
     stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)} · ${picks.length} ${t("selectedPicks")}</span></div>`;
     const note = error ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "";
-    box.innerHTML = note + (picks.length ? picks.map(selectionHistoryRow).join("") : `<div class="loading">${t("noPickDay")}</div>`);
+    box.innerHTML = note + (picks.length ? picks.map(dayPickRow).join("") : `<div class="loading">${t("noPickDay")}</div>`);
     return;
   }
   const mine = withResolution(personalTradeRows().filter(r => r.session_date === d), strategy)
@@ -2751,7 +2754,13 @@ async function initHistory(){
       ? selectedPicks(feed).map(b => b.session_date)
       : [feed.session].concat(feed.history || []).filter(d => d && d.date && Number(d.bets || 0) > 0).map(d => d.date))
       .filter(Boolean).sort().reverse();
-    if (days.length) start = days[0] > pick.max ? pick.max : days[0];
+    // v174: история открывается на первом дне, которого нет в блоке «за 24 часа» (чтобы не повторять его), иначе на последнем
+    let first = days[0];
+    if (OFFICIAL_PERSONAL_LISTS && days.length > 1) {
+      const covered = new Set(recentSelectionRows(feed).map(r => r.session_date));
+      first = days.find(d => !covered.has(d)) || days[0];
+    }
+    if (days.length) start = first > pick.max ? pick.max : first;
   } catch(e){}
   pick.value = start;
   loadDay(pick.value);
@@ -3032,6 +3041,10 @@ function mergeDayRow(pick, list){
     session_date: (pick && pick.session_date) || (trade && trade.session_date) || "",
     side: (pick && pick.side) || (trade && trade.side) || "",
     _cash: cash, _forecast: !cash, _unknown: unknown, _realTrade: cash,
+    // v174: время выпуска прогноза, старта матча и последнего исполнения покупки — для суточного окна дашборда
+    ts: (pick && pick.ts) || (trade && trade.opened_ts) || "",
+    commence: (pick && pick.commence) || (trade && trade.commence) || "",
+    exec_ts: real.map(t => t.exec_ts).filter(Boolean).sort().pop() || null,
     stake: cash && stakes.length ? stakes.reduce((s, n) => s + n, 0) : null,
     pnl: cash ? pnl : null,
     result: cash ? result : (pick ? pick.result : null),
@@ -3225,13 +3238,6 @@ function rowKey(r){
   const ids = Array.isArray(r.operation_ids) && r.operation_ids.length ? r.operation_ids.slice().sort().join("+") : (r.operation_id || "");
   return ids || [r.sport || "", r.match || "", r.side || r.selection || "", r.session_date || ""].join("|");
 }
-function selectionHistoryRow(r){
-  const won = r.result === 1;
-  const sel = v3Esc(String(r.selection || "").replace(/[\[\]]/g, " ").trim());
-  const odds = Number(r.best_odds ?? r.odds);
-  const oddsHtml = Number.isFinite(odds) ? `<span class="sel-odds"><b>${odds.toFixed(5)}</b><small>${t("forecastOddsLabel")}</small></span>` : "";
-  return `<article class="pickline ${won ? "win" : "plain"}"><div class="pickline-row"><span class="pico" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${won ? `<span class="winner">${sel}</span>` : sel} · ${t("originPaper")}</small></span>${oddsHtml}</div>${won ? `<div class="glowbar green" aria-hidden="true"></div>` : ""}</article>`;
-}
 function historyCashRow(r){
   return dayPickRow({
     sport: r.sport, _ico: r._ico, match: r.match, selection: r.selection, session_date: r.session_date, operation_id: r.operation_id,
@@ -3253,44 +3259,6 @@ function personalHistoryRows(feed){
     .map(r => Object.assign({}, r, {session_date: rowGameDay(r, saved)}))
     .sort((a, b) => String(b.opened_ts || "").localeCompare(String(a.opened_ts || "")));
 }
-function personalHistoryHtml(rows){
-  const groups = new Map();
-  for (const r of rows || []) {
-    const d = r.session_date || "—";
-    if (!groups.has(d)) groups.set(d, []);
-    groups.get(d).push(r);
-  }
-  return [...groups.keys()].sort().reverse().map(d =>
-    `<div class="hist-day" data-day="${v3Esc(d)}">${v3Esc(d === "—" ? d : fmtDayFull(d))}</div>` +
-    groups.get(d).map(historyCashRow).join("")
-  ).join("");
-}
-// v161 (владелец 16.10): блок на дашборде компактный — последние сделки, остальное за кнопкой архива
-// (группировка по игровому дню исходной покупки). Раскрытие помнится на сессию, чужая сессия начинает свёрнутой.
-// 16.10 (владелец, п.5): блок «Ставки за 24 часа» — подтверждённые покупки по времени ИСПОЛНЕНИЯ за скользящие 24 часа
-// (`exec_ts`: filled_at, иначе submitted_at); время CLAIM и правки метаданных покупку в список не возвращают. Royals 26.09
-// сюда не попадает, Cleveland уходит через 24 ч после исполнения. Архив (все покупки по игровым дням) доступен всегда,
-// даже при двух старых покупках; `partial` — API отдал первые 200 операций, число не притворяется полным.
-const DAY_MS = 86400000;
-function recentTradeRows(rows, now){
-  const since = (now || Date.now()) - DAY_MS;
-  return (rows || []).filter(r => r._realTrade === true && r.exec_ts && Date.parse(r.exec_ts) >= since);
-}
-function personalHistoryBlockHtml(rows, expanded, partial, now){
-  const all = rows || [];
-  if (!all.length) return "";
-  const count = partial ? String(all.length) + "+" : String(all.length);
-  if (expanded) {
-    const more = partial && historyCanLoadMore();
-    const note = partial ? `<div class="pick-detail hist-partial">${t(more ? "historyMoreNote" : "historyPartial")}</div>` : "";
-    const moreBtn = more ? `<button type="button" class="hist-toggle hist-more">${t("histMore")}</button>` : "";
-    return personalHistoryHtml(all) + moreBtn + `<button type="button" class="hist-toggle" data-expanded="1" aria-expanded="true">${t("histCollapse")}</button>` + note;
-  }
-  const recent = recentTradeRows(all, now);
-  const basisNote = recent.length && recent.every(r => r.exec_basis === "submitted") ? `<div class="pick-detail hist-partial">${t("recentBasisSubmitted")}</div>` : "";
-  const body = recent.length ? recent.map(historyCashRow).join("") : `<div class="loading">${t("noRecentBets")}</div>`;
-  return body + basisNote + `<button type="button" class="hist-toggle" data-expanded="0" aria-expanded="false">${t("histArchive").replace("{n}", count)}</button>`;
-}
 function personalHistoryPartial(){
   const p = window.__privateRealBets;
   return !!(p && p.session === sessionKey() && p.truncated === true);
@@ -3299,24 +3267,40 @@ function historyCanLoadMore(){
   const st = typeof botAccountController !== "undefined" && botAccountController ? botAccountController.state : null;
   return !!(st && st.historySource === "page" && st.historyHasMore === true && st.historyCursor);
 }
+// v174 (владелец 18.10): «Ставки за 24 часа» — отбор за скользящие сутки по всем видам теми же карточками, что на «Ставках»
+// (прогноз + подтверждённая покупка одной строкой). Строка в сутках, если за последние 24 ч был выпуск прогноза (ts),
+// старт матча (commence) или исполнение покупки (exec_ts). Архива здесь нет — он в «Истории прогнозов» по дням.
+const DAY_MS = 86400000;
+function recentSelectionRows(feed, now){
+  const source = feed || window.__strategyFeed || null;
+  const at = now || Date.now();
+  const t0 = at - DAY_MS, t1 = at + DAY_MS;
+  const inWindow = v => { const x = v ? Date.parse(v) : NaN; return Number.isFinite(x) && x >= t0 && x <= t1; };
+  const days = new Set(selectedPicks(source).map(b => b.session_date).filter(Boolean));
+  personalHistoryRows(source).forEach(r => { if (r.session_date) days.add(r.session_date); });
+  const floor = new Date(t0 - 2 * DAY_MS).toISOString().slice(0, 10);
+  const out = [];
+  for (const d of [...days].filter(d => d >= floor).sort().reverse()) {
+    daySelectionRows(source, d)
+      .filter(r => inWindow(r.ts) || inWindow(r.commence) || inWindow(r.exec_ts))
+      .sort((a, b) => String(b.ts || b.commence || "").localeCompare(String(a.ts || a.commence || "")))
+      .forEach(r => out.push(r));
+  }
+  return out;
+}
+function recentSelectionBlockHtml(feed, now){
+  const rows = recentSelectionRows(feed, now);
+  if (!rows.length) return `<div class="loading">${t("noRecentPicks")}</div>`;
+  const groups = new Map();
+  for (const r of rows) { const d = r.session_date || "—"; if (!groups.has(d)) groups.set(d, []); groups.get(d).push(r); }
+  return [...groups.keys()].sort().reverse().map(d =>
+    `<div class="hist-day" data-day="${v3Esc(d)}">${v3Esc(d === "—" ? d : fmtDayFull(d))}</div>` + groups.get(d).map(dayPickRow).join("")
+  ).join("");
+}
 function renderPersonalHistory(feed){
   const box = document.getElementById("personalHistory");
   if (!box) return;
-  const rows = personalHistoryRows(feed);
-  const expanded = window.__histExpanded === sessionKey();
-  const html = rows.length ? personalHistoryBlockHtml(rows, expanded, personalHistoryPartial()) : `<div class="loading">${personalUnknownTradesHint() || t("noPersonalBets")}</div>`;
-  if (!swapListHtml(box, html)) return;       // ничего не изменилось — обработчики и раскрытия на месте
-  const toggle = box.querySelector(".hist-toggle[data-expanded]");
-  if (toggle) toggle.addEventListener("click", () => {
-    window.__histExpanded = expanded ? null : sessionKey();
-    renderPersonalHistory(feed);
-  });
-  const more = box.querySelector(".hist-more");
-  if (more) more.addEventListener("click", async () => {
-    more.disabled = true; more.textContent = t("histMoreBusy");
-    try { await botAccountController.historyMore(); } catch (e) {}
-    renderPersonalHistory(feed);                 // новые строки дорисует рендер контроллера; здесь — снять занятость
-  });
+  swapListHtml(box, recentSelectionBlockHtml(feed || window.__strategyFeed || null));
 }
 // v162 (п.4.5), переписано 16.10 (дефект «вечная Загрузка…»): ЕДИНСТВЕННАЯ точка записи в контейнеры списков.
 //  • сравнение идёт с ФАКТИЧЕСКИМ DOM (`__lastDom`), а не только с сохранённой строкой: чужая запись в контейнер

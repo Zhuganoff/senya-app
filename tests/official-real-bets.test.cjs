@@ -212,9 +212,10 @@ test("October 15 shows only Cleveland and Royals stay in the September history",
   assert.match(block, /В расчёте|Выиграла · ожидает погашения/);
   assert.match(block, /⚾/);
   assert.equal(block.split("<article").length - 1, 1);
-  const hist = context.personalHistoryHtml(context.personalTradeRows());
-  assert.match(hist, /data-day="2026-10-15"/);
-  assert.match(hist, /data-day="2026-09-26"/);
+  // v174: архив на дашборде снят — Royals 26.09 виден в «Истории прогнозов» за свой игровой день той же карточкой
+  const sep = context.daySelectionRows(feed, "2026-09-26");
+  assert.equal(sep.length, 1);
+  const hist = context.dayPickRow(sep[0]);
   assert.match(hist, /Kansas City Royals/);
   assert.match(hist, /pickline lose/);
   assert.match(hist, /×/);
@@ -259,13 +260,10 @@ test("bottom navigation labels stay in place", () => {
   assert.match(html, /data-i18n="navEarn">Рефералы/);
   assert.match(html, /data-i18n="navMe">Профиль/);
 });
-test("dashboard selection history labels the forecast price and skips personal money", () => {
-  const row = context.selectionHistoryRow(context.selectionDisplayRows(feed)[0]);
-  assert.match(row, /1\.81022/);
-  assert.match(row, /коэффициент прогноза/);
-  assert.match(row, /Cleveland Guardians/);
-  assert.match(row, /⚾/);
-  assert.doesNotMatch(row, /USD|33\.45|pUSD|@—/);
+test("v174: history day rows are the same short card as «Ставки» (team, outcome), no forecast-odds column", () => {
+  const row = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
+  assert.match(row, /Cleveland Guardians/); assert.match(row, /⚾/);
+  assert.doesNotMatch(row, /коэффициент прогноза|прогноз стратегии|PAPER|1\.81022|sel-odds/);
 });
 function accountState(history, balance, extra){
   return Object.assign({historyLoaded:true, history, account:{bot_deposit_wallet:"0x" + "11".repeat(20), balance:Object.assign({
@@ -409,7 +407,7 @@ test("UNKNOWN stays pending when the forecast already won", () => {
 });
 // ── v161 (владелец 16.10): личные сделки на дашборде, подписи ожидания/погашений, пояс расписания ──
 Object.assign(I18N, {
-  histArchive: ["Архив ставок · {n}"], histCollapse: ["Свернуть архив"],
+  histArchive: ["Архив ставок · {n}"], histCollapse: ["Свернуть архив"], noRecentPicks: ["За последние 24 часа отбора не было"],
   v3Decisions: ["матчей в анализе"], v3Processed: ["обработано · {n} ожидают анализа"], ofWord: ["из"],
   schedDayNote: ["игровой день {d} (до 06:00 UTC) · время по часам устройства, {tz}"],
   awaitAnalysis: ["{k} из {n} обработано · {m} ожидают анализа. Волны проходят за 60 и 30 минут до старта."],
@@ -441,43 +439,35 @@ test("personal history moved from Games to the Dashboard markup", () => {
   assert.match(html, /taClaim24Hint/);
   assert.match(html, /\.grid \.card:first-child \.v\{font-size:clamp\([^}]*white-space:nowrap/);
 });
-test("the 24-hour block keeps only buys executed in the last day and the archive is always reachable", () => {
+test("v174: the 24-hour block shows the selection of the last day across sports as the same cards, without an archive", () => {
   const h = n => new Date(Date.now() - n * 3600000).toISOString();
-  const mk = (i, day, submitted) => ({kind:"TRADE", state:"CONFIRMED", operation_id:"op-" + i, fixture_id:`${day}T17:00:00Z|away${i}@home${i}`,
-    side:"home", match:`Away ${i} @ Home ${i}`, amount_units:"1000000", created_at:`${day}T16:00:00Z`, submitted_at:submitted, sport:"mlb"});
-  // Cleveland исполнена 15.10 16:32Z — внутри суток (стенд: 20 ч назад); Royals 26.09 — вне суток, хотя погашена сегодня
-  const cle = mk(1, "2026-10-15", h(20)), roy = mk(2, "2026-09-26", "2026-09-26T22:43:05Z");
-  const royClaim = {kind:"CLAIM", state:"CONFIRMED", operation_id:"claim-roy", realized_pnl_units:"-3597750", created_at:h(1), updated_at:h(0),
-    intent:{resolution:{trades:[{operation_id:"op-2", cost_units:"3597750", shares_units:"6600000"}]}}};
-  load([cle, roy, royClaim]);
-  const rows = context.personalHistoryRows(feed);
-  const recent = context.recentTradeRows(rows);
-  assert.equal(recent.length, 1); assert.equal(recent[0].operation_id, "op-1");
-  const compact = context.personalHistoryBlockHtml(rows, false, false);
-  assert.equal(compact.split("<article").length - 1, 1);
-  assert.doesNotMatch(compact, /Home 2/);                       // Royals нет в сутках, несмотря на погашение сегодня
-  assert.match(compact, /Архив ставок · 2/);                     // архив доступен и при двух покупках
-  assert.match(compact, /по времени отправки ордера/);           // основа фильтра подписана, пока нет filled_at
-  // через 25 часов после исполнения Cleveland уходит из суточного блока — остаётся только архив
-  const later = context.personalHistoryBlockHtml(rows, false, false, Date.now() + 5 * 3600000);
-  assert.equal(later.split("<article").length - 1, 0);
-  assert.match(later, /За последние 24 часа ставок не было/);
-  assert.match(later, /Архив ставок · 2/);
-  // архив: обе покупки по исходным игровым дням
-  const full = context.personalHistoryBlockHtml(rows, true, false);
-  assert.equal(full.split("<article").length - 1, 2);
-  assert.match(full, /data-day="2026-10-15"/); assert.match(full, /data-day="2026-09-26"/);
-  // без времени исполнения покупка в суточный список не попадает, а в архиве есть
-  const noTime = mk(3, "2026-10-16", undefined);
-  load([noTime]);
-  assert.equal(context.recentTradeRows(context.personalHistoryRows(feed)).length, 0);
-  assert.match(context.personalHistoryBlockHtml(context.personalHistoryRows(feed), true, false), /Home 3/);
-  // filled_at имеет приоритет над submitted_at
-  const filled = Object.assign(mk(4, "2026-10-16", h(30)), {filled_at:h(2)});
-  load([filled]);
-  const r4 = context.personalHistoryRows(feed)[0];
-  assert.equal(r4.exec_basis, "filled"); assert.equal(context.recentTradeRows([r4]).length, 1);
-  assert.equal(context.personalHistoryBlockHtml([], false, false), "");
+  const day = iso => iso.slice(0, 10);
+  const mkPick = (sport, id, ts, commence, extra) => Object.assign({sport, entry_id: id, side: "home", match: `Home ${id} vs Away ${id}`, selection: `Home ${id}`,
+    commence, opened_ts: ts, session_date: day(commence), real_stake: 0, odds: 1.9}, extra || {});
+  const fresh = mkPick("soccer", "s1", h(3), h(-2));                   // выпущен 3 ч назад, матч через 2 ч
+  const played = mkPick("mlb", "m1", h(20), h(10), {result: 1});       // сыгран сегодня
+  const old = mkPick("soccer", "s0", h(60), h(50), {result: 0});       // позавчера — вне суток
+  const sfeed = {mode:"PAPER_ONLY", real_stake:0, bets:[fresh, played, old],
+    session:{date: day(h(-2)), bets_list:[fresh, played]}, history:[{date: day(h(50)), bets_list:[old]}]};
+  load([]);
+  const rows = context.recentSelectionRows(sfeed);
+  assert.equal(rows.map(r => r.match).sort().join("|"), "Home m1 vs Away m1|Home s1 vs Away s1");
+  const html = context.recentSelectionBlockHtml(sfeed);
+  assert.equal(html.split("<article").length - 1, 2);
+  assert.match(html, /⚽/); assert.match(html, /⚾/);
+  assert.doesNotMatch(html, /Архив|hist-toggle|Home s0/);
+  // покупка, исполненная за последние сутки, без прогноза в ленте — тоже в блоке, той же карточкой
+  const buy = {kind:"TRADE", state:"CONFIRMED", operation_id:"op-b", fixture_id:`${h(30)}|away b@home b`, side:"home",
+    match:"Away B @ Home B", amount_units:"1000000", created_at:h(30), submitted_at:h(30), filled_at:h(5), sport:"mlb"};
+  load([buy]);
+  const withBuy = context.recentSelectionBlockHtml(sfeed);
+  assert.match(withBuy, /Home B/); assert.match(withBuy, /Резерв 1,00 USD/);
+  // покупка старше суток в блок не попадает
+  load([Object.assign({}, buy, {operation_id:"op-o", filled_at:h(40), fixture_id:`${h(50)}|away o@home o`, match:"Away O @ Home O"})]);
+  assert.doesNotMatch(context.recentSelectionBlockHtml(sfeed), /Home O/);
+  // пусто — одна строка состояния
+  load([]);
+  assert.match(context.recentSelectionBlockHtml({mode:"PAPER_ONLY", real_stake:0, bets:[], session:{date: day(h(0)), bets_list:[]}, history:[]}), /За последние 24 часа отбора не было/);
 });
 test("dashboard rows face the money result of a redeemed buy and keep the stake in the caption", () => {
   const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",
@@ -637,11 +627,7 @@ test("a 200-operation history is marked partial in the archive button and gives 
   const parsed = load(many);
   assert.equal(parsed.truncated, true);
   context.window.__privateRealBets.truncated = true;
-  const rows = context.personalHistoryRows(feed);
-  const compact = context.personalHistoryBlockHtml(rows, false, context.personalHistoryPartial());
-  assert.match(compact, /Архив ставок · 200\+/);
-  const full = context.personalHistoryBlockHtml(rows, true, true);
-  assert.match(full, /история неполная/);
+  assert.equal(context.personalHistoryPartial(), true);   // v174: архива на дашборде нет, признак неполноты остаётся у данных
   assert.equal(context.winrateText(context.tradingAccountStats(accountState(many))).rate, "—");
   const few = load(many.slice(0, 5));
   assert.equal(few.truncated, false);
