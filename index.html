@@ -955,7 +955,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v112";
+const BUILD = "v113";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -970,7 +970,7 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "13.09.2026";
+const BUILD_DATE = "18.10.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1776,7 +1776,7 @@ function betRow(r){
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
             : `<span style="color:var(--mut)">${t("inPlay")}</span>`;
   // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно
-  const ms = r.result != null ? msFor(ICO_SPORT[r._ico], r.match, r.match_date) : null;
+  const ms = r.result != null ? msFor(r._sport || ICO_SPORT[r._ico], r.match, r.match_date) : null;
   const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
   const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}" data-pick="${(r.selection||"").replace(/"/g,"&quot;")}" data-res="${r.result??""}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
@@ -1958,9 +1958,9 @@ function fmtGDate(iso){
 // v73: строки дня берутся из ЕДИНОГО ассета core_feed (сессия + история),
 // а не из старых таблиц. Копирования и перезаписи истории нет: сессии уже
 // посчитаны в ленте по append-only журналу кошелька.
-const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ ", khl: "🏒 ", nfl: "🏈 "};   // v109: иконки КХЛ/НФЛ в «Ставках» (владелец 14.09)
+const ICO_BY_SPORT = {mlb: "⚾ ", tennis: "🎾 ", soccer: "⚽ ", khl: "🏒 ", nhl: "🏒 ", nfl: "🏈 "};   // v109: иконки КХЛ/НФЛ в «Ставках» (владелец 14.09); 18.10: НХЛ
 function feedBetToRow(b){
-  return {_ico: ICO_BY_SPORT[b.sport] || "", match: b.match,
+  return {_ico: ICO_BY_SPORT[b.sport] || "", _sport: b.sport, match: b.match,
           selection: b.selection || b.side, best_odds: b.odds,
           stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
           stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
