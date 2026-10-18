@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v174";
+const BUILD = "v175";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1147,10 +1147,26 @@ function selectedPicks(feed){
   });
 }
 function selectionEventId(b){
-  if (b.sport !== "mlb" || !b.commence || !b.match || !String(b.match).includes("@")) return "";
+  // Канонический ID события = ID сигнала Auto: «ISO-старт|away@home» строчными. MLB — из «Away @ Home»;
+  // v175 (аудит 18.10, Paris FC): футбол — из «Home vs Away» / «Home — Away» ленты, иначе ключ прогноза был пустым и покупка
+  // (или отказ автоставки) никогда не сходилась с карточкой прогноза.
+  if (!b || !b.commence || !b.match) return "";
   const ts = new Date(b.commence);
   if (Number.isNaN(ts.getTime())) return "";
-  return ts.toISOString().replace(".000Z", "Z") + "|" + String(b.match).trim().toLowerCase().replace(/\s+/g, " ").replace(/\s*@\s*/g, "@");
+  const iso = ts.toISOString().replace(".000Z", "Z");
+  const norm = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const raw = String(b.match).trim();
+  if (b.sport === "mlb") {
+    if (!raw.includes("@")) return "";
+    return iso + "|" + norm(raw).replace(/\s*@\s*/g, "@");
+  }
+  if (b.sport === "soccer") {
+    if (raw.includes("@")) { const [a, h] = raw.split("@"); return iso + "|" + norm(a) + "@" + norm(h); }
+    const parts = raw.split(/\s+vs\s+|\s+—\s+|\s+-\s+/i);
+    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) return "";
+    return iso + "|" + norm(parts[1]) + "@" + norm(parts[0]);
+  }
+  return "";
 }
 function tradeKey(b){
   const event = b._forecast ? selectionEventId(b) : b.fixture_id;
@@ -1196,7 +1212,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "17.10.2026";
+const BUILD_DATE = "19.10.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1625,6 +1641,8 @@ const T = {
   selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
   selectionAnalysisScope: ["Отбор MLB и футбола · автоставки по вашим настройкам", "MLB and soccer selections · auto-bets follow your settings", "MLB 和足球选场 · 自动投注按你的设置执行"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
+  autoBetFailed: ["Автоставка не выполнена", "Auto-bet not executed", "自动投注未执行"],
+  forecastsOne: ["прогноз", "forecast", "个预测"], forecastsFew: ["прогноза", "forecasts", "个预测"], forecastsMany: ["прогнозов", "forecasts", "个预测"],
   awaitingRedeem: ["Выиграла · ожидает погашения", "Won · awaiting redemption", "已赢 · 等待兑付"],
   payoutReceived: ["Выплата получена", "Payout received", "兑付已到账"],
   priceUnavailable: ["Цена недоступна", "Price unavailable", "价格不可用"],
@@ -2916,6 +2934,13 @@ function personalTradeRows(){
   }
   return out;
 }
+// v175: отклонённые операции Auto текущей сессии — только для подписи карточки прогноза; в списки покупок и суммы не входят
+function personalRejectedRows(){
+  const p = window.__privateRealBets;
+  if (!p || p.session !== sessionKey() || !Array.isArray(p.rejected)) return [];
+  const seen = new Set();
+  return p.rejected.filter(r => r && r.operation_id && !seen.has(r.operation_id) && seen.add(r.operation_id));
+}
 function selectionDisplayRows(feed){
   // Отбор MLB и футбола остаётся отдельным списком, без личной суммы и без зелёной отметки.
   return selectedPicks(feed).map(b => Object.assign({}, forecastRow(b), {
@@ -3012,8 +3037,9 @@ function pickTone(r){
   if (r.result === -1) return "void";
   return "plain";
 }
-function mergeDayRow(pick, list){
+function mergeDayRow(pick, list, rejectedList){
   const trades = (list || []).filter(Boolean);
+  const rejected = (rejectedList || []).filter(Boolean);
   const trade = trades[0] || null;
   const sport = (pick && pick.sport) || (trade && trade.sport) || "";
   const real = trades.filter(t => t._realTrade === true);
@@ -3041,6 +3067,9 @@ function mergeDayRow(pick, list){
     session_date: (pick && pick.session_date) || (trade && trade.session_date) || "",
     side: (pick && pick.side) || (trade && trade.side) || "",
     _cash: cash, _forecast: !cash, _unknown: unknown, _realTrade: cash,
+    // v175: автоставка пыталась исполниться и получила технический отказ (без покупки и без расхода) — только когда нет ни покупки, ни сверки
+    _autoRejected: !cash && !unknown ? rejected.length : 0,
+    _autoReason: !cash && !unknown && rejected.length ? String(rejected[rejected.length - 1].reason || rejected[rejected.length - 1].state || "") : "",
     // v174: время выпуска прогноза, старта матча и последнего исполнения покупки — для суточного окна дашборда
     ts: (pick && pick.ts) || (trade && trade.opened_ts) || "",
     commence: (pick && pick.commence) || (trade && trade.commence) || "",
@@ -3103,13 +3132,21 @@ function daySelectionRows(feed, date){
     if (!buckets.has(key)) buckets.set(key, []);
     buckets.get(key).push(trade);
   }
+  // v175: отклонённые операции Auto того же дня — к карточке прогноза по тому же каноническому ключу (сами строками не становятся)
+  const rejBuckets = new Map();
+  for (const rej of personalRejectedRows().filter(r => rowGameDay(r, saved) === day)) {
+    const key = tradeKey(rej);
+    if (!key) continue;
+    if (!rejBuckets.has(key)) rejBuckets.set(key, []);
+    rejBuckets.get(key).push(rej);
+  }
   const used = new Set();
   const rows = [];
   for (const pick of picks) {
     const key = tradeKey(pick);
     const list = key && buckets.has(key) ? buckets.get(key) : [];
     list.forEach(t => used.add(t.operation_id));
-    rows.push(mergeDayRow(pick, list));
+    rows.push(mergeDayRow(pick, list, key && rejBuckets.has(key) ? rejBuckets.get(key) : []));
   }
   for (const list of buckets.values()) {
     const left = list.filter(t => !used.has(t.operation_id));
@@ -3120,12 +3157,23 @@ function daySelectionRows(feed, date){
 function dayStakeUnits(rows){
   return (rows || []).filter(r => r._cash && r.stake != null).reduce((s, r) => s + Number(r.stake), 0);
 }
+// v175 (аудит 18.10): склонение «прогноз» для счётчика дня
+function plForecasts(n){
+  const k = Math.abs(Number(n) || 0) % 100, d = k % 10;
+  if (LANG === "ru") return (k > 10 && k < 20) ? t("forecastsMany") : d === 1 ? t("forecastsOne") : (d >= 2 && d <= 4) ? t("forecastsFew") : t("forecastsMany");
+  return Number(n) === 1 ? t("forecastsOne") : t("forecastsMany");
+}
 function dayPickHead(date, rows, view){
   const n = (rows || []).length;
   const last = view && view.current === false;
   const title = !date ? t("secLast") : last ? `${t("lastSelection")} · ${fmtDay(date)}` : fmtDay(date);
   const note = last ? `<div class="daysum" style="margin-top:6px"><span>${t("newSelectionNotStarted")}</span></div>` : "";
-  return `<div class="dayhead"><span class="daydate">${title}</span><span class="daydow">${n} ${plBets(n)}</span></div>${note}`;
+  // v175 (аудит 18.10, Paris FC): «1 СТАВКА» считал прогнозы — теперь покупки и прогнозы различаются:
+  // только прогнозы → «N прогнозов»; есть покупки → «M ставок · K прогнозов»
+  const cashN = (rows || []).filter(r => r && r._cash === true).length;
+  const forecastN = n - cashN;
+  const count = cashN === 0 ? `${n} ${plForecasts(n)}` : forecastN === 0 ? `${cashN} ${plBets(cashN)}` : `${cashN} ${plBets(cashN)} · ${forecastN} ${plForecasts(forecastN)}`;
+  return `<div class="dayhead"><span class="daydate">${title}</span><span class="daydow">${count}</span></div>${note}`;
 }
 function cardMoney(r){
   // v167 (§9.2): денежная строка карточки — только подтверждённые факты личного счёта.
@@ -3164,7 +3212,8 @@ function forecastOutcomeWord(tone){
 function pickAria(r, tone){
   const sport = r.sport === "soccer" ? t("sportSoccer") : r.sport === "mlb" ? t("sportMlb") : (r.sport || "");
   const m = cardMoney(r);
-  const outcome = m ? [m.staked, m.odds, m.result, m.state].filter(Boolean).join(". ") : [t("forecastWord"), forecastOutcomeWord(tone)].filter(Boolean).join(". ");
+  const outcome = m ? [m.staked, m.odds, m.result, m.state].filter(Boolean).join(". ")
+    : [t("forecastWord"), forecastOutcomeWord(tone), r._autoRejected ? `${t("autoBetFailed")} (${r._autoReason || ""})` : ""].filter(Boolean).join(". ");
   return [sport, r.match || "", r.selection || "", outcome].filter(Boolean).join(". ");
 }
 function pickDetails(r){
@@ -3196,7 +3245,9 @@ function dayPickRow(r){
   // подтверждённой покупки денег и зелёной отметки покупки нет — короткое «Прогноз». Раскрытие — только при подтверждённой комиссии.
   const m = cardMoney(r);
   // v172 (владелец 18.10): «Прогноз · Выигрыш/Проигрыш/Возврат» у рассчитанного прогноза; до расчёта — просто «Прогноз»
-  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? forecastOutcomeWord(tone) : ""].filter(Boolean).join(" · ");
+  // v175: у прогноза с отклонённой автоставкой — честная подпись «Автоставка не выполнена»; код отказа — в заголовке карточки (title)
+  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? forecastOutcomeWord(tone) : "",
+                !m && r._autoRejected ? `<span class="neg" title="${v3Esc(r._autoReason || "")}">${t("autoBetFailed")}</span>` : ""].filter(Boolean).join(" · ");
   const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.odds ? `<span>${v3Esc(m.odds)}</span>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "",
                          m.state ? (m.stateCls ? `<span class="${m.stateCls}">${v3Esc(m.state)}</span>` : `<span>${v3Esc(m.state)}</span>`) : ""].filter(Boolean) : [];
   const sub2 = moneyBits.length ? `<small class="sub">${moneyBits.join(" · ")}</small>` : "";
@@ -4045,8 +4096,21 @@ function personalTradesFromHistory(state){
   const pendingNames = pending.map(o => String(o.match || o.fixture_id || "—"));
   const seen = new Set();
   const rows = [];
+  // v175 (аудит 18.10, Paris FC): отклонённые/несостоявшиеся операции Auto не выбрасываются молча — отдельный список `rejected`
+  // (не деньги, не ставки, в суммы и счётчики покупок не входят), чтобы карточка прогноза показала «Автоставка не выполнена» и код
+  const rejected = [];
+  const sportOf = (o) => o.sport || (["1x2", "total", "spread"].includes(String(o.market_family || "").toLowerCase()) ? "soccer" : "mlb");
   for (const o of hist) {
-    if (o.kind !== "TRADE" || !o.operation_id || closed.has(o.state) || seen.has(o.operation_id)) continue;
+    if (o.kind !== "TRADE" || !o.operation_id || seen.has(o.operation_id)) continue;
+    if (closed.has(o.state)) {
+      seen.add(o.operation_id);
+      const start0 = String(o.fixture_id || "").split("|")[0];
+      rejected.push({sport: sportOf(o), operation_id: o.operation_id, state: o.state, reason: String(o.reason || ""),
+        match: readableMatch(o.match || o.fixture_id || ""), fixture_id: String(o.fixture_id || ""), side: String(o.side || ""),
+        session_date: sessionDateFromStart(start0 || o.created_at || ""), opened_ts: o.created_at, commence: start0,
+        _rejected: true, _realTrade: false, _unknown: false, _wallet: true});
+      continue;
+    }
     seen.add(o.operation_id);
     const unknown = o.state !== "CONFIRMED";
     const start = String(o.fixture_id || "").split("|")[0];
@@ -4084,7 +4148,7 @@ function personalTradesFromHistory(state){
     const fee = o.fee_units != null && /^[0-9]+$/.test(String(o.fee_units)) ? Number(o.fee_units) / 1e6 : null;
     // v167 (§9.2): затраты до погашения доказаны только исполнением — fill_notional_units (сумма исполнений) + fee_units; резерв не годится
     const notional = o.fill_notional_units != null && /^[0-9]+$/.test(String(o.fill_notional_units)) ? Number(o.fill_notional_units) / 1e6 : null;
-    rows.push({sport: o.sport || "mlb", operation_id: o.operation_id, state: o.state, match, selection,
+    rows.push({sport: sportOf(o), operation_id: o.operation_id, state: o.state, match, selection,
       cost_known: notional != null && fee != null ? notional + fee : null,
       fill_price: confirmedFillPrice(o),
       stake: costUnits != null ? Number(costUnits) / 1e6 : reserved,
@@ -4099,7 +4163,7 @@ function personalTradesFromHistory(state){
       opened_ts: o.created_at, commence: start, fixture_id: String(o.fixture_id || ""),
       side: String(o.side || ""), _unknown: unknown, _realTrade: !unknown, _wallet: true});
   }
-  return {rows, unknown: pending.length, pendingNames, truncated: !historyIsComplete(state), loaded: true};
+  return {rows, rejected, unknown: pending.length, pendingNames, truncated: !historyIsComplete(state), loaded: true};
 }
 function confirmedFillPrice(o){
   // Только цена подтверждённого исполнения. Коэффициент прогноза и лимит сигнала сюда не подставляются.

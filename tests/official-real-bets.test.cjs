@@ -10,7 +10,8 @@ function segment(start, end) {
   return html.slice(a, b);
 }
 const I18N = {
-  autoBetPlaced: ["Автоставка поставлена"], reconciling: ["сверяется"],
+  autoBetPlaced: ["Автоставка поставлена"], reconciling: ["сверяется"], autoBetFailed: ["Автоставка не выполнена"],
+  forecastsOne: ["прогноз"], forecastsFew: ["прогноза"], forecastsMany: ["прогнозов"],
   awaitingRedeem: ["Выиграла · ожидает погашения"],
   payoutReceived: ["Выплата получена"],
   paperWin: ["прогноз зашёл"], paperLoss: ["прогноз не зашёл"], selectedNoTrade: ["Выбрано · реальной ставки нет"],
@@ -71,7 +72,7 @@ const trade = {kind:"TRADE", state:"CONFIRMED", operation_id:"op-guardians",
 const unknown = Object.assign({}, trade, {operation_id:"op-unknown", state:"UNKNOWN", amount_units:"1000000"});
 function load(ops) {
   const parsed = context.personalTradesFromHistory({historyLoaded:true, history:ops});
-  context.window.__privateRealBets = {session: context.sessionKey(), rows: parsed.rows, loaded: true, truncated: parsed.truncated};
+  context.window.__privateRealBets = {session: context.sessionKey(), rows: parsed.rows, rejected: parsed.rejected, loaded: true, truncated: parsed.truncated};
   return parsed;
 }
 function face(htmlRow){ return String(htmlRow).split("pick-more")[0].replace(/aria-label="[^"]*"/g, ""); }
@@ -844,4 +845,70 @@ test("v173: real card shows reserve until fills are proven, odds only from the c
   // цена сигнала/прогноза коэффициентом не становится
   const noPrice = context.dayPickRow(Object.assign({}, base, {staked:3.5, fill_price:null, best_odds:1.96, forecast_odds:1.96}));
   assert.doesNotMatch(noPrice, /кф/);
+});
+
+// ── v175 (аудит Paris FC 18.10): футбольный прогноз и его операция Auto сходятся по каноническому ID; отказ виден; счётчик различает ──
+test("v175: soccer forecast builds the canonical Auto event id from «Home vs Away»", () => {
+  const id = context.selectionEventId({sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC vs Rennes"});
+  assert.equal(id, "2026-10-18T15:15:00Z|rennes@paris fc");
+  assert.equal(context.selectionEventId({sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC — Rennes"}), id);
+  assert.equal(context.selectionEventId({sport:"mlb", commence:"2026-10-15T17:00:00+00:00", match:"Tampa Bay Rays @ Cleveland Guardians"}), fixture);
+  assert.equal(context.selectionEventId({sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC"}), "");
+  assert.equal(context.tradeKey(Object.assign({_forecast:true, side:"home"}, {sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC vs Rennes"})), "soccer|" + id + "|home");
+});
+
+const parisPick = {sport:"soccer", entry_id:"paper-paris", side:"home", match:"Paris FC vs Rennes", selection:"Paris FC",
+  commence:"2026-10-18T15:15:00+00:00", session_date:"2026-10-18", real_stake:0, result:null, stake_usd_paper:36.57, pnl_usd_paper:null, odds:2.12};
+const parisFeed = {mode:"PAPER_ONLY", real_stake:0, bets:[parisPick], session:{bets_list:[parisPick], date:"2026-10-18"}, history:[]};
+const parisRejected = {kind:"TRADE", state:"REJECTED", operation_id:"9d9fb82a-af87-4229-bbc5-70c40c0d7f49", phase:"DONE", reason:"CLOB_SIGNER_KEY_MISMATCH",
+  fixture_id:"2026-10-18T15:15:00Z|rennes@paris fc", match:"Paris FC — Rennes", market_family:"1x2", side:"home",
+  amount_units:"3721229", created_at:"2026-10-18T14:49:21Z", updated_at:"2026-10-18T14:49:42Z"};
+
+test("v175: Paris forecast + REJECTED Auto operation → one forecast card with the refusal, no money, no purchase", () => {
+  const parsed = load([parisRejected]);
+  assert.equal(parsed.rows.length, 0, "отклонённая операция — не покупка и не строка денег");
+  assert.equal(parsed.rejected.length, 1);
+  assert.equal(parsed.rejected[0].sport, "soccer");
+  assert.equal(parsed.rejected[0].reason, "CLOB_SIGNER_KEY_MISMATCH");
+  const rows = context.daySelectionRows(parisFeed, "2026-10-18");
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]._cash, false);
+  assert.equal(rows[0]._autoRejected, 1);
+  assert.equal(rows[0]._autoReason, "CLOB_SIGNER_KEY_MISMATCH");
+  assert.equal(rows[0].stake, null);
+  const html = context.dayPickRow(rows[0]);
+  assert.match(html, /Автоставка не выполнена/);
+  assert.match(html, /title="CLOB_SIGNER_KEY_MISMATCH"/);
+  assert.doesNotMatch(html, /Поставлено|Автоставка поставлена/);
+  assert.match(context.dayPickHead("2026-10-18", rows, {current:true}), /1 прогноз</);
+  assert.equal(context.dayStakeUnits(rows), 0);
+});
+
+test("v175: Paris forecast + CONFIRMED soccer purchase of the same market → one money card through the full key path", () => {
+  const buy = {kind:"TRADE", state:"CONFIRMED", operation_id:"paris-buy", fixture_id:"2026-10-18T15:15:00Z|rennes@paris fc", side:"home",
+    match:"Paris FC — Rennes", market_family:"1x2", average_price:"0.4600", amount_units:"3721229", fill_notional_units:"3600000", fee_units:"90000",
+    created_at:"2026-10-18T14:49:21Z", submitted_at:"2026-10-18T14:49:40Z", filled_at:"2026-10-18T14:49:41Z"};
+  const parsed = load([buy, parisRejected]);
+  assert.equal(parsed.rows.length, 1);
+  assert.equal(parsed.rows[0].sport, "soccer");
+  const rows = context.daySelectionRows(parisFeed, "2026-10-18");
+  assert.equal(rows.length, 1, "покупка и прогноз — одна карточка, без дубля");
+  assert.equal(rows[0]._cash, true);
+  assert.equal(rows[0]._autoRejected, 0, "при подтверждённой покупке отказ другой операции карточку не портит");
+  assert.match(context.dayPickHead("2026-10-18", rows, {current:true}), /1 ставок</);
+  // чужая сторона того же матча к прогнозу не присоединяется
+  const other = Object.assign({}, buy, {operation_id:"paris-other", side:"away"});
+  load([other]);
+  const rows2 = context.daySelectionRows(parisFeed, "2026-10-18");
+  assert.equal(rows2.length, 2);
+  assert.equal(rows2.filter(r => r._cash).length, 1);
+  assert.match(context.dayPickHead("2026-10-18", rows2, {current:true}), /1 ставок · 1 прогноз</);
+});
+
+test("v175: forecast-only day header counts forecasts, not bets", () => {
+  load([]);
+  const rows = context.daySelectionRows({mode:"PAPER_ONLY", real_stake:0, bets:[parisPick, Object.assign({}, parisPick, {entry_id:"paper-lyon", match:"Lyon vs Nice", selection:"Lyon"})],
+    session:{bets_list:[parisPick, Object.assign({}, parisPick, {entry_id:"paper-lyon", match:"Lyon vs Nice", selection:"Lyon"})], date:"2026-10-18"}, history:[]}, "2026-10-18");
+  assert.equal(rows.length, 2);
+  assert.match(context.dayPickHead("2026-10-18", rows, {current:true}), /2 прогноза</);
 });
