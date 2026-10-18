@@ -854,7 +854,7 @@ test("v175: soccer forecast builds the canonical Auto event id from «Home vs Aw
   assert.equal(context.selectionEventId({sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC — Rennes"}), id);
   assert.equal(context.selectionEventId({sport:"mlb", commence:"2026-10-15T17:00:00+00:00", match:"Tampa Bay Rays @ Cleveland Guardians"}), fixture);
   assert.equal(context.selectionEventId({sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC"}), "");
-  assert.equal(context.tradeKey(Object.assign({_forecast:true, side:"home"}, {sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC vs Rennes"})), "soccer|" + id + "|home");
+  assert.equal(context.tradeKey(Object.assign({_forecast:true, side:"home"}, {sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC vs Rennes"})), "soccer|" + id + "|home|1x2");
 });
 
 const parisPick = {sport:"soccer", entry_id:"paper-paris", side:"home", match:"Paris FC vs Rennes", selection:"Paris FC",
@@ -911,4 +911,38 @@ test("v175: forecast-only day header counts forecasts, not bets", () => {
     session:{bets_list:[parisPick, Object.assign({}, parisPick, {entry_id:"paper-lyon", match:"Lyon vs Nice", selection:"Lyon"})], date:"2026-10-18"}, history:[]}, "2026-10-18");
   assert.equal(rows.length, 2);
   assert.match(context.dayPickHead("2026-10-18", rows, {current:true}), /2 прогноза</);
+});
+
+// ── v175.1 (проверка владельца 19.10): рынок и линия в ключе; актуальный отказ по времени; причина раскрывается касанием ──
+test("v175.1: a confirmed spread +1.5 purchase does not merge into the 1X2 forecast of the same match", () => {
+  const spread = {kind:"TRADE", state:"CONFIRMED", operation_id:"paris-spread", fixture_id:"2026-10-18T15:15:00Z|rennes@paris fc", side:"home",
+    match:"Paris FC — Rennes", market_family:"spread", average_price:"0.5500", amount_units:"3721229", fill_notional_units:"3600000", fee_units:"90000",
+    created_at:"2026-10-18T14:49:21Z", submitted_at:"2026-10-18T14:49:40Z", filled_at:"2026-10-18T14:49:41Z"};
+  load([spread]);
+  const rows = context.daySelectionRows(parisFeed, "2026-10-18");
+  assert.equal(rows.length, 2, "прогноз 1X2 и покупка форы — две разные строки");
+  const pick = rows.find(r => r._forecast); const money = rows.find(r => r._cash);
+  assert.equal(pick._cash, false); assert.equal(money.stake != null, true);
+  assert.equal(context.tradeKey({_forecast:true, sport:"soccer", commence:"2026-10-18T15:15:00+00:00", match:"Paris FC vs Rennes", side:"home", kind:"1x2"}), "soccer|2026-10-18T15:15:00Z|rennes@paris fc|home|1x2");
+  assert.equal(context.tradeKey({sport:"soccer", fixture_id:"2026-10-18T15:15:00Z|rennes@paris fc", side:"home", market_family:"spread"}), "", "фора без линии — соответствие не угадывается");
+  assert.equal(context.tradeKey({sport:"soccer", fixture_id:"x", side:"over", market_family:"total", line:2.5}), "soccer|x|over|total|2.5");
+  assert.notEqual(context.tradeKey({sport:"soccer", fixture_id:"x", side:"over", market_family:"total", line:2.5}), context.tradeKey({sport:"soccer", fixture_id:"x", side:"over", market_family:"total", line:3.5}), "разные линии тотала — разные ключи");
+  assert.equal(context.tradeKey({sport:"mlb", fixture_id:fixture, side:"home", market_family:"ml"}), context.tradeKey(Object.assign({_forecast:true, side:"home"}, pick0())), "MLB: прогноз и покупка ml сходятся");
+});
+function pick0(){ return {sport:"mlb", commence:"2026-10-15T17:00:00+00:00", match:"Tampa Bay Rays @ Cleveland Guardians", kind:"ml"}; }
+
+test("v175.1: the latest refusal wins when history arrives newest-first, and the reason opens by tap", () => {
+  const older = Object.assign({}, parisRejected, {operation_id:"paris-rej-old", reason:"OLD_REASON", created_at:"2026-10-18T14:40:00Z", updated_at:"2026-10-18T14:40:30Z"});
+  const newer = Object.assign({}, parisRejected, {operation_id:"paris-rej-new", reason:"NEW_REASON", created_at:"2026-10-18T14:49:21Z", updated_at:"2026-10-18T14:49:42Z"});
+  load([newer, older]);
+  const rows = context.daySelectionRows(parisFeed, "2026-10-18");
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0]._autoRejected, 2);
+  assert.equal(rows[0]._autoReason, "NEW_REASON");
+  const html = context.dayPickRow(rows[0]);
+  assert.match(html, /<button type="button" class="pickline-row"/, "есть раскрытие касанием");
+  assert.match(html, /<div class="pick-more" hidden><div class="pick-detail">Автоставка не выполнена · NEW_REASON<\/div>/);
+  assert.doesNotMatch(context.dayPickRow(Object.assign({}, rows[0], {_autoRejected:0, _autoReason:""})), /pick-more/);
+  load([older, newer]);
+  assert.equal(context.daySelectionRows(parisFeed, "2026-10-18")[0]._autoReason, "NEW_REASON", "порядок массива не влияет");
 });

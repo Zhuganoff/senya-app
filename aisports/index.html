@@ -1168,9 +1168,24 @@ function selectionEventId(b){
   }
   return "";
 }
+// v175.1 (проверка владельца 19.10): ключ соединения прогноза с операцией несёт ТИП РЫНКА и ЛИНИЮ — победа, фора и разные линии
+// тотала одного матча не соединяются. Семейство рынка нормализуется (ml/winner → ml для MLB, 1x2 для футбола; total/spread; handicap → spread);
+// у рынков с линией линия обязательна с обеих сторон — если её нет (RPC истории линию не отдаёт), соответствие не угадывается.
+function marketFamily(b){
+  const raw = String((b && (b.market_family || b.kind)) || "").toLowerCase().trim();
+  if (!raw || raw === "winner" || raw === "ml" || raw === "moneyline" || raw === "1x2") return b && b.sport === "mlb" ? "ml" : "1x2";
+  if (raw === "total" || raw === "totals" || raw === "ou") return "total";
+  if (raw === "spread" || raw === "handicap" || raw === "ah") return "spread";
+  return raw;
+}
 function tradeKey(b){
   const event = b._forecast ? selectionEventId(b) : b.fixture_id;
-  return event && b.side ? `${b.sport}|${event}|${b.side}` : "";
+  if (!event || !b.side) return "";
+  const family = marketFamily(b);
+  const needsLine = family === "total" || family === "spread";
+  const line = b.line != null && Number.isFinite(Number(b.line)) ? String(Number(b.line)) : "";
+  if (needsLine && !line) return "";
+  return `${b.sport}|${event}|${b.side}|${family}${needsLine ? "|" + line : ""}`;
 }
 function forecastRow(b){
   const r = feedBetToRow(b); r._forecast = true;
@@ -2677,6 +2692,7 @@ function readableMatch(raw){
 }
 function feedBetToRow(b){
   return {_ico: ICO_BY_SPORT[b.sport] || "", sport: b.sport, fixture_id: b.fixture_id,
+          kind: b.kind, line: b.line != null ? b.line : null,   // v175.1: тип рынка и линия — для ключа соединения с операцией
           side: b.side, match: readableMatch(b.match), selection: pickSelectionLabel(b), best_odds: b.odds,
           stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
           stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
@@ -3069,7 +3085,12 @@ function mergeDayRow(pick, list, rejectedList){
     _cash: cash, _forecast: !cash, _unknown: unknown, _realTrade: cash,
     // v175: автоставка пыталась исполниться и получила технический отказ (без покупки и без расхода) — только когда нет ни покупки, ни сверки
     _autoRejected: !cash && !unknown ? rejected.length : 0,
-    _autoReason: !cash && !unknown && rejected.length ? String(rejected[rejected.length - 1].reason || rejected[rejected.length - 1].state || "") : "",
+    // v175.1: актуальная попытка — самая поздняя по updated_at/created_at (история приходит от новых к старым; индекс массива не годится)
+    _autoReason: !cash && !unknown && rejected.length ? (() => {
+      const ts = r => Date.parse(String(r.updated_at || r.opened_ts || "")) || 0;
+      const latest = rejected.reduce((a, b) => (ts(b) > ts(a) ? b : a), rejected[0]);
+      return String(latest.reason || latest.state || "");
+    })() : "",
     // v174: время выпуска прогноза, старта матча и последнего исполнения покупки — для суточного окна дашборда
     ts: (pick && pick.ts) || (trade && trade.opened_ts) || "",
     commence: (pick && pick.commence) || (trade && trade.commence) || "",
@@ -3220,7 +3241,10 @@ function pickDetails(r){
   // v167 (§9.2): в раскрытии — только подтверждённая комиссия. Выплата, доли, цена, коэффициент прогноза, резерв,
   // повторы «Потрачено/Результат/Сумма» и подписи ожидания личной истории из карточки убраны.
   const fee = cardFeeText(r);
-  return fee ? `<div class="pick-detail">${fee}</div>` : "";
+  // v175.1 (проверка владельца): причина отказа автоставки раскрывается касанием той же строкой-деталью (существующий .pick-detail),
+  // а не только в title/aria-label; без денег, без служебной простыни — одна строка «Автоставка не выполнена · КОД»
+  const refusal = r && r._cash !== true && r._autoRejected ? `<div class="pick-detail">${t("autoBetFailed")} · ${v3Esc(r._autoReason || "")}</div>` : "";
+  return (fee ? `<div class="pick-detail">${fee}</div>` : "") + refusal;
 }
 // v167 (§9.2, п.1): реальные покупки на «Дашборде» (последние) и в архиве — та же короткая карточка, что на «Ставках».
 // Строка личной истории → вид карточки: только подтверждённые факты (затраты с комиссией, чистый результат CLAIM, комиссия, если она известна).
@@ -4107,7 +4131,9 @@ function personalTradesFromHistory(state){
       const start0 = String(o.fixture_id || "").split("|")[0];
       rejected.push({sport: sportOf(o), operation_id: o.operation_id, state: o.state, reason: String(o.reason || ""),
         match: readableMatch(o.match || o.fixture_id || ""), fixture_id: String(o.fixture_id || ""), side: String(o.side || ""),
+        market_family: o.market_family || null, line: o.line != null ? o.line : null,
         session_date: sessionDateFromStart(start0 || o.created_at || ""), opened_ts: o.created_at, commence: start0,
+        updated_at: o.updated_at || o.created_at || "",   // v175.1: актуальность отказа — по времени, не по положению в массиве
         _rejected: true, _realTrade: false, _unknown: false, _wallet: true});
       continue;
     }
@@ -4161,6 +4187,7 @@ function personalTradesFromHistory(state){
       exec_ts: execTs, exec_basis: execBasis,
       session_date: sessionDateFromStart(start || o.created_at || ""),
       opened_ts: o.created_at, commence: start, fixture_id: String(o.fixture_id || ""),
+      market_family: o.market_family || null, line: o.line != null ? o.line : null,
       side: String(o.side || ""), _unknown: unknown, _realTrade: !unknown, _wallet: true});
   }
   return {rows, rejected, unknown: pending.length, pendingNames, truncated: !historyIsComplete(state), loaded: true};
@@ -4307,7 +4334,9 @@ let __privateBetsSig = null;
 botAccountController.render = state => {
   const privateTrades = personalTradesFromHistory(state);
   window.__privateRealBets = {session:sessionKey(),...privateTrades};
-  const betsSig = JSON.stringify([sessionKey(),state.historyLoaded,privateTrades.rows,privateTrades.unknown,privateTrades.pendingNames]);
+  // v175.1: пришедший отказ автоставки (или смена его причины) тоже перерисовывает списки — иначе открытая вкладка не обновлялась
+  const betsSig = JSON.stringify([sessionKey(),state.historyLoaded,privateTrades.rows,privateTrades.unknown,privateTrades.pendingNames,
+                                  (privateTrades.rejected || []).map(r => [r.operation_id, r.state, r.reason, r.updated_at])]);
   // v167 (§9.3): свежесть — время УСПЕШНОГО ответа истории (historyAt контроллера), не момент отрисовки; восстановленный снимок свежим не считается
   window.__acctRefreshAt = state.historyLoaded === true && !state.restored ? (state.historyAt || 0) : 0;
   window.__acctSync = {session: sessionKey(), state: state.busy && state.historyLoaded !== true ? "loading" : state.error && !state.busy ? "error" : state.historyLoaded === true ? "ok" : "idle",
