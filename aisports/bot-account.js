@@ -595,7 +595,7 @@
     policy:["Меньшая из доли стратегии и вашего максимума; комиссия входит в риск. Лимиты общие для всех видов. Максимум открытых позиций:","The lower of the strategy allocation and your maximum; fees count toward risk. Limits are shared across sports. Maximum open positions:","采用策略比例和您上限中的较低值，费用计入风险。各项目共用限额。最大未平仓数量："],
     sportsTitle:["Виды автоставок","Auto-bet sports","自动投注项目"], sport_mlb:["Бейсбол MLB","Baseball MLB","棒球 MLB"], sport_soccer:["Футбол","Soccer","足球"],
     sport_mlb_scope:["Победитель матча","Match winner","比赛胜者"],
-    sport_soccer_scope:["Победы 1X2 · тоталы и форы пока только прогнозы","1X2 winners · totals and spreads are forecasts only","1X2 胜负 · 大小球和让球暂仅预测"],
+    sport_soccer_scope:["Победы 1X2 · тоталы и форы","1X2 winners · totals and spreads","1X2 胜负 · 大小球和让球"],   // v172 (18.10): тоталы и форы тоже идут в Auto
     sportNotOnServer:["на сервере пока недоступно","not available on the server yet","服务器暂不支持"],
     sportsNote:["После смены видов подтвердите новое правило автоставок.","After changing sports, confirm the new auto-bet policy.","更改项目后，请确认新的自动投注规则。"],
     stopInfo:["Остановка запрещает новые ставки. Отправленные заявки и переводы продолжают сверяться, открытые позиции сохраняются.","Stopping prevents new bets. Submitted orders and transfers continue to reconcile; positions remain open.","停止后不再新增投注，已发送的订单与转账继续核对，现有持仓保留。"],

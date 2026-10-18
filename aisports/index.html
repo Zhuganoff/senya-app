@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v171"></script>
-<script src="wallet-connect.js?v=v171"></script>
+<script src="bot-account.js?v=v172"></script>
+<script src="wallet-connect.js?v=v172"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v171";
+const BUILD = "v172";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1366,6 +1366,8 @@ const T = {
   noRecentBets: ["За последние 24 часа ставок не было", "No bets in the last 24 hours", "近 24 小时没有投注"],
   recentBasisSubmitted: ["по времени отправки ордера на биржу; время исполнения в учёте пока не записано", "by the time the order was sent to the exchange; fill time is not recorded in the ledger yet", "按订单发送到交易所的时间；账本尚未记录成交时间"],
   stakeWord: ["ставка", "stake", "投注"], forecastWord: ["Прогноз", "Forecast", "预测"],
+  // v172 (владелец 18.10): у рассчитанного прогноза — отметка исхода, как у реальной покупки: ✓/× и слово
+  forecastWon: ["Выигрыш", "Won", "赢"], forecastLost: ["Проигрыш", "Lost", "输"], forecastVoid: ["Возврат", "Void", "退还"],
   // v167 (владелец 16.10, §9.2): одна короткая карточка — «Поставлено» (затраты с комиссией), «Прибыль/Убыток/Результат» (чистый итог),
   // «В расчёте» до погашения, «Сверяется» для UNKNOWN; единственная необязательная строка — подтверждённая комиссия
   stakedLabel: ["Поставлено", "Staked", "已投注"], profitLabel: ["Прибыль", "Profit", "盈利"], lossLabel: ["Убыток", "Loss", "亏损"],
@@ -2957,6 +2959,10 @@ function pickTone(r){
     if (r._resolution === 0) return "lose";
     return "pending";
   }
+  // v172 (владелец 18.10): рассчитанный прогноз без покупки тоже получает исход — выигрыш/проигрыш/возврат
+  if (r.result === 1) return "win";
+  if (r.result === 0) return "lose";
+  if (r.result === -1) return "void";
   return "plain";
 }
 function mergeDayRow(pick, list){
@@ -3092,10 +3098,13 @@ function cardFeeText(r){
   const x = f === 0 ? usdTxt(0, 2) : f < 0.005 ? t("feeTiny") : usdTxt(f, 2);
   return t("feeIncludedLine").replace("{x}", x);
 }
+function forecastOutcomeWord(tone){
+  return tone === "win" ? t("forecastWon") : tone === "lose" ? t("forecastLost") : tone === "void" ? t("forecastVoid") : "";
+}
 function pickAria(r, tone){
   const sport = r.sport === "soccer" ? t("sportSoccer") : r.sport === "mlb" ? t("sportMlb") : (r.sport || "");
   const m = cardMoney(r);
-  const outcome = m ? [m.staked, m.result, m.state].filter(Boolean).join(". ") : t("forecastWord");
+  const outcome = m ? [m.staked, m.result, m.state].filter(Boolean).join(". ") : [t("forecastWord"), forecastOutcomeWord(tone)].filter(Boolean).join(". ");
   return [sport, r.match || "", r.selection || "", outcome].filter(Boolean).join(". ");
 }
 function pickDetails(r){
@@ -3120,17 +3129,18 @@ function dayPickRow(r){
   const tone = pickTone(r);
   const cash = r._cash === true;
   const sel = v3Esc(String(r.selection || "").replace(/[\[\]]/g, " ").trim());
-  const selHtml = (cash && tone === "win") || (!cash && r.result === 1) ? `<span class="winner">${sel}</span>` : sel;
+  const selHtml = tone === "win" ? `<span class="winner">${sel}</span>` : sel;
   const date = fmtDay(r.session_date || "");
   // v167 (владелец 16.10, §9.2): ОДНА короткая карточка на всех экранах — иконка, «Away — Home», выбранная команда (победившая —
   // жирная зелёная), дата; строка денег «Поставлено X USD · Прибыль +Y USD» (или «В расчёте» / «Сверяется»); у прогноза без
   // подтверждённой покупки денег и зелёной отметки покупки нет — короткое «Прогноз». Раскрытие — только при подтверждённой комиссии.
   const m = cardMoney(r);
-  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : ""].filter(Boolean).join(" · ");
+  // v172 (владелец 18.10): «Прогноз · Выигрыш/Проигрыш/Возврат» у рассчитанного прогноза; до расчёта — просто «Прогноз»
+  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? forecastOutcomeWord(tone) : ""].filter(Boolean).join(" · ");
   const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "", m.state ? `<span>${v3Esc(m.state)}</span>` : ""].filter(Boolean) : [];
   const sub2 = moneyBits.length ? `<small class="sub">${moneyBits.join(" · ")}</small>` : "";
-  const mark = cash && tone === "win" ? "✓" : cash && tone === "lose" ? "×" : "";
-  const glow = cash && tone === "win" ? "green" : cash && tone === "lose" ? "red" : "";
+  const mark = tone === "win" ? "✓" : tone === "lose" ? "×" : "";
+  const glow = tone === "win" ? "green" : tone === "lose" ? "red" : "";
   const key = v3Esc(rowKey(r));   // устойчивый ключ строки: раскрытие переживает перерисовку (16.10)
   const more = pickDetails(r);
   const inner = `<span class="pico" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${sub1}</small>${sub2}</span><span class="right">${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span>`;

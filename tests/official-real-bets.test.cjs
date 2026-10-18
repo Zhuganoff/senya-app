@@ -235,7 +235,9 @@ test("soccer stays a forecast and six rows keep an icon without an odds column",
   assert.equal(ball._cash, false);
   const ballHtml = context.dayPickRow(ball);
   assert.match(ballHtml, /⚽/);
-  assert.doesNotMatch(ballHtml, /USD|class="mark"|Автоставка/);
+  // v172 (владелец 18.10): рассчитанный прогноз получает отметку исхода, денег и «Автоставки» по-прежнему нет
+  assert.match(ballHtml, /pickline win/); assert.match(ballHtml, /class="mark"[^>]*>✓/); assert.match(ballHtml, /Прогноз · Выигрыш/);
+  assert.doesNotMatch(ballHtml, /USD|Автоставка/);
   const six = Array.from({length:6}, (_, i) => context.dayPickRow({
     sport: i % 2 ? "soccer" : "mlb", _ico: i % 2 ? "⚽" : "⚾", match:"Long Match Name Number " + i,
     selection:"Side " + i, session_date:"2026-10-15", _cash:false, result:null, forecast_odds:null
@@ -420,7 +422,7 @@ Object.assign(I18N, {
   drawSide: ["Ничья"], autoSportsLine: ["виды: {s}"], period24Incomplete: ["период неполный"], period24Unknown: ["период неизвестен: сервер не отдал денежный итог суток"], period24Short: ["погашения за 24 ч"],
   historyMoreNote: ["архив загружен частично — продолжение по кнопке"], histMore: ["Загрузить ещё"], histMoreBusy: ["загрузка…"], claimConfirmedAt: ["подтверждено"], claimTimeUnknown: ["время подтверждения в учёте не записано"], claimCreatedAt: ["задание создано"], gameDayLabel: ["игровой день"],
   restoredSnapshot: ["Снимок ленты от {t} ({m} мин назад)"], moneyMore: ["Подробнее о деньгах"], moneyLess: ["Свернуть"],
-  stakeWord: ["ставка"], forecastWord: ["Прогноз"], historyLoading: ["сверка с личной историей…"], historyLoadingLong: ["Личная история ещё загружается"],
+  stakeWord: ["ставка"], forecastWord: ["Прогноз"], forecastWon: ["Выигрыш"], forecastLost: ["Проигрыш"], forecastVoid: ["Возврат"], historyLoading: ["сверка с личной историей…"], historyLoadingLong: ["Личная история ещё загружается"],
   noRecentBets: ["За последние 24 часа ставок не было"], recentBasisSubmitted: ["по времени отправки ордера"],
   winOne: ["победа"], winFew: ["победы"], winMany: ["побед"], lossOne: ["поражение"], lossFew: ["поражения"], lossMany: ["поражений"],
   returnOne: ["возврат"], returnFew: ["возврата"], returnMany: ["возвратов"], settledOne: ["рассчитана"], settledFew: ["рассчитаны"], settledMany: ["рассчитано"],
@@ -669,12 +671,12 @@ test("a forecast before the private history arrives is not declared a non-purcha
   const row = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
   // v167 (§9.2/9.3): в карточке нет длинных подписей сверки и нет утверждения «реальной ставки нет»; состояние — строкой списка
   assert.match(face(row), /Прогноз/);
-  assert.doesNotMatch(row, /USD|сверка|Личная история|реальной ставки нет|class="mark"|pick-more/);
+  assert.doesNotMatch(row, /USD|сверка|Личная история|реальной ставки нет|pick-more/);
   load([]);                                           // история пришла пустой — честный прогноз
   assert.equal(context.personalHistoryLoading(), false);
   const after = context.dayPickRow(context.daySelectionRows(feed, "2026-10-15")[0]);
   assert.match(face(after), /Прогноз/);
-  assert.doesNotMatch(after, /USD|Выбрано|class="mark"/);
+  assert.doesNotMatch(after, /USD|Выбрано/);
 });
 // ── v167 (владелец 16.10, §9.2): комиссия без ложного нуля; состояния карточки ──
 test("fee is summed only when every purchase of the card confirms it: [null]→hidden, [0]→0, [x,null]→hidden", () => {
@@ -709,10 +711,22 @@ test("card states: loss, zero, unsettled, unknown, forecast — no payout, no pr
   assert.match(face(open), /Поставлено 3,42 USD<\/b> · <span>В расчёте<\/span>/);
   const unknown = context.dayPickRow(Object.assign({}, base, {_cash:true, _unknown:true}));
   assert.match(face(unknown), /Сверяется/); assert.doesNotMatch(unknown, /USD|Поставлено/);
+  // v172 (владелец 18.10): рассчитанный прогноз — та же отметка исхода, что у покупки (✓/×, полоса, слово), но без денег
   const forecast = context.dayPickRow(Object.assign({}, base, {_cash:false, result:1, forecast_odds:1.81022}));
-  assert.match(face(forecast), /<span class="winner">Cleveland Guardians<\/span> · 2026-10-15 · Прогноз/);
-  assert.doesNotMatch(forecast, /USD|class="mark"|1\.81022|коэффициент|glowbar/);
-  for (const h of [loss, zero, open, unknown, forecast]) assert.doesNotMatch(h, /Выплата|Цена|Доли|резерв|Потрачено|Сумма|прогноз зашёл|сверка с личной/);
+  assert.match(face(forecast), /<span class="winner">Cleveland Guardians<\/span> · 2026-10-15 · Прогноз · Выигрыш/);
+  assert.match(forecast, /pickline win/); assert.match(forecast, /✓/); assert.match(forecast, /glowbar green/);
+  assert.doesNotMatch(forecast, /USD|1\.81022|коэффициент/);
+  const forecastLost = context.dayPickRow(Object.assign({}, base, {_cash:false, result:0}));
+  assert.match(face(forecastLost), /Cleveland Guardians · 2026-10-15 · Прогноз · Проигрыш/);
+  assert.match(forecastLost, /pickline lose/); assert.match(forecastLost, /×/); assert.match(forecastLost, /glowbar red/);
+  assert.doesNotMatch(forecastLost, /class="winner"|USD/);
+  const forecastOpen = context.dayPickRow(Object.assign({}, base, {_cash:false, result:null}));
+  assert.match(face(forecastOpen), /Cleveland Guardians · 2026-10-15 · Прогноз<\/small>/);
+  assert.match(forecastOpen, /pickline plain/); assert.doesNotMatch(forecastOpen, /class="mark"|glowbar|Выигрыш|Проигрыш/);
+  const forecastVoid = context.dayPickRow(Object.assign({}, base, {_cash:false, result:-1}));
+  assert.match(face(forecastVoid), /Прогноз · Возврат/); assert.doesNotMatch(forecastVoid, /class="mark"|glowbar/);
+  assert.match(forecast, /aria-label="Бейсбол MLB\. Tampa Bay Rays @ Cleveland Guardians\. Cleveland Guardians\. Прогноз\. Выигрыш"/);
+  for (const h of [loss, zero, open, unknown, forecast, forecastLost, forecastOpen]) assert.doesNotMatch(h, /Выплата|Цена|Доли|резерв|Потрачено|Сумма|прогноз зашёл|сверка с личной/);
   // aria: содержимое карточки читается целиком
   assert.match(loss, /aria-label="Бейсбол MLB\. Tampa Bay Rays @ Cleveland Guardians\. Cleveland Guardians\. Поставлено 3,60 USD\. Убыток −3,60 USD"/);
 });
