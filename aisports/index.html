@@ -1094,8 +1094,8 @@ body.splash-on{overflow:hidden}
     <span data-i18n="navMe">Профиль</span></button>
 </nav>
 
-<script src="bot-account.js?v=v172"></script>
-<script src="wallet-connect.js?v=v172"></script>
+<script src="bot-account.js?v=v173"></script>
+<script src="wallet-connect.js?v=v173"></script>
 <script>
 // v167 (§9.3.9): недоступное хранилище (приватный режим, запрет сайтовых данных, песочница) не ломает приложение:
 // обращения идут через безопасную тень с памятью на сессию; RAM-кэш и сеть работают как обычно
@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v172";
+const BUILD = "v173";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1368,6 +1368,10 @@ const T = {
   stakeWord: ["ставка", "stake", "投注"], forecastWord: ["Прогноз", "Forecast", "预测"],
   // v172 (владелец 18.10): у рассчитанного прогноза — отметка исхода, как у реальной покупки: ✓/× и слово
   forecastWon: ["Выигрыш", "Won", "赢"], forecastLost: ["Проигрыш", "Lost", "输"], forecastVoid: ["Возврат", "Void", "退还"],
+  // v173 (владелец 18.10): подпись выбора как у бейсбола (команда / «Больше N» / «Команда (+N)»); коэффициент покупки;
+  // до погашения — «Выиграла · ожидает погашения» / «Проиграла · ожидает расчёта»; сумма резерва, пока исполнение не подтверждено
+  overWord: ["Больше", "Over", "大于"], underWord: ["Меньше", "Under", "小于"], oddsShort: ["кф", "odds", "赔率"],
+  reservedLabel: ["Резерв", "Reserved", "预留"], lostAwaitingSettle: ["Проиграла · ожидает расчёта", "Lost · awaiting settlement", "已输 · 等待结算"],
   // v167 (владелец 16.10, §9.2): одна короткая карточка — «Поставлено» (затраты с комиссией), «Прибыль/Убыток/Результат» (чистый итог),
   // «В расчёте» до погашения, «Сверяется» для UNKNOWN; единственная необязательная строка — подтверждённая комиссия
   stakedLabel: ["Поставлено", "Staked", "已投注"], profitLabel: ["Прибыль", "Profit", "盈利"], lossLabel: ["Убыток", "Loss", "亏损"],
@@ -2653,12 +2657,46 @@ function readableMatch(raw){
 }
 function feedBetToRow(b){
   return {_ico: ICO_BY_SPORT[b.sport] || "", sport: b.sport, fixture_id: b.fixture_id,
-          side: b.side, match: readableMatch(b.match), selection: b.selection || b.side, best_odds: b.odds,
+          side: b.side, match: readableMatch(b.match), selection: pickSelectionLabel(b), best_odds: b.odds,
           stake_pct: b.stake_pct != null ? Number(b.stake_pct)/100 : null,
           stake: b.stake_usd_paper, result: b.result, pnl: b.pnl_usd_paper,
           match_date: b.session_date || String(b.commence || "").slice(0,10),
           ts: b.opened_ts, commence: b.commence, _realTrade: b._realTrade === true,
           closing_ts: null, closing_odds: null, clv_pct: b.clv_pct};
+}
+// v173 (владелец 18.10): подпись выбора одинаковая для всех видов — имя команды («Ничья»), «Больше/Меньше N», «Команда (+N)».
+// Сокращения контура («П1», «П2», «ТБ 2.5», «Фора +1 гости») в карточку не попадают; при нехватке данных — исходная подпись.
+function pickSelectionLabel(b){
+  const T = k => typeof t === "function" ? t(k) : ({overWord: "Больше", underWord: "Меньше", drawSide: "Ничья"})[k] || k;
+  const raw = String((b && b.selection) || "").trim();
+  const side = String((b && b.side) || "").toLowerCase();
+  const kind = String((b && b.kind) || "").toLowerCase();
+  const match = readableMatch(b && b.match);
+  const line = b && b.line != null && Number.isFinite(Number(b.line)) ? Number(b.line) : null;
+  const team = (sd) => {
+    const src = String(match || "");
+    if (sd === "draw") return T("drawSide");
+    const parts = src.includes(" @ ") ? src.split(" @ ").reverse() : src.split(/ — | vs /);
+    if (parts.length < 2) return "";
+    return (sd === "home" ? parts[0] : sd === "away" ? parts[parts.length - 1] : "").trim();
+  };
+  const tot = raw.match(/^Т([БМ])\s*([\d.]+)/);
+  if (kind === "total" || side === "over" || side === "under" || tot) {
+    const over = side === "over" || (!side && tot && tot[1] === "Б") || (side !== "under" && tot && tot[1] === "Б");
+    const n = line != null ? line : tot ? Number(tot[2]) : null;
+    return n != null ? `${T(over ? "overWord" : "underWord")} ${n}` : (raw || side);
+  }
+  const hcp = raw.match(/([+\-−])\s*([\d.]+)/);
+  if (kind === "spread" || /^Фора/i.test(raw)) {
+    const name = team(side);
+    const n = hcp ? `${hcp[1] === "-" ? "−" : hcp[1]}${hcp[2]}` : line != null ? `${line < 0 ? "−" : "+"}${Math.abs(line)}` : "";
+    return name ? (n ? `${name} (${n})` : name) : (raw || side);
+  }
+  if (side === "home" || side === "away" || side === "draw") {
+    const name = team(side);
+    if (name) return name;
+  }
+  return raw || side;
 }
 function feedSession(feed, d){
   if (!feed) return null;
@@ -2928,7 +2966,7 @@ function teamForSide(match, side){
     if (side === "home") return (parts[1] || "").trim();
     if (side === "away") return (parts[0] || "").trim();
   }
-  const teams = src.split(" — ");
+  const teams = src.split(/ — | vs /);   // v173: «Home — Away» и «Home vs Away»
   if (side === "home") return (teams[0] || "").trim();
   if (side === "away") return (teams[teams.length - 1] || "").trim();
   if (side === "draw") return t("drawSide");
@@ -3083,12 +3121,21 @@ function cardMoney(r){
   if (!r) return null;
   if (r._unknown) return {state: t("reconcilingState")};
   if (r._cash !== true) return null;
-  const staked = r.staked != null && Number.isFinite(Number(r.staked)) ? `${t("stakedLabel")} ${usdTxt(r.staked, 2)}` : "";
+  // v173 (владелец 18.10): затраты доказаны исполнением → «Поставлено»; иначе честная подпись «Резерв» по удержанию операции
+  const staked = r.staked != null && Number.isFinite(Number(r.staked)) ? `${t("stakedLabel")} ${usdTxt(r.staked, 2)}`
+               : r.reserved != null && Number.isFinite(Number(r.reserved)) && Number(r.reserved) > 0 ? `${t("reservedLabel")} ${usdTxt(r.reserved, 2)}` : "";
+  // коэффициент — только из подтверждённой биржей цены исполнения (1 / средняя цена), без цены сигнала и прогноза
+  const fp = Number(r.fill_price);
+  const odds = Number.isFinite(fp) && fp > 0 && fp < 1 ? `${t("oddsShort")} ${(1 / fp).toFixed(2)}` : "";
   const settled = r.claim_confirmed === true && r.pnl != null && Number.isFinite(Number(r.pnl));
-  if (!settled) return {state: t("inSettlement"), staked};
+  if (!settled) {
+    // исход матча уже известен отбору, погашения ещё нет
+    const state = r._resolution === 1 ? t("awaitingRedeem") : r._resolution === 0 ? t("lostAwaitingSettle") : t("inSettlement");
+    return {state, staked, odds, stateCls: r._resolution === 1 ? "pos" : r._resolution === 0 ? "neg" : ""};
+  }
   const p = Number(r.pnl);
   const result = p > 0 ? `${t("profitLabel")} +${usdTxt(p, 2)}` : p < 0 ? `${t("lossLabel")} ${usdTxt(p, 2)}` : `${t("zeroResultLabel")} ${usdTxt(0, 2)}`;
-  return {staked, result, cls: p > 0 ? "pos" : p < 0 ? "neg" : ""};
+  return {staked, odds, result, cls: p > 0 ? "pos" : p < 0 ? "neg" : ""};
 }
 function cardFeeText(r){
   // единственная необязательная строка: подтверждённая комиссия всех покупок карточки, уже включённая в «Поставлено»;
@@ -3104,7 +3151,7 @@ function forecastOutcomeWord(tone){
 function pickAria(r, tone){
   const sport = r.sport === "soccer" ? t("sportSoccer") : r.sport === "mlb" ? t("sportMlb") : (r.sport || "");
   const m = cardMoney(r);
-  const outcome = m ? [m.staked, m.result, m.state].filter(Boolean).join(". ") : [t("forecastWord"), forecastOutcomeWord(tone)].filter(Boolean).join(". ");
+  const outcome = m ? [m.staked, m.odds, m.result, m.state].filter(Boolean).join(". ") : [t("forecastWord"), forecastOutcomeWord(tone)].filter(Boolean).join(". ");
   return [sport, r.match || "", r.selection || "", outcome].filter(Boolean).join(". ");
 }
 function pickDetails(r){
@@ -3137,7 +3184,8 @@ function dayPickRow(r){
   const m = cardMoney(r);
   // v172 (владелец 18.10): «Прогноз · Выигрыш/Проигрыш/Возврат» у рассчитанного прогноза; до расчёта — просто «Прогноз»
   const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? forecastOutcomeWord(tone) : ""].filter(Boolean).join(" · ");
-  const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "", m.state ? `<span>${v3Esc(m.state)}</span>` : ""].filter(Boolean) : [];
+  const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.odds ? `<span>${v3Esc(m.odds)}</span>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "",
+                         m.state ? (m.stateCls ? `<span class="${m.stateCls}">${v3Esc(m.state)}</span>` : `<span>${v3Esc(m.state)}</span>`) : ""].filter(Boolean) : [];
   const sub2 = moneyBits.length ? `<small class="sub">${moneyBits.join(" · ")}</small>` : "";
   const mark = tone === "win" ? "✓" : tone === "lose" ? "×" : "";
   const glow = tone === "win" ? "green" : tone === "lose" ? "red" : "";
