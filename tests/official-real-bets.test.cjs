@@ -440,7 +440,7 @@ test("personal history moved from Games to the Dashboard markup", () => {
   assert.match(html, /taClaim24Hint/);
   assert.match(html, /\.grid \.card:first-child \.v\{font-size:clamp\([^}]*white-space:nowrap/);
 });
-test("v174: the 24-hour block shows the selection of the last day across sports as the same cards, without an archive", () => {
+test("v176: the 24-hour block shows only real purchases — forecasts without a buy are not listed", () => {
   const h = n => new Date(Date.now() - n * 3600000).toISOString();
   const day = iso => iso.slice(0, 10);
   const mkPick = (sport, id, ts, commence, extra) => Object.assign({sport, entry_id: id, side: "home", match: `Home ${id} vs Away ${id}`, selection: `Home ${id}`,
@@ -451,24 +451,33 @@ test("v174: the 24-hour block shows the selection of the last day across sports 
   const sfeed = {mode:"PAPER_ONLY", real_stake:0, bets:[fresh, played, old],
     session:{date: day(h(-2)), bets_list:[fresh, played]}, history:[{date: day(h(50)), bets_list:[old]}]};
   load([]);
-  const rows = context.recentSelectionRows(sfeed);
-  assert.equal(rows.map(r => r.match).sort().join("|"), "Home m1 vs Away m1|Home s1 vs Away s1");
+  // v176 (владелец 26.10): прогнозы без покупки в блок не входят
+  assert.equal(context.recentSelectionRows(sfeed).length, 0);
   const html = context.recentSelectionBlockHtml(sfeed);
-  assert.equal(html.split("<article").length - 1, 2);
-  assert.match(html, /⚽/); assert.match(html, /⚾/);
-  assert.doesNotMatch(html, /Архив|hist-toggle|Home s0/);
+  assert.equal(html.split("<article").length - 1, 0);
+  assert.match(html, /За последние 24 часа ставок не было/);
   // покупка, исполненная за последние сутки, без прогноза в ленте — тоже в блоке, той же карточкой
   const buy = {kind:"TRADE", state:"CONFIRMED", operation_id:"op-b", fixture_id:`${h(30)}|away b@home b`, side:"home",
     match:"Away B @ Home B", amount_units:"1000000", created_at:h(30), submitted_at:h(30), filled_at:h(5), sport:"mlb"};
   load([buy]);
   const withBuy = context.recentSelectionBlockHtml(sfeed);
   assert.match(withBuy, /Home B/); assert.match(withBuy, /Резерв 1,00 USD/);
+  assert.equal(withBuy.split("<article").length - 1, 1, "только покупка, без прогнозов s1/m1");
+  assert.doesNotMatch(withBuy, /Home s1|Home m1|Архив|hist-toggle/);
   // покупка старше суток в блок не попадает
   load([Object.assign({}, buy, {operation_id:"op-o", filled_at:h(40), fixture_id:`${h(50)}|away o@home o`, match:"Away O @ Home O"})]);
   assert.doesNotMatch(context.recentSelectionBlockHtml(sfeed), /Home O/);
   // пусто — одна строка состояния
   load([]);
-  assert.match(context.recentSelectionBlockHtml({mode:"PAPER_ONLY", real_stake:0, bets:[], session:{date: day(h(0)), bets_list:[]}, history:[]}), /За последние 24 часа отбора не было/);
+  assert.match(context.recentSelectionBlockHtml({mode:"PAPER_ONLY", real_stake:0, bets:[], session:{date: day(h(0)), bets_list:[]}, history:[]}), /За последние 24 часа ставок не было/);
+});
+test("v176: realBetRowsOnly keeps confirmed and reconciling buys, drops forecasts and rejected Auto", () => {
+  const rows = [{_cash:true}, {_unknown:true}, {_forecast:true, _cash:false}, {_cash:false, _autoRejected:1}, null];
+  assert.equal(context.realBetRowsOnly(rows).length, 2);
+  load([trade]);
+  assert.equal(context.realBetRowsOnly(context.daySelectionRows(feed, "2026-10-15")).length, 1);
+  load([]);
+  assert.equal(context.realBetRowsOnly(context.daySelectionRows(feed, "2026-10-15")).length, 0, "прогноз Cleveland без покупки скрыт");
 });
 test("dashboard rows face the money result of a redeemed buy and keep the stake in the caption", () => {
   const cleveland = {kind:"TRADE", state:"CONFIRMED", operation_id:"91cebdd2-033d-485b-a449-e03fe034bd36",

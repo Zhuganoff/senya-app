@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v175";
+const BUILD = "v176";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -3175,6 +3175,9 @@ function daySelectionRows(feed, date){
   }
   return rows;
 }
+// v176 (владелец 26.10): в «Ставках» и «Ставках за 24 часа» — только реальные покупки личного счёта
+// (подтверждённые и сверяемые); прогнозы без покупки и отказы Auto сюда не входят — для них будет своё меню прогнозов
+function realBetRowsOnly(rows){ return (rows || []).filter(r => r && (r._cash === true || r._unknown === true)); }
 function dayStakeUnits(rows){
   return (rows || []).filter(r => r._cash && r.stake != null).reduce((s, r) => s + Number(r.stake), 0);
 }
@@ -3356,7 +3359,7 @@ function recentSelectionRows(feed, now){
   const floor = new Date(t0 - 2 * DAY_MS).toISOString().slice(0, 10);
   const out = [];
   for (const d of [...days].filter(d => d >= floor).sort().reverse()) {
-    daySelectionRows(source, d)
+    realBetRowsOnly(daySelectionRows(source, d))
       .filter(r => inWindow(r.ts) || inWindow(r.commence) || inWindow(r.exec_ts))
       .sort((a, b) => String(b.ts || b.commence || "").localeCompare(String(a.ts || a.commence || "")))
       .forEach(r => out.push(r));
@@ -3365,7 +3368,7 @@ function recentSelectionRows(feed, now){
 }
 function recentSelectionBlockHtml(feed, now){
   const rows = recentSelectionRows(feed, now);
-  if (!rows.length) return `<div class="loading">${t("noRecentPicks")}</div>`;
+  if (!rows.length) return `<div class="loading">${t("noRecentBets")}</div>`;
   const groups = new Map();
   for (const r of rows) { const d = r.session_date || "—"; if (!groups.has(d)) groups.set(d, []); groups.get(d).push(r); }
   return [...groups.keys()].sort().reverse().map(d =>
@@ -3549,7 +3552,7 @@ async function loadLastBets(quiet){
     const feed = window.__strategyFeed || null;
     loadOfficialSelectionAnalysis(feed);
     const view = selectionListDay(feed);
-    const rows = view.date ? daySelectionRows(feed, view.date) : [];
+    const rows = view.date ? realBetRowsOnly(daySelectionRows(feed, view.date)) : [];
     const paint = () => {
       if (gen !== __betsGen || session !== sessionKey()) return;
       const st = document.getElementById("lastStat");
