@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v176";
+const BUILD = "v177";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1227,7 +1227,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "19.10.2026";
+const BUILD_DATE = "28.10.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1738,7 +1738,7 @@ document.querySelectorAll("[data-i18n]").forEach(el => {
     // на GitHub Pages — прежний version.json
     const onRpc = location.pathname.includes("/rpc/");
     const vurl = onRpc
-      ? "app_version?apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M&t=" + Date.now()
+      ? "app_version?apikey=sb_publishable_xJfGU3MhcWAV6-1gxUaYRQ_wqFfCeZP&t=" + Date.now()
       : "version.json?t=" + Date.now();
     fetch(vurl, {cache: "no-store"})
       .then(r => r.ok ? r.json() : null)
@@ -1756,7 +1756,7 @@ const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";
 // Публичная лента отбора песочницы; личные сделки остаются только в aisports RPC.
 const STRATEGY_SB = "https://gqlfnhlrpteqfdfyhavl.supabase.co/rest/v1";
 const STRATEGY_KEY = "sb_publishable_J1keRlMi77VotTCnuqGJQg_inumrH9o";
-const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImduYXZpb2pzdnRtdWt5cGRuYXhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3NjY5MDIsImV4cCI6MjEwNDM0MjkwMn0.26mLwHDM4pQVRfSfUktvr5sm9ZiWt1nBvii3ITph42M";
+const KEY = "sb_publishable_xJfGU3MhcWAV6-1gxUaYRQ_wqFfCeZP";
 const H = {apikey: KEY, Authorization: "Bearer " + KEY};
 
 const tg = window.Telegram && window.Telegram.WebApp;
