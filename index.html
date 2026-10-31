@@ -955,7 +955,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v114";
+const BUILD = "v115";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -970,7 +970,7 @@ const HIDE_MONEY = APP_PROFILE === "aisports";
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "30.10.2026";
+const BUILD_DATE = "01.11.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1172,7 +1172,9 @@ const T = {
   sportsD: ["MLB · теннис · футбол", "MLB · tennis · soccer", "MLB · 网球 · 足球"],
   showcase: ["Витрина обновляется…", "Showcase is updating…", "数据更新中…"],
   // динамика: ставки
-  win: ["выигрыш", "win", "赢"], lose: ["проигрыш", "loss", "输"], voided: ["возврат", "void", "退还"], inPlay: ["в игре", "in play", "进行中"],
+  win: ["выигрыш", "win", "赢"], lose: ["проигрыш", "loss", "输"], voided: ["возврат", "void", "退还"], liveLeading: ["идёт к выигрышу", "on track to win", "有望赢"], liveTrailing: ["идёт к проигрышу", "on track to lose", "有望输"], livePush: ["идёт к возврату", "on track for a push", "有望退还"],
+  liveFinal: ["финал", "final", "终场"], liveAwait: ["финал · ждём подтверждения", "final · awaiting confirmation", "终场 · 等待确认"],
+  inPlay: ["в игре", "in play", "进行中"],
   ofBank: ["% банка", "% of bank", "% 资金"],
   noBetsYet: ["Ставок пока нет", "No bets yet", "暂无投注"],
   baTitle: ["Анализ ставок", "Bet analysis", "投注分析"],
@@ -1770,14 +1772,21 @@ function betRow(r){
   const money = HIDE_MONEY ? ""
               : r.stake != null ? ` = $${Number(r.stake).toFixed(2)}`
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
+  // v115 (владелец 31.10: «следить в реальном времени»): живой счёт ESPN от сторожа soccer_live_watch (поле live ленты) —
+  // только пока ставка не рассчитана; деньги и итог по-прежнему ставит расчёт (settle), здесь лишь подпись
+  const lv = (r.result == null && r.live && typeof r.live === "object" && r.live.hs != null && r.live.as != null) ? r.live : null;
+  const lvTxt = lv ? (lv.state === "post" ? t("liveAwait")
+                     : `${t("inPlay")}${lv.prelim === 1 ? " · " + t("liveLeading") : lv.prelim === 0 ? " · " + t("liveTrailing") : lv.prelim === -1 ? " · " + t("livePush") : ""}`) : "";
   const res = r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
             : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
+            : lv?`<span style="color:var(--mut)">${v3Esc(lvTxt)}</span>`
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
             : `<span style="color:var(--mut)">${t("inPlay")}</span>`;
-  // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно
+  // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно; у идущего матча — живой счёт и минута
   const ms = r.result != null ? msFor(r._sport || ICO_SPORT[r._ico], r.match, r.match_date) : null;
-  const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>` : "";
+  const scoreS = ms && ms.final_score ? `<span class="bscore">${ms.final_score}</span>`
+               : lv ? `<span class="bscore">${v3Esc(String(lv.hs))}:${v3Esc(String(lv.as))}${lv.state === "in" && lv.minute ? " " + v3Esc(String(lv.minute)) : lv.state === "post" ? " " + t("liveFinal") : ""}</span>` : "";
   const msAttr = ms ? ` data-ms="${ms.sport}|${(r.match||"").replace(/"/g,"&quot;")}|${ms.match_date}" data-pick="${(r.selection||"").replace(/"/g,"&quot;")}" data-res="${r.result??""}"` : "";
   return `<div class="bet ${rowCls(r)}"${msAttr}><div class="res">${ico}</div>
     <div class="m"><div class="match">${r._ico||""}${v3Esc(r.match||"")}${scoreS}</div>
