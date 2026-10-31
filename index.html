@@ -955,7 +955,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v115";
+const BUILD = "v116";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1774,7 +1774,8 @@ function betRow(r){
               : (sh && window.__myBank) ? ` = $${(sh*window.__myBank).toFixed(2)}` : "";
   // v115 (владелец 31.10: «следить в реальном времени»): живой счёт ESPN от сторожа soccer_live_watch (поле live ленты) —
   // только пока ставка не рассчитана; деньги и итог по-прежнему ставит расчёт (settle), здесь лишь подпись
-  const lv = (r.result == null && r.live && typeof r.live === "object" && r.live.hs != null && r.live.as != null) ? r.live : null;
+  const lv = (r.result == null && r.live && typeof r.live === "object" && r.live.hs != null && r.live.as != null
+              && (r.live.state === "in" || r.live.state === "post")) ? r.live : null;   // до стартового свистка счёт не показываем
   const lvTxt = lv ? (lv.state === "post" ? t("liveAwait")
                      : `${t("inPlay")}${lv.prelim === 1 ? " · " + t("liveLeading") : lv.prelim === 0 ? " · " + t("liveTrailing") : lv.prelim === -1 ? " · " + t("livePush") : ""}`) : "";
   const res = r.result===1?`<span class="pos">${t("win")}</span>`
