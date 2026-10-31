@@ -1109,7 +1109,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v177";
+const BUILD = "v178";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1136,7 +1136,8 @@ function personalUnknownTradesHint(){
 function selectedPicks(feed){
   if (!feed || feed.mode !== "PAPER_ONLY" || Number(feed.real_stake || 0) !== 0) return [];
   const blocks = [feed.session, ...(Array.isArray(feed.history) ? feed.history : [])];
-  const all = [...(Array.isArray(feed.bets) ? feed.bets : []),
+  // v178: официальная лента несёт выборы в paper_forecasts (bets/bets_list в ней пустые с 21.09); песочная — в bets
+  const all = [...(Array.isArray(feed.paper_forecasts) ? feed.paper_forecasts : []), ...(Array.isArray(feed.bets) ? feed.bets : []),
     ...blocks.flatMap(b => (b && Array.isArray(b.bets_list)) ? b.bets_list : [])];
   const seen = new Set();
   return all.filter(b => {
@@ -1227,7 +1228,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "28.10.2026";
+const BUILD_DATE = "31.10.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1754,9 +1755,11 @@ document.querySelectorAll("[data-i18n]").forEach(el => {
 
 const SB = "https://gnaviojsvtmukypdnaxk.supabase.co/rest/v1";
 // Публичная лента отбора песочницы; личные сделки остаются только в aisports RPC.
-const STRATEGY_SB = "https://gqlfnhlrpteqfdfyhavl.supabase.co/rest/v1";
-const STRATEGY_KEY = "sb_publishable_J1keRlMi77VotTCnuqGJQg_inumrH9o";
 const KEY = "sb_publishable_xJfGU3MhcWAV6-1gxUaYRQ_wqFfCeZP";
+// v178 (владелец 31.10): лента отбора — из проекта ОСНОВНОГО приложения (её публикует сервер sport-kz, официальный контур;
+// выборы — блок paper_forecasts), а не из проекта песочницы Mac: v160–v177 показывали бумажные выборы песочницы как «выбрано»
+// рядом с реальными автоставками основного счёта (31.10: «3 выбрано» песочницы при 5 выборах и 2 покупках официального контура)
+const STRATEGY_SB = SB; const STRATEGY_KEY = KEY;
 const H = {apikey: KEY, Authorization: "Bearer " + KEY};
 
 const tg = window.Telegram && window.Telegram.WebApp;
@@ -2891,6 +2894,10 @@ function startStatsAutoRefresh(){
     if (!statsTabVisible() || window.__statsInit !== true) return;
     try { loadLastBets(true); } catch(e) {}
   }, STATS_REFRESH_MS);
+  // v178 (владелец 31.10: «в режиме онлайн всё обновлялось сразу»): личный счёт раньше перечитывался только при возврате
+  // в приложение (visibilitychange/pageshow) — открытое приложение не видело исполнение покупки (висело «Резерв», «поставлено» не росло).
+  // Фоновый опрос каждые 30 с по тем же правилам botAccountPoll (скрытое приложение — ни одного запроса; снимок моложе 30 с — пропуск).
+  if (!window.__acctPollTimer) window.__acctPollTimer = setInterval(() => { try { botAccountPoll(); } catch(e) {} }, ACCOUNT_SNAPSHOT_MS);
   // возврат к приложению — сразу свежие цифры, не дожидаясь тика таймера
   document.addEventListener("visibilitychange", () => {
     if (statsTabVisible() && window.__statsInit) {
