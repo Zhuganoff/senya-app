@@ -1060,11 +1060,6 @@ body.splash-on{overflow:hidden}
 
   </div>
 
-  <div class="proof" data-i18n="proofMain">
-    🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной
-    базы результатов. Каждая ставка фиксируется в момент размещения. Технические
-    исправления сохраняются с причиной, временем и исходным значением.
-  </div>
 
   <div class="foot" id="foot" data-i18n="foot"><b class="brandline">AI Sports · спортивная аналитика</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
 </div>
@@ -1109,7 +1104,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v178";
+const BUILD = "v179";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1182,9 +1177,14 @@ function marketFamily(b){
 function tradeKey(b){
   const event = b._forecast ? selectionEventId(b) : b.fixture_id;
   if (!event || !b.side) return "";
-  const family = marketFamily(b);
+  let family = marketFamily(b);
+  let line = b.line != null && Number.isFinite(Number(b.line)) ? String(Number(b.line)) : "";
+  // v179 (владелец 02.11: «ничего не должно дублироваться»): на Polymarket целой форы нет — покупка «сторона или ничья» (dc) и есть
+  // прогноз «фора +1», покупка «победа» по подмене — прогноз «фора −1» (замена 24.10); без этого карточка покупки и карточка прогноза
+  // одного матча шли двумя строками
+  if (family === "dc") { family = "spread"; line = "1"; }
+  if (family === "spread" && line === "-1") { family = "1x2"; line = ""; }
   const needsLine = family === "total" || family === "spread";
-  const line = b.line != null && Number.isFinite(Number(b.line)) ? String(Number(b.line)) : "";
   if (needsLine && !line) return "";
   return `${b.sport}|${event}|${b.side}|${family}${needsLine ? "|" + line : ""}`;
 }
@@ -1228,7 +1228,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "31.10.2026";
+const BUILD_DATE = "02.11.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -4185,7 +4185,9 @@ function personalTradesFromHistory(state){
     // v167 (§9.2): затраты до погашения доказаны только исполнением — fill_notional_units (сумма исполнений) + fee_units; резерв не годится
     const notional = o.fill_notional_units != null && /^[0-9]+$/.test(String(o.fill_notional_units)) ? Number(o.fill_notional_units) / 1e6 : null;
     rows.push({sport: sportOf(o), operation_id: o.operation_id, state: o.state, match, selection,
-      cost_known: notional != null && fee != null ? notional + fee : null,
+      // v179: сумма исполнений известна у каждой подтверждённой покупки (fill_notional_units); комиссия у покупки биржей не
+      // отдаётся — раньше из-за этого карточка показывала «Первоначальный резерв» вместо «Поставлено» до самого погашения
+      cost_known: notional != null ? notional + (fee != null ? fee : 0) : null,
       fill_price: confirmedFillPrice(o),
       stake: costUnits != null ? Number(costUnits) / 1e6 : reserved,
       reserved, fee, shares: sharesUnits != null ? Number(sharesUnits) / 1e6 : null,
