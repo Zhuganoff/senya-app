@@ -920,11 +920,7 @@ body.splash-on{overflow:hidden}
 
   </div>
 
-  <div class="proof" data-i18n="proofMain">
-    🔍 <b>Прозрачность:</b> данные на этой странице читаются напрямую из публичной
-    базы результатов. Каждая ставка фиксируется в момент размещения. Технические
-    исправления сохраняются с причиной, временем и исходным значением.
-  </div>
+  <div class="proof" data-i18n="proofMain"><b></b></div>
 
   <div class="foot" id="foot" data-i18n="foot"><b class="brandline">Автономный AI-аналитик · рынок и код решают по исполнимому edge</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
 </div>
@@ -955,7 +951,7 @@ body.splash-on{overflow:hidden}
 </nav>
 
 <script>
-const BUILD = "v116";
+const BUILD = "v117";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1035,9 +1031,7 @@ const T = {
   yesterday: ["← вчера", "← prev day", "← 前一天"],
   tomorrow: ["завтра →", "next day →", "后一天 →"],
   pickDate: ["Выбери дату", "Pick a date", "选择日期"],
-  proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
-              "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
-              "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
+  proofMain: ["<b></b>", "<b></b>", "<b></b>"],
   foot: ["<b class=\"brandline\">Автономный AI-аналитик · рынок и код решают по исполнимому edge</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
          "<b class=\"brandline\">Autonomous AI analyst · market and code decide by executable edge</b>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
          "<b class=\"brandline\">自主 AI 分析师 · 市场与代码按可执行优势决策</b>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
