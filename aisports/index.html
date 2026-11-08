@@ -40,7 +40,7 @@
   --card:#141b26;--card-2:#1a2231;--card-3:#212b3d;
   --txt:#eef3fa;--txt-2:#b8c4d6;--mut:#7d8eaa;
   --line:rgba(255,255,255,.07);--line-2:rgba(255,255,255,.12);
-  --green:#22c55e;--green-2:#16a34a;--red:#f43f5e;--amber:#f59e0b;
+  --green:#22c55e;--green-2:#16a34a;--red:#f43f5e;--amber:#f59e0b;--blue:#3b82f6;
   --accent:#38bdf8;--accent2:#06b6d4;
   --glow:rgba(56,189,248,.15);--tint1:rgba(56,189,248,.12);--tint2:rgba(6,182,212,.07);
   /* отступы и радиусы: шаг 4, ничего между */
@@ -53,7 +53,7 @@ body.light{
   --card:#ffffff;--card-2:#f4f7fa;--card-3:#e9eff5;
   --txt:#0d1521;--txt-2:#34445f;--mut:#5b6b84;
   --line:rgba(13,21,33,.09);--line-2:rgba(13,21,33,.16);
-  --green:#15a34a;--green-2:#0f8a3e;--red:#dc2f4b;--amber:#b45309;
+  --green:#15a34a;--green-2:#0f8a3e;--red:#dc2f4b;--amber:#b45309;--blue:#2563eb;
   --accent:#0284c7;--accent2:#0891b2;
   --glow:rgba(2,132,199,.13);--tint1:rgba(2,132,199,.09);--tint2:rgba(8,145,178,.05);
   --shadow:0 1px 2px rgba(20,40,70,.06),0 10px 26px -14px rgba(20,40,70,.22);
@@ -97,6 +97,7 @@ body{background:var(--bg);color:var(--txt);
 b{font-weight:700}
 .pos{color:var(--green)}
 .neg{color:var(--red)}
+.ret{color:var(--blue)}
 .loading{color:var(--mut);font-size:13.5px;padding:var(--s4) var(--s3);text-align:center}
 
 /* ── шапка ── */
@@ -224,7 +225,8 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
   border-color:color-mix(in srgb,var(--green) 28%,var(--line))}
 .bet.lose .res{color:var(--red);background:color-mix(in srgb,var(--red) 12%,var(--card-3));
   border-color:color-mix(in srgb,var(--red) 26%,var(--line))}
-.bet.void .res{color:var(--txt-2)}
+.bet.void .res{color:var(--blue);background:color-mix(in srgb,var(--blue) 13%,var(--card-3));
+  border-color:color-mix(in srgb,var(--blue) 28%,var(--line))}
 .bet .m{flex:1;min-width:0}
 .bet .match{font-size:14.5px;font-weight:700;letter-spacing:-.015em;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -239,12 +241,13 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
   letter-spacing:.04em;text-transform:uppercase}
 .bet.win .pnl:last-child{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
 .bet.lose .pnl:last-child{background:color-mix(in srgb,var(--red) 16%,transparent);color:var(--red)}
-.bet.void .pnl:last-child{background:var(--card-2);color:var(--mut)}
+.bet.void .pnl:last-child{background:color-mix(in srgb,var(--blue) 18%,transparent);color:var(--blue)}
 .bet.win{border-left-color:var(--green);
   background:linear-gradient(90deg,rgba(34,197,94,.10),transparent 42%)}
 .bet.lose{border-left-color:var(--red);
   background:linear-gradient(90deg,rgba(244,63,94,.09),transparent 42%)}
-.bet.void{border-left-color:var(--line-2)}
+.bet.void{border-left-color:var(--blue);
+  background:linear-gradient(90deg,rgba(59,130,246,.10),transparent 42%)}
 .pickline{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:transparent}
 .pickline:last-child{border-bottom:none}
 .pickline-row{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:8px 10px;width:100%;
@@ -270,10 +273,13 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
 .pickline.win .mark{background:#d8f4e3;color:#168458}
 .pickline.lose{background:linear-gradient(105deg,color-mix(in srgb,#df5a69 14%,var(--card)),var(--card) 68%)}
 .pickline.lose .mark{background:#ffe0e4;color:#bf4b5e}
+.pickline.void{background:linear-gradient(105deg,color-mix(in srgb,#3b82f6 16%,var(--card)),var(--card) 68%)}
+.pickline.void .mark{background:#dbeafe;color:#1d4ed8}
 .pickline.pending{background:linear-gradient(105deg,color-mix(in srgb,#e0b15a 16%,var(--card)),var(--card) 72%)}
 .pickline .glowbar{position:absolute;left:0;right:0;bottom:0;height:5px;overflow:hidden;pointer-events:none}
 .pickline .glowbar.green{background:linear-gradient(90deg,#2abf72,#73eab3,#20af6e)}
 .pickline .glowbar.red{background:linear-gradient(90deg,#df5a69,#ffa0a4,#d94760)}
+.pickline .glowbar.blue{background:linear-gradient(90deg,#3b82f6,#93c5fd,#2563eb)}
 .pickline .glowbar::after{content:"";display:block;width:42%;height:100%;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);
   transform:translateX(-120%);animation:aisGlowSweep 7.5s ease-in-out infinite}
@@ -316,6 +322,7 @@ body.light .glass-sheen::after{background:linear-gradient(112deg,transparent 31%
 .sel-odds small{display:block;max-width:92px;font-size:9px;font-weight:650;color:var(--mut);line-height:1.25;white-space:normal}
 body.light .pickline.win{background:linear-gradient(105deg,#eefaf2,#fff 63%)}
 body.light .pickline.lose{background:linear-gradient(105deg,#fff0f1,#fff 63%)}
+body.light .pickline.void{background:linear-gradient(105deg,#eff6ff,#fff 63%)}
 body.light .pickline.pending{background:linear-gradient(105deg,#fff8ee,#fff 70%)}
 
 /* ── кошельки ── */
@@ -1104,7 +1111,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v179";
+const BUILD = "v180";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1228,7 +1235,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "02.11.2026";
+const BUILD_DATE = "08.11.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -2504,7 +2511,7 @@ function betRow(r){
             : `<span style="color:var(--mut)">${t("selectedNoTrade")}</span>`)
             : r.result===1?`<span class="pos">${t("win")}</span>`
             : r.result===0?`<span class="neg">${t("lose")}</span>`
-            : r.result===-1?`<span style="color:var(--mut)">${t("voided")}</span>`
+            : r.result===-1?`<span class="ret">${t("voided")}</span>`
             : isStale(r)?`<span style="color:var(--mut)">⏸ ${t("suspended")}</span>`
             : `<span style="color:var(--mut)">${t("inPlay")}</span>`;
   // счёт сыгранного матча (senya_match_stats) — бейдж + тап открывает окно
@@ -3227,7 +3234,7 @@ function cardMoney(r){
   }
   const p = Number(r.pnl);
   const result = p > 0 ? `${t("profitLabel")} +${usdTxt(p, 2)}` : p < 0 ? `${t("lossLabel")} ${usdTxt(p, 2)}` : `${t("zeroResultLabel")} ${usdTxt(0, 2)}`;
-  return {staked, odds, result, cls: p > 0 ? "pos" : p < 0 ? "neg" : ""};
+  return {staked, odds, result, cls: p > 0 ? "pos" : p < 0 ? "neg" : "ret"};   // v180: нулевой результат (возврат) — синим
 }
 function cardFeeText(r){
   // единственная необязательная строка: подтверждённая комиссия всех покупок карточки, уже включённая в «Поставлено»;
@@ -3280,13 +3287,14 @@ function dayPickRow(r){
   const m = cardMoney(r);
   // v172 (владелец 18.10): «Прогноз · Выигрыш/Проигрыш/Возврат» у рассчитанного прогноза; до расчёта — просто «Прогноз»
   // v175: у прогноза с отклонённой автоставкой — честная подпись «Автоставка не выполнена»; код отказа — в заголовке карточки (title)
-  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? forecastOutcomeWord(tone) : "",
+  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? (tone === "void" ? `<span class="ret">${forecastOutcomeWord(tone)}</span>` : forecastOutcomeWord(tone)) : "",
                 !m && r._autoRejected ? `<span class="neg" title="${v3Esc(r._autoReason || "")}">${t("autoBetFailed")}</span>` : ""].filter(Boolean).join(" · ");
   const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.odds ? `<span>${v3Esc(m.odds)}</span>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "",
                          m.state ? (m.stateCls ? `<span class="${m.stateCls}">${v3Esc(m.state)}</span>` : `<span>${v3Esc(m.state)}</span>`) : ""].filter(Boolean) : [];
   const sub2 = moneyBits.length ? `<small class="sub">${moneyBits.join(" · ")}</small>` : "";
-  const mark = tone === "win" ? "✓" : tone === "lose" ? "×" : "";
-  const glow = tone === "win" ? "green" : tone === "lose" ? "red" : "";
+  // v180 (владелец 08.11): возврат (push по форе, нулевой результат) подсвечивается синим — метка ↩, синяя полоса, слово «Возврат» синим
+  const mark = tone === "win" ? "✓" : tone === "lose" ? "×" : tone === "void" ? "↩" : "";
+  const glow = tone === "win" ? "green" : tone === "lose" ? "red" : tone === "void" ? "blue" : "";
   const key = v3Esc(rowKey(r));   // устойчивый ключ строки: раскрытие переживает перерисовку (16.10)
   const more = pickDetails(r);
   const inner = `<span class="pico" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${sub1}</small>${sub2}</span><span class="right">${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span>`;
