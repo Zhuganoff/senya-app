@@ -1111,7 +1111,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v181";
+const BUILD = "v182";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1463,6 +1463,10 @@ const T = {
   schedDayNote: ["игровой день {d} (до 06:00 UTC) · время по часам устройства, {tz}", "game day {d} (until 06:00 UTC) · device time, {tz}", "比赛日 {d}（至 06:00 UTC）· 设备时间，{tz}"],
   taProfit24: ["Результат погашений за 24 часа", "Redemptions result, last 24h", "近24小时赎回结果"],
   taSettledHint: ["по подтверждённым выплатам биржи", "from confirmed exchange payouts", "按交易所已确认的派息"],
+  taLedgerFunded: ["внесено", "deposited", "已存入"], taLedgerWithdrawn: ["выведено", "withdrawn", "已提取"],
+  taLedgerBought: ["потрачено на покупки", "spent on buys", "买入支出"], taLedgerPaid: ["выплачено биржей", "paid out by the exchange", "交易所已派息"],
+  taLedgerWallet: ["итог по кошельку", "wallet result", "按钱包结算"], taLedgerOk: ["учёт сходится с кошельком", "ledger matches the wallet", "账目与钱包一致"],
+  taLedgerUnexplained: ["вне учёта", "outside the ledger", "账外"],
   taHistoryLimited: ["История ещё загружается или неполная", "History is loading or incomplete", "历史记录加载中或不完整"],
   taAccountLoading: ["Загружаем торговый счёт", "Loading trading account", "正在加载交易账户"],
   walletNotConnected: ["Не подключён · привязка не подтверждена", "Not connected · link not verified", "未连接 · 绑定未验证"],
@@ -2229,7 +2233,7 @@ async function main(){
       <div class="d" style="color:var(--mut)">${dayHint}</div>${more}</div>
     <div class="card"><div class="k">${t("allTimeResult")}</div>
       <div class="v ${tone(ta.pnlAll)}">${ta.pnlAll != null ? shortTxt(ta.pnlAll) : "—"}</div>
-      <div class="d" style="color:var(--mut)">${(ta.pnlAll != null ? moneyUnits(ta.pnlAll, {exact:true, sign:true}) + " · " + t("taSettledHint") : t("taHistoryLimited")) + since}</div></div>
+      <div class="d" style="color:var(--mut)">${(ta.pnlAll != null ? moneyUnits(ta.pnlAll, {exact:true, sign:true}) + " · " + t("taSettledHint") : t("taHistoryLimited")) + ledgerLine(ta) + since}</div></div>
     <div class="card"><div class="k">${t("taWinrate")}</div>
       <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${wr.rate}</div>
       <div class="d" style="color:var(--mut)">${wr.detail}</div></div>`;
@@ -3469,7 +3473,8 @@ function moneyDetailsHtml(feed, state){
     : ta && ta.period24Known ? `${t("period24")}: — · ${t("period24Incomplete")}` : `${t("period24")}: — · ${t("period24Unknown")}`;
   return rows.sort((a, b) => String(b.session_date).localeCompare(String(a.session_date))).map(line).join("")
     + `<div class="pick-detail"><b>${t("resultAmount")} (${rows.length}): ${sign}${claimPnlTxt(total / 1e6)} USD</b></div>`
-    + `<div class="pick-detail">${p24}</div>`;
+    + `<div class="pick-detail">${p24}</div>`
+    + ledgerDetailHtml(ta);
 }
 function selectionListDay(feed){
   const current = (feed && feed.session && feed.session.date) || "";
@@ -4319,6 +4324,12 @@ function tradingAccountStats(state){
   return {available: String(a.balance.available_units ?? "0"), reserved: String(a.balance.reserved_units ?? "0"), confirmed: String(a.balance.confirmed_units ?? "0"),
           wins, losses, pushes, settled: fullHistory ? wins + losses : null, unit: "purchases",
           pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24,
+          // v182 (владелец 09.11): учёт по кошельку с сервера (bot_account_view.balance.*_units; старый сервер полей не отдаёт → null, строк нет)
+          funded: units(a.balance.funded_units) != null ? String(a.balance.funded_units) : null,
+          withdrawn: units(a.balance.withdrawn_units) != null ? String(a.balance.withdrawn_units) : null,
+          bought: units(a.balance.bought_units) != null ? String(a.balance.bought_units) : null,
+          paidOut: units(a.balance.paid_out_units) != null ? String(a.balance.paid_out_units) : null,
+          unexplained: units(a.balance.unexplained_units) != null ? String(a.balance.unexplained_units) : null,
           period24Complete: pnl24 != null, period24Known: !!money, pnl24Count: money ? money.settled_window_count : null,
           claimsWithoutTime: money ? money.claims_without_settled_at : null, claims: claims.length};
 }
@@ -4329,6 +4340,26 @@ function autoSinceText(account){
   const d = new Date(ts); if (isNaN(d.getTime())) return "";
   const p = n => String(n).padStart(2, "0");
   return " · " + t("autoSince").replace("{d}", `${p(d.getUTCDate())}.${p(d.getUTCMonth() + 1)}.${d.getUTCFullYear()}`);
+}
+// v182 (владелец 09.11: «каждому пользователю — подключённый кошелёк и баланс, чтобы всё ровно и чётко»): строка учёта по кошельку.
+// Сервер считает по подтверждённым на цепочке денежным событиям счёта: внесено, выведено, потрачено, выплачено; «вне учёта» —
+// разница остатка кошелька с этой суммой (0 = сходится). Старый сервер полей не отдаёт → строки нет.
+function ledgerLine(ta){
+  if (!ta || ta.funded == null) return "";
+  let out = ` · ${t("taLedgerFunded")} ${moneyUnits(ta.funded, {decimals: 2})}`;
+  if (ta.withdrawn != null && ta.withdrawn !== "0") out += ` · ${t("taLedgerWithdrawn")} ${moneyUnits(ta.withdrawn, {decimals: 2})}`;
+  if (ta.unexplained != null) out += ta.unexplained === "0" ? ` · ${t("taLedgerOk")}` : ` · ${t("taLedgerUnexplained")} ${moneyUnits(ta.unexplained, {decimals: 2, sign: true})}`;
+  return out;
+}
+function ledgerDetailHtml(ta){
+  if (!ta || ta.funded == null) return "";
+  const big = v => v != null && /^-?[0-9]+$/.test(String(v)) ? BigInt(v) : null;
+  const walletResult = big(ta.confirmed) != null && big(ta.withdrawn) != null ? (big(ta.confirmed) + big(ta.withdrawn) - big(ta.funded)).toString() : null;
+  const parts = [`${t("taLedgerFunded")} ${moneyUnits(ta.funded, {exact: true})}`, `${t("taLedgerWithdrawn")} ${moneyUnits(ta.withdrawn || "0", {exact: true})}`,
+    `${t("taLedgerBought")} ${moneyUnits(ta.bought || "0", {exact: true})}`, `${t("taLedgerPaid")} ${moneyUnits(ta.paidOut || "0", {exact: true})}`];
+  const tail = walletResult != null ? ` · <b>${t("taLedgerWallet")} ${moneyUnits(walletResult, {exact: true, sign: true})}</b>` : "";
+  const unexp = ta.unexplained == null ? "" : ta.unexplained === "0" ? ` · ${t("taLedgerOk")}` : ` · ${t("taLedgerUnexplained")} ${moneyUnits(ta.unexplained, {exact: true, sign: true})}`;
+  return `<div class="pick-detail">${parts.join(" · ")}${tail}${unexp}</div>`;
 }
 function historyIsComplete(state){
   if (!state || state.historyLoaded !== true) return false;
