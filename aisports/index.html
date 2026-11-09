@@ -1111,7 +1111,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v180";
+const BUILD = "v181";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1235,7 +1235,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "08.11.2026";
+const BUILD_DATE = "09.11.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1442,6 +1442,7 @@ const T = {
   lastSelection: ["Последний отбор", "Latest selection", "最近一次选场"],
   newSelectionNotStarted: ["Новый отбор ещё не начался", "The new selection has not started yet", "新一轮选场尚未开始"],
   dayResult: ["Результат ставок", "Bets result", "投注结果"], allTimeResult: ["За всё время", "All time", "累计"],
+  autoSince: ["автоставки включены {d}", "auto-bets enabled {d}", "自动投注启用于 {d}"],
   dayResultHint: ["по подтверждённым выплатам ставок этого игрового дня", "from confirmed payouts of this game day's bets", "按该比赛日投注的已确认派息"],
   awaitingSettle: ["{n} ожидают расчёта", "{n} awaiting settlement", "{n} 笔待结算"],
   noDayResult: ["подтверждённых результатов за этот день нет", "no confirmed results for this day", "该日暂无已确认结果"],
@@ -2200,6 +2201,7 @@ async function main(){
     const ta = tradingAccountStats(botAccountController.state);
     const account = botAccountController.state && botAccountController.state.account;
     const card = accountCardHtml(account && account.balance);
+    const since = autoSinceText(account);   // v181 (владелец 09.11): дата включения автоставок — из политики счёта (enabled_at)
     const pnlTxt = u => moneyUnits(u, {exact:true, sign:true});
     const tone = u => u == null || String(u) === "0" ? "" : (String(u).startsWith("-") ? "neg" : "pos");
     const hint = u => u == null ? t("taHistoryLimited") : t("taSettledHint");
@@ -2227,7 +2229,7 @@ async function main(){
       <div class="d" style="color:var(--mut)">${dayHint}</div>${more}</div>
     <div class="card"><div class="k">${t("allTimeResult")}</div>
       <div class="v ${tone(ta.pnlAll)}">${ta.pnlAll != null ? shortTxt(ta.pnlAll) : "—"}</div>
-      <div class="d" style="color:var(--mut)">${ta.pnlAll != null ? moneyUnits(ta.pnlAll, {exact:true, sign:true}) + " · " + t("taSettledHint") : t("taHistoryLimited")}</div></div>
+      <div class="d" style="color:var(--mut)">${(ta.pnlAll != null ? moneyUnits(ta.pnlAll, {exact:true, sign:true}) + " · " + t("taSettledHint") : t("taHistoryLimited")) + since}</div></div>
     <div class="card"><div class="k">${t("taWinrate")}</div>
       <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${wr.rate}</div>
       <div class="d" style="color:var(--mut)">${wr.detail}</div></div>`;
@@ -2239,7 +2241,7 @@ async function main(){
     <div class="card"><div class="k">${dayTitle}</div><div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>
     <div class="card"><div class="k">${t("allTimeResult")}</div><div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("taAccountLoading")}</div></div>
+      <div class="d" style="color:var(--mut)">${t("taAccountLoading")}${since}</div></div>
     <div class="card"><div class="k">${t("taWinrate")}</div><div class="v">—</div>
       <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>`;
     const det = document.getElementById("moneyDetails"); if (det) { det.hidden = true; det.innerHTML = ""; }
@@ -4319,6 +4321,14 @@ function tradingAccountStats(state){
           pnlAll: units(a.balance.realized_pnl_units) != null ? String(a.balance.realized_pnl_units) : null, pnl24,
           period24Complete: pnl24 != null, period24Known: !!money, pnl24Count: money ? money.settled_window_count : null,
           claimsWithoutTime: money ? money.claims_without_settled_at : null, claims: claims.length};
+}
+// v181 (владелец 09.11): «автоставки включены ДД.ММ.ГГГГ» — дата включения из политики счёта (policy.enabled_at, UTC); нет данных — пусто
+function autoSinceText(account){
+  const ts = account && account.policy && account.policy.enabled_at;
+  if (!ts) return "";
+  const d = new Date(ts); if (isNaN(d.getTime())) return "";
+  const p = n => String(n).padStart(2, "0");
+  return " · " + t("autoSince").replace("{d}", `${p(d.getUTCDate())}.${p(d.getUTCMonth() + 1)}.${d.getUTCFullYear()}`);
 }
 function historyIsComplete(state){
   if (!state || state.historyLoaded !== true) return false;
