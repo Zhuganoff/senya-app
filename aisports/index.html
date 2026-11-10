@@ -1204,7 +1204,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v184";
+const BUILD = "v185";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1328,7 +1328,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "10.11.2026";
+const BUILD_DATE = "11.11.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1366,6 +1366,7 @@ const T = {
   loading: ["Загрузка…", "Loading…", "加载中…"],
   secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>", "今日投注 <span class=\"tag\" id=\"todayTag\">live</span>"],
   secDayBets: ["Прогнозы по дням", "Forecasts by day", "按日预测"],
+  chartStartLbl: ["старт", "start", "起点"],
   pickLbl: ["Ставка", "Bet", "投注"], oddsLbl: ["кф", "odds", "赔率"], startsAt: ["начало", "starts", "开始"],
   chartMin: ["минимум", "min", "最低"], chartMax: ["максимум", "max", "最高"],
   acctChartTitle: ["Результат счёта по дням", "Account result by day", "账户每日结果"],
@@ -3758,6 +3759,34 @@ function fcShare(feed){
   return {rate: Math.round(100 * w / n) + " %", cls: w / n >= 0.5 ? "pos" : "neg",
           detail: `${w} ${plRu(w, t("winOne"), t("winFew"), t("winMany"))} · ${l} ${plRu(l, t("lossOne"), t("lossFew"), t("lossMany"))}`};
 }
+// Живая точка графика: ведёшь пальцем или мышью — точка встаёт на ближайший день, в заголовке день и сумма.
+// Отпустил — через пару секунд точка возвращается на последний день. Разметка и стили не меняются.
+function chartScrub(box, pts){
+  const svg = box.querySelector("svg"), dot = box.querySelector(".dot"), pulse = box.querySelector(".pulse"), out = box.querySelector(".ch-r");
+  if (!svg || !dot || !out || !pts || pts.length < 2) return;
+  const base = out.textContent, last = pts[pts.length - 1];
+  let timer = 0;
+  const put = (q, text) => {
+    dot.setAttribute("cx", q.x); dot.setAttribute("cy", q.y);
+    if (pulse) { pulse.setAttribute("cx", q.x); pulse.setAttribute("cy", q.y); }
+    out.textContent = text;
+  };
+  const at = ev => {
+    clearTimeout(timer);
+    const q = svg.getBoundingClientRect();
+    if (!q.width) return;
+    const k = Math.min(1, Math.max(0, (ev.clientX - q.left) / q.width));
+    const p = pts[Math.round(k * (pts.length - 1))];
+    put(p, p.label);
+  };
+  const reset = () => put(last, base);
+  svg.style.touchAction = "pan-y"; svg.style.cursor = "ew-resize";
+  svg.addEventListener("pointerdown", ev => { try { svg.setPointerCapture(ev.pointerId); } catch(e) {} at(ev); }, {passive: true});
+  svg.addEventListener("pointermove", at, {passive: true});
+  svg.addEventListener("pointerleave", () => { clearTimeout(timer); timer = setTimeout(reset, 400); }, {passive: true});
+  svg.addEventListener("pointerup", () => { clearTimeout(timer); timer = setTimeout(reset, 2500); }, {passive: true});
+  svg.addEventListener("pointercancel", reset, {passive: true});
+}
 function renderAcctChart(){
   // v184 (владелец 10.11: «подключённый кошелёк к автоставкам — это данные»): накопленный результат счёта по игровым дням,
   // только подтверждённые погашения (CLAIM) личной истории; меньше двух дней — графика нет
@@ -3803,6 +3832,8 @@ function renderAcctChart(){
         <circle class="pulse" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2"/><circle class="dot" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2"/>
       </svg>
       <div class="ch-x"><span>${fmtDay(days[0])}</span><span>${fmtDay(days[days.length - 1])}</span></div></div>`;
+    chartScrub(box, pts.map((q, i) => ({x: X(i).toFixed(1), y: Y(q.v).toFixed(1),
+      label: `${q.date ? fmtDay(q.date) : t("chartStartLbl")} · ${sgn(q.v)}`})));
   } catch (e) { box.innerHTML = ""; }
 }
 function sportStatCardHtml(k, sp, title){

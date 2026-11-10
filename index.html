@@ -1036,7 +1036,7 @@ body.light .hero3d{box-shadow:0 2px 4px rgba(20,40,70,.08),0 26px 50px -26px rgb
 </nav>
 
 <script>
-const BUILD = "v119";
+const BUILD = "v120";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "main";
@@ -1260,6 +1260,7 @@ const T = {
   // динамика: ставки
   win: ["выигрыш", "win", "赢"], lose: ["проигрыш", "loss", "输"], voided: ["возврат", "void", "退还"], liveLeading: ["идёт к выигрышу", "on track to win", "有望赢"], liveTrailing: ["идёт к проигрышу", "on track to lose", "有望输"], livePush: ["идёт к возврату", "on track for a push", "有望退还"],
   liveFinal: ["финал", "final", "终场"], liveAwait: ["финал · ждём подтверждения", "final · awaiting confirmation", "终场 · 等待确认"],
+  chartStartLbl: ["старт", "start", "起点"],
   livePostWin: ["победа · деньги после расчёта", "won · money after settlement", "赢 · 结算后到账"],
   livePostLose: ["проигрыш · ждём расчёта", "lost · awaiting settlement", "输 · 等待结算"],
   livePostPush: ["возврат · ждём расчёта", "void · awaiting settlement", "退还 · 等待结算"],
@@ -1618,6 +1619,34 @@ function coreFeed(force){
 
 // ═══ v118: график банка, вход содержимого, объём карточки банка ═══
 const FX_REDUCED = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e) { return false; } })();
+// Живая точка графика: ведёшь пальцем или мышью — точка встаёт на ближайший день, в заголовке день и сумма.
+// Отпустил — через пару секунд точка возвращается на последний день. Разметка и стили не меняются.
+function chartScrub(box, pts){
+  const svg = box.querySelector("svg"), dot = box.querySelector(".dot"), pulse = box.querySelector(".pulse"), out = box.querySelector(".ch-r");
+  if (!svg || !dot || !out || !pts || pts.length < 2) return;
+  const base = out.textContent, last = pts[pts.length - 1];
+  let timer = 0;
+  const put = (q, text) => {
+    dot.setAttribute("cx", q.x); dot.setAttribute("cy", q.y);
+    if (pulse) { pulse.setAttribute("cx", q.x); pulse.setAttribute("cy", q.y); }
+    out.textContent = text;
+  };
+  const at = ev => {
+    clearTimeout(timer);
+    const q = svg.getBoundingClientRect();
+    if (!q.width) return;
+    const k = Math.min(1, Math.max(0, (ev.clientX - q.left) / q.width));
+    const p = pts[Math.round(k * (pts.length - 1))];
+    put(p, p.label);
+  };
+  const reset = () => put(last, base);
+  svg.style.touchAction = "pan-y"; svg.style.cursor = "ew-resize";
+  svg.addEventListener("pointerdown", ev => { try { svg.setPointerCapture(ev.pointerId); } catch(e) {} at(ev); }, {passive: true});
+  svg.addEventListener("pointermove", at, {passive: true});
+  svg.addEventListener("pointerleave", () => { clearTimeout(timer); timer = setTimeout(reset, 400); }, {passive: true});
+  svg.addEventListener("pointerup", () => { clearTimeout(timer); timer = setTimeout(reset, 2500); }, {passive: true});
+  svg.addEventListener("pointercancel", reset, {passive: true});
+}
 function renderBankChart(feed, bankStart){
   const box = document.getElementById("bankChart");
   if (!box) return;
@@ -1654,6 +1683,8 @@ function renderBankChart(feed, bankStart){
         <circle class="pulse" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2"/><circle class="dot" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2"/>
       </svg>
       <div class="ch-x"><span>${fmtDay(days[0].date)}</span><span>${fmtDay(days[days.length - 1].date)}</span></div></div>`;
+    chartScrub(box, pts.map((q, i) => ({x: X(i).toFixed(1), y: Y(q.v).toFixed(1),
+      label: `${q.date ? fmtDay(q.date) : t("chartStartLbl")} · $${q.v.toFixed(2)}`})));
   } catch (e) { box.innerHTML = ""; }
 }
 // вход содержимого: один раз на состав блока (фоновое обновление раз в минуту не мигает)
