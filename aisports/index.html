@@ -832,6 +832,60 @@ body.splash-on{overflow:hidden}
   .sp-taurus{opacity:.34}
   .sp-orb{opacity:1;transform:scale(1)}.sp-ai,.sp-word,.sp-tag,.sp-proof,.sp-skip{opacity:1;filter:none}
   .sp-word{transform:translateY(-50%) translateX(0)}.sp-word::after{transform:scaleX(1)}}
+/* ═══ v183 (владелец 10.11: «то же оформление, что в песочнице: перелив, объём, появление»; раздел «Прогнозы») ═══
+   Только transform/opacity/маски — без новых blur; reduced-motion выключает всё движение. */
+@property --ang{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes iriSpin{to{--ang:360deg}}
+@keyframes fxIn{from{opacity:0;transform:translate3d(0,14px,0) scale(.985)}to{opacity:1;transform:none}}
+@keyframes paneIn{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
+@keyframes heroFloat{0%,100%{transform:rotateX(2.2deg) rotateY(-3deg)}50%{transform:rotateX(-1.6deg) rotateY(3deg)}}
+@keyframes sheenRun{0%{transform:translate3d(-130%,0,0) skewX(-18deg)}55%,100%{transform:translate3d(230%,0,0) skewX(-18deg)}}
+.iri{position:relative;isolation:isolate}
+.iri::before{content:'';position:absolute;inset:-1px;border-radius:inherit;padding:1.5px;z-index:5;pointer-events:none;
+  background:conic-gradient(from var(--ang),#38bdf8,#818cf8,#e879f9,#fb7185,#fbbf24,#34d399,#38bdf8);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;
+  mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:iriSpin 7s linear infinite;opacity:.9}
+body.light .iri::before{opacity:.75}
+#topCards{perspective:900px}
+.hero3d{transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+  transition:transform .5s cubic-bezier(.16,1,.3,1);will-change:transform;overflow:visible;
+  box-shadow:0 2px 4px rgba(0,0,0,.25),0 26px 50px -24px rgba(56,189,248,.45),0 18px 36px -22px rgba(0,0,0,.8)}
+body.light .hero3d{box-shadow:0 2px 4px rgba(20,40,70,.08),0 26px 50px -26px rgba(2,132,199,.45)}
+.hero3d.idle{animation:heroFloat 9s ease-in-out infinite}
+.hero3d .k{transform:translateZ(18px)}
+.hero3d .v{transform:translateZ(40px);text-shadow:0 10px 26px rgba(0,0,0,.35)}
+.hero3d .d{transform:translateZ(14px)}
+.hero3d .glare{position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;overflow:hidden;
+  background:radial-gradient(240px circle at var(--gx,30%) var(--gy,20%),rgba(255,255,255,.20),transparent 60%);mix-blend-mode:soft-light}
+.hero3d .glare::after{content:'';position:absolute;top:-20%;bottom:-20%;left:0;width:34%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);animation:sheenRun 6.5s cubic-bezier(.4,0,.2,1) infinite}
+.fx-in{animation:fxIn .55s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0) * 42ms)}
+.pane-in{animation:paneIn .34s cubic-bezier(.16,1,.3,1) both}
+.card,.btn,.bnav-item,.segsw button{-webkit-tap-highlight-color:transparent}
+.btn{transition:transform .16s cubic-bezier(.16,1,.3,1),filter .16s ease}
+.btn:active{transform:scale(.97)}
+.pickline-row{transition:transform .18s cubic-bezier(.16,1,.3,1)}
+button.pickline-row:active{transform:scale(.985)}
+/* переключатель «Ставки | Прогнозы»: два тарифа — два списка, каждый матч в своём списке один раз */
+.segsw{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin:0 0 var(--s3);border-radius:var(--r-m);
+  background:var(--card);border:1px solid var(--line)}
+.segsw button{appearance:none;-webkit-appearance:none;border:0;background:transparent;color:var(--mut);font:inherit;font-size:13.5px;
+  font-weight:750;letter-spacing:.01em;min-height:44px;padding:8px;border-radius:var(--r-s);cursor:pointer;
+  transition:background-color .2s ease,color .2s ease,transform .16s cubic-bezier(.16,1,.3,1)}
+.segsw button:active{transform:scale(.97)}
+.segsw button[aria-selected="true"]{color:var(--txt);background:color-mix(in srgb,var(--accent) 18%,transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 38%,transparent)}
+#segFc .v3box{margin-bottom:var(--s4)}
+.seg-note{font-size:12px;line-height:1.4;color:var(--mut);margin:0 2px var(--s3)}
+.pickline .bought{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--green);
+  background:color-mix(in srgb,var(--green) 14%,transparent);border-radius:6px;padding:2px 6px;vertical-align:1px}
+::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){
+  .iri::before,.hero3d.idle,.hero3d .glare::after,.fx-in,.pane-in{animation:none}
+  .hero3d{transform:none;transition:none}
+}
 </style>
 </head>
 <body>
@@ -873,8 +927,8 @@ body.splash-on{overflow:hidden}
   <header>
     <div class="logo" aria-hidden="true"><span class="logo-ai">AI</span></div>
     <div>
-      <h1>AI Sports<span class="badge-live">LIVE</span></h1>
-      <div class="sub" data-i18n="headSub">Каждая ставка — в открытой базе. Проверь сам.</div>
+      <h1>AI Sports</h1>
+      <div class="sub" data-i18n="headSub">Прогнозы на матчи и автоставки на Polymarket</div>
     </div>
   </header>
 
@@ -888,19 +942,8 @@ body.splash-on{overflow:hidden}
   <div class="bets" id="personalHistory"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <!-- 16.10 (владелец): статистика отбора по видам — постоянно открыта, один заголовок и короткая подпись происхождения -->
   <div class="section" data-i18n="wrBySport">Статистика по видам спорта</div>
-  <div class="stats-note" data-i18n="statsNote">По результатам отбора</div>
+  <div class="stats-note" data-i18n="statsNote">По всем прогнозам системы</div>
   <div id="dashSports" class="sgrid"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-  <div id="simBody">
-    <div class="section" data-i18n="secDayBets">История прогнозов</div>
-  <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
-  <div class="dayrow">
-    <button class="daybtn" id="dprev" aria-label="prev">←</button>
-    <input type="date" id="dpick" class="dpick">
-    <button class="daybtn" id="dnext" aria-label="next">→</button>
-  </div>
-  <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
-  <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
-  </div><!-- /simBody -->
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" class="pane-glass pane-sched" style="display:none">
@@ -914,11 +957,33 @@ body.splash-on{overflow:hidden}
 
   <div id="pane-stats" class="pane-glass pane-stats">
 
-    <div class="section" data-i18n="baTitle">Анализ ставок</div>
-    <div id="baPanel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+    <!-- v183 (владелец 10.11): два тарифа — два списка. «Ставки» — только реальные покупки счёта; «Прогнозы» — все прогнозы
+         системы по дням, каждый матч один раз (купленный автоставкой — с пометкой, а не второй карточкой) -->
+    <div class="segsw" id="betSeg" role="tablist">
+      <button type="button" role="tab" data-seg="bets" aria-selected="true" aria-controls="segBets" data-i18n="segBets">Ставки</button>
+      <button type="button" role="tab" data-seg="fc" aria-selected="false" aria-controls="segFc" data-i18n="segForecasts">Прогнозы</button>
+    </div>
+    <div id="segBets" role="tabpanel">
+    <div class="seg-note" data-i18n="segBetsNote">Покупки вашего счёта автоставок. Только реальные деньги.</div>
     <div class="section" data-i18n="secLast">Последние ставки</div>
     <div id="lastStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+    </div>
+    <div id="segFc" role="tabpanel" hidden>
+    <div class="seg-note" data-i18n="segFcNote">Все прогнозы системы по дням. Каждый матч показан один раз.</div>
+    <div id="baPanel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div id="simBody">
+    <div class="section" data-i18n="secDayBets">История прогнозов</div>
+  <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
+  <div class="dayrow">
+    <button class="daybtn" id="dprev" aria-label="prev">←</button>
+    <input type="date" id="dpick" class="dpick">
+    <button class="daybtn" id="dnext" aria-label="next">→</button>
+  </div>
+  <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
+  <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
+  </div><!-- /simBody -->
+    </div>
   </div>
 
   <div id="pane-me" class="pane-glass pane-me" style="display:none">
@@ -1068,7 +1133,7 @@ body.splash-on{overflow:hidden}
   </div>
 
 
-  <div class="foot" id="foot" data-i18n="foot"><b class="brandline">AI Sports · спортивная аналитика</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
+  <div class="foot" id="foot" data-i18n="foot"><b class="brandline">AI Sports · спортивная аналитика</b><span style="opacity:.7">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style="opacity:.55">сборка v66 · 20.08.2026</span></div>
 </div>
 
 <div class="msov" id="msov" style="display:none">
@@ -1111,7 +1176,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v182";
+const BUILD = "v183";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1235,7 +1300,7 @@ const BOT_USERNAME = APP_PROFILE === "aisports" ? "aisports0bot" : "sportzhubot"
 // этапом с доказательством владения. До него состояние честное: «не подключён».
 const WALLET_BOUND = false;
 // дата сборки для подвала; подставляется в «сборка vN · дата» при загрузке
-const BUILD_DATE = "09.11.2026";
+const BUILD_DATE = "10.11.2026";
 // Перелив надписи AI Sports (CEO 04.09) — keyframes из JS, как сцена WIN100:
 // статический CSS-каркас v66 не расширяется; reduced-motion уважается.
 (() => {
@@ -1269,12 +1334,22 @@ const T = {
   spTag: ["Рынок. Данные. Решение.", "Market. Data. Decision.", "市场。数据。决策。"],
   spProof: ["Каждая ставка — в открытой базе.", "Every bet is recorded in the public database.", "每一笔投注都记录在公开数据库中。"],
   spSkip: ["нажми, чтобы пропустить", "tap to skip", "点按跳过"],
-  headSub: ["Каждая ставка — в открытой базе. Проверь сам.", "Every bet lives in an open database. Verify it yourself.", "每一笔投注都记录在公开数据库中，欢迎亲自查证。"],
+  headSub: ["Прогнозы на матчи и автоставки на Polymarket", "Match forecasts and auto-bets on Polymarket", "赛事预测与 Polymarket 自动投注"],
   loading: ["Загрузка…", "Loading…", "加载中…"],
   secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>", "今日投注 <span class=\"tag\" id=\"todayTag\">live</span>"],
-  secDayBets: ["История прогнозов", "Forecast history", "预测历史"],
+  secDayBets: ["Прогнозы по дням", "Forecasts by day", "按日预测"],
+  segBets: ["Ставки", "Bets", "投注"], segForecasts: ["Прогнозы", "Forecasts", "预测"],
+  segBetsNote: ["Покупки вашего счёта автоставок. Только реальные деньги.", "Purchases of your auto-bet account. Real money only.", "你的自动投注账户的购买记录，仅含真实资金。"],
+  segFcNote: ["Все прогнозы системы по дням. Каждый матч показан один раз.", "All system forecasts by day. Each match is shown once.", "系统按日给出的全部预测，每场比赛只显示一次。"],
+  boughtAuto: ["куплено автоставкой", "bought by auto-bet", "已自动买入"],
+  fcWonN: ["сыграло", "won", "命中"], fcLostN: ["не сыграло", "lost", "未中"], fcBoughtN: ["куплено", "bought", "已买入"],
+  autoWhyFunds: ["не хватило средств на счёте", "not enough funds in the account", "账户余额不足"],
+  autoWhyPrice: ["цена на бирже изменилась", "the exchange price moved", "交易所价格已变动"],
+  autoWhyBook: ["на бирже не хватило предложений", "not enough offers on the exchange", "交易所挂单不足"],
+  autoWhyLimit: ["достигнут лимит ваших настроек", "your settings limit was reached", "已达到你设置的上限"],
+  autoWhyTech: ["техническая причина", "technical reason", "技术原因"],
   secWr: ["Винрейт по видам спорта", "Win rate by sport", "各项目胜率"],
-  secLast: ["Выбранные ставки", "Selected bets", "精选投注"],
+  secLast: ["Последние ставки", "Latest bets", "最近投注"],
   noPersonalBets: ["Подтверждённых личных сделок нет", "No confirmed personal trades", "暂无已确认的个人交易"],
   noPersonalBetsHint: ["Операции и ставки отдельного счёта доступны в «Профиль → Торговый счёт AISports». Здесь нет публичной истории чужих счетов.", "Your separate account’s transactions and bets are in Profile → AISports trading account. Other accounts’ private history is not shown here.", "独立账户的交易与投注请见个人资料 → AISports 交易账户。此处不展示其他账户的私人历史。"],
   unknownTradesHint: ["Отправка не подтверждена. Средства удержаны до сверки; это не ставки.", "Submission is unconfirmed. Funds remain reserved during reconciliation; these are not bets.", "提交尚未确认。资金在核对期间保留；这些不是已成交投注。"],
@@ -1307,9 +1382,9 @@ const T = {
   proofMain: ["🔍 <b>Прозрачность:</b> данные читаются напрямую из публичной базы результатов. Каждая ставка фиксируется в момент размещения. Технические исправления сохраняются с причиной, временем и исходным значением.",
               "🔍 <b>Transparency:</b> data is read directly from the public results database. Every bet is recorded when placed. Technical corrections retain the reason, time and original value.",
               "🔍 <b>透明：</b>数据直接来自公开结果数据库。每笔投注在下单时记录；技术修正会保留原因、时间与原始值。"],
-  foot: ["<b class=\"brandline\">AI Sports · спортивная аналитика</b>β-версия · реф-программа: 20% с платежей 1-й линии + 5% со 2-й, пожизненно<br><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
-         "<b class=\"brandline\">AI Sports · sports analytics</b>β version · referral program: 20% of 1st-line payments + 5% of 2nd, lifetime<br><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
-         "<b class=\"brandline\">AI Sports · 体育分析</b>β 版 · 推荐计划：第一层付款的 20% + 第二层的 5%，终身有效<br><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
+  foot: ["<b class=\"brandline\">AI Sports · спортивная аналитика</b><span style=\"opacity:.7\">Сервис показывает аналитику, а не советы: каждое решение и его риск остаются за тобой. Ставки — только для 18+, играй ответственно.</span><br><span style=\"opacity:.55\">сборка v66 · 20.08.2026</span>",
+         "<b class=\"brandline\">AI Sports · sports analytics</b><span style=\"opacity:.7\">This service shows analytics, not advice: every decision and its risk stay with you. Betting is 18+ only — play responsibly.</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>",
+         "<b class=\"brandline\">AI Sports · 体育分析</b><span style=\"opacity:.7\">本服务提供的是分析，不是建议：每个决定及其风险由你自己承担。仅限 18 岁以上，请理性投注。</span><br><span style=\"opacity:.55\">build v66 · 20.08.2026</span>"],
   v3Section: ["Новая стратегия V3", "New V3 strategy", "V3 新策略"],
   v3Title: ["Рыночный edge", "Market edge", "市场优势"],
   v3Paper: ["ТЕСТ · $0", "PAPER · $0", "模拟 · $0"],
@@ -1424,7 +1499,7 @@ const T = {
   dataAsOf: ["данные от {t}", "data as of {t}", "数据截至 {t}"],
   historyLoading: ["сверка с личной историей…", "checking personal history…", "正在核对个人历史…"],
   historyLoadingLong: ["Личная история ещё загружается — наличие покупки по этому прогнозу уточняется", "Personal history is still loading — a purchase on this forecast is being checked", "个人历史仍在加载——正在核对该预测是否有购买"],
-  statsNote: ["По результатам отбора", "Based on selection results", "按选场结果"],
+  statsNote: ["По всем прогнозам системы", "Across all system forecasts", "基于系统全部预测"],
   statsUnavailable: ["Статистика отбора сейчас недоступна", "Selection statistics are unavailable right now", "选场统计暂不可用"],
   winOne: ["победа", "win", "胜"], winFew: ["победы", "wins", "胜"], winMany: ["побед", "wins", "胜"],
   lossOne: ["поражение", "loss", "负"], lossFew: ["поражения", "losses", "负"], lossMany: ["поражений", "losses", "负"],
@@ -1435,12 +1510,13 @@ const T = {
   v3Processed: ["обработано · {n} ожидают анализа", "processed · {n} awaiting analysis", "已处理 · {n} 场待分析"],
   awaitAnalysis: ["{k} из {n} обработано · {m} ожидают анализа. Волны проходят за 60 и 30 минут до старта.", "{k} of {n} processed · {m} awaiting analysis. Waves run 60 and 30 minutes before kick-off.", "{n} 场中已处理 {k} 场 · {m} 场待分析。分析在开赛前 60 和 30 分钟进行。"],
   feedUnavailable: ["Лента отбора сейчас недоступна. Показываем последнее известное состояние.", "The selection feed is unavailable right now. Showing the last known state.", "选场数据源暂不可用，显示最后已知状态。"],
-  feedStale: ["Лента отбора не обновлялась {h} ч. Состояние дня может быть неполным.", "The selection feed has not updated for {h} h. Today's state may be incomplete.", "选场数据已 {h} 小时未更新，今日状态可能不完整。"],
+  feedStale: ["Данные обновлялись {h} ч назад. Свежие прогнозы появятся после обновления.", "Data was updated {h} h ago. New forecasts will appear after the next update.", "数据更新于 {h} 小时前，新的预测将在下次更新后显示。"],
   noMatchesDay: ["На этот игровой день матчей в отборе нет.", "No games are scheduled for this game day.", "本比赛日没有待分析的比赛。"],
   reservedLabel: ["Первоначальный резерв", "Initial reserve", "初始预留"], spentLabel: ["Потрачено", "Spent", "实际支出"],
   feeLabel: ["Комиссия, уже включена", "Fee, already included", "手续费（已包含）"], sharesLabel: ["Доли", "Shares", "份额"],
-  lastSelection: ["Последний отбор", "Latest selection", "最近一次选场"],
-  newSelectionNotStarted: ["Новый отбор ещё не начался", "The new selection has not started yet", "新一轮选场尚未开始"],
+  lastSelection: ["Последний игровой день", "Latest game day", "最近比赛日"],
+  newSelectionNotStarted: ["Сегодняшние матчи ещё не разобраны", "Today's matches have not been analysed yet", "今日比赛尚未分析"],
+  noBetsDayHint: ["Покупок за этот день нет. Прогнозы системы — в разделе «Прогнозы».", "No purchases for this day. System forecasts are in the Forecasts section.", "当日没有购买记录。系统预测见“预测”栏。"],
   dayResult: ["Результат ставок", "Bets result", "投注结果"], allTimeResult: ["За всё время", "All time", "累计"],
   autoSince: ["автоставки включены {d}", "auto-bets enabled {d}", "自动投注启用于 {d}"],
   dayResultHint: ["по подтверждённым выплатам ставок этого игрового дня", "from confirmed payouts of this game day's bets", "按该比赛日投注的已确认派息"],
@@ -1666,8 +1742,8 @@ const T = {
   forecastsTitle: ["Отбор стратегии · без денежной ставки", "Strategy selections · no cash bet", "策略选场 · 非现金投注"],
   selectedPicks: ["выбрано", "selected", "已选"],
   selectedNoTrade: ["Выбрано · реальной ставки нет", "Selected · no real bet", "已选 · 无真实投注"],
-  selectionAnalysis: ["Отбор и автоставки", "Selections and auto-bets", "选场与自动投注"],
-  selectionAnalysisScope: ["Отбор MLB и футбола · автоставки по вашим настройкам", "MLB and soccer selections · auto-bets follow your settings", "MLB 和足球选场 · 自动投注按你的设置执行"],
+  selectionAnalysis: ["Прогнозы на сегодня", "Today's forecasts", "今日预测"],
+  selectionAnalysisScope: ["бейсбол и футбол", "baseball and soccer", "棒球与足球"],
   autoBetPlaced: ["Автоставка поставлена", "Auto-bet placed", "自动投注已成交"],
   autoBetFailed: ["Автоставка не выполнена", "Auto-bet not executed", "自动投注未执行"],
   forecastsOne: ["прогноз", "forecast", "个预测"], forecastsFew: ["прогноза", "forecasts", "个预测"], forecastsMany: ["прогнозов", "forecasts", "个预测"],
@@ -2119,6 +2195,88 @@ function coreFeed(force){
   return window.__coreFeedPromise;
 }
 
+// ═══ v183: раздел «Ставки | Прогнозы», вход содержимого, объём главной карточки ═══
+const FX_REDUCED = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e) { return false; } })();
+let __segUser = false;
+function setSeg(seg, byUser){
+  const fc = seg === "fc";
+  const a = document.getElementById("segBets"), b = document.getElementById("segFc");
+  if (!a || !b) return;
+  if (byUser) { __segUser = true; try { sessionStorage.setItem("aisSeg", seg); } catch(e) {} }
+  const was = b.hidden ? "bets" : "fc";
+  a.hidden = fc; b.hidden = !fc;
+  document.querySelectorAll("#betSeg button").forEach(x => x.setAttribute("aria-selected", x.dataset.seg === seg ? "true" : "false"));
+  if (was === seg) return;
+  const shown = fc ? b : a;
+  shown.classList.remove("pane-in"); void shown.offsetWidth; shown.classList.add("pane-in");
+  if (fc) { const pick = document.getElementById("dpick"); if (pick && pick.value) { try { loadDay(pick.value); } catch(e) {} } }   // пометки «куплено» — по свежей истории
+}
+function segAuto(){
+  // выбор пользователя в этой сессии не перебивается; пока личная история читается — не гадаем
+  if (__segUser) return;
+  let saved = ""; try { saved = sessionStorage.getItem("aisSeg") || ""; } catch(e) {}
+  if (saved === "bets" || saved === "fc") { __segUser = true; setSeg(saved); return; }
+  if (typeof personalHistoryLoading === "function" && personalHistoryLoading()) return;
+  const mine = personalTradeRows().some(x => x && (x._realTrade === true || x._unknown === true));
+  setSeg(mine ? "bets" : "fc");
+}
+document.querySelectorAll("#betSeg button").forEach(x => x.addEventListener("click", () => {
+  setSeg(x.dataset.seg, true);
+  if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.selectionChanged(); } catch(e) {} }
+}));
+(function fxLayer(){
+  const WATCH = ["topCards", "dashSports", "dayBets", "bets", "schedList", "baPanel", "personalHistory"];
+  function tilt(card){
+    if (FX_REDUCED || card.dataset.tilt) return;
+    card.dataset.tilt = "1";
+    card.classList.add("idle");
+    let raf = 0;
+    const set = (px, py) => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        card.style.setProperty("--ry", ((px - .5) * 14).toFixed(2) + "deg");
+        card.style.setProperty("--rx", ((.5 - py) * 10).toFixed(2) + "deg");
+        card.style.setProperty("--gx", (px * 100).toFixed(1) + "%");
+        card.style.setProperty("--gy", (py * 100).toFixed(1) + "%");
+      });
+    };
+    const move = ev => {
+      const q = card.getBoundingClientRect(); card.classList.remove("idle");
+      set(Math.min(1, Math.max(0, (ev.clientX - q.left) / q.width)), Math.min(1, Math.max(0, (ev.clientY - q.top) / q.height)));
+    };
+    const leave = () => { card.style.setProperty("--rx", "0deg"); card.style.setProperty("--ry", "0deg"); setTimeout(() => card.classList.add("idle"), 520); };
+    card.addEventListener("pointermove", move, {passive: true});
+    card.addEventListener("pointerleave", leave, {passive: true});
+    card.addEventListener("pointerup", leave, {passive: true});
+    card.addEventListener("pointercancel", leave, {passive: true});
+  }
+  function hero(box){
+    // главная карточка счёта перерисовывается целиком — объём и перелив возвращаются каждой перерисовкой, без повторного входа
+    const card = box.querySelector(".card.glass-sheen");
+    if (!card || card.classList.contains("hero3d")) return;
+    card.classList.add("hero3d", "iri");
+    const g = document.createElement("div"); g.className = "glare"; g.setAttribute("aria-hidden", "true"); card.appendChild(g);
+    tilt(card);
+  }
+  function run(box){
+    if (box.id === "topCards") hero(box);
+    const kids = Array.prototype.filter.call(box.children, n => n.nodeType === 1 && !n.classList.contains("loading"));
+    if (!kids.length) return;
+    const sig = kids.length + "|" + (kids[0].getAttribute("data-key") || kids[0].className || "");
+    if (box.dataset.fxSig === sig) return;                 // тот же состав — без повторной анимации (опрос раз в минуту не мигает)
+    box.dataset.fxSig = sig;
+    if (FX_REDUCED) return;
+    kids.forEach((n, i) => { n.style.setProperty("--i", Math.min(i, 12)); n.classList.remove("fx-in"); void n.offsetWidth; n.classList.add("fx-in"); });
+  }
+  let pending = false;
+  const sweep = () => { pending = false; WATCH.forEach(id => { const b = document.getElementById(id); if (b) run(b); }); };
+  try {
+    const mo = new MutationObserver(() => { if (!pending) { pending = true; requestAnimationFrame(sweep); } });
+    WATCH.forEach(id => { const b = document.getElementById(id); if (b) mo.observe(b, {childList: true}); });
+  } catch (e) {}
+  ["baPanel", "lastStat", "dayStat"].forEach(id => { const b = document.getElementById(id); if (b) b.classList.add("iri"); });
+})();
+
 async function main(){
   // Дашборд v29 (CEO 17.08, третья редакция): общий винрейт → общая прибыль
   // (% банка и $ от кошелька пользователя, вся история и за сутки) → винрейт
@@ -2407,6 +2565,7 @@ document.querySelectorAll(".bnav-item").forEach(function(btn){
     btn.classList.add("active");
     const t = btn.dataset.tab;
     PANES.forEach(p => document.getElementById("pane-" + p).style.display = (p === t ? "" : "none"));
+    { const pe = document.getElementById("pane-" + t); pe.classList.remove("pane-in"); void pe.offsetWidth; pe.classList.add("pane-in"); }   // v183: мягкий вход вкладки
     window.scrollTo({top: 0, behavior: "instant"});
     if (tg && tg.HapticFeedback) { try{ tg.HapticFeedback.selectionChanged(); }catch(e){} }
     // вкладки грузятся лениво — первое открытие тянет данные, дальше уже готово
@@ -2765,11 +2924,23 @@ async function loadDay(d){
   if (session !== sessionKey()) return;
   if (OFFICIAL_PERSONAL_LISTS) {
     // v174 (владелец 18.10): архив по дням — ТА ЖЕ карточка, что на «Ставках» и в суточном блоке (команда, исход, деньги покупки)
-    const picks = daySelectionRows(strategy, d)
-      .sort((a,b) => String(b.ts || b.commence || "").localeCompare(String(a.ts || a.commence || "")));
+    // v183 (владелец 10.11): раздел «Прогнозы» — только прогнозы системы; покупка счёта второй карточкой не идёт, а помечает
+    // свой прогноз («куплено автоставкой»); деньги покупки живут в разделе «Ставки»
+    const bought = new Set(personalTradeRows().filter(x => x && x._realTrade === true).map(tradeKey).filter(Boolean));
+    const refused = new Map();
+    const whenOf = x => Date.parse(String(x.updated_at || x.opened_ts || "")) || 0;
+    personalRejectedRows().forEach(x => { const k = tradeKey(x); if (k && (!refused.has(k) || whenOf(x) > whenOf(refused.get(k)))) refused.set(k, x); });
+    const picks = selectionDisplayRows(strategy).filter(row => (row.session_date || "") === d).map(row => {
+      const k = tradeKey(row), got = !!k && bought.has(k), rej = !got && k ? refused.get(k) : null;
+      return Object.assign({}, row, {_cash: false, _unknown: false, _bought: got,
+        _autoRejected: rej ? 1 : 0, _autoReason: rej ? String(rej.reason || rej.state || "") : ""});
+    }).sort((a,b) => String(b.ts || b.commence || "").localeCompare(String(a.ts || a.commence || "")));
     await loadMatchStats([d]);
     if (session !== sessionKey()) return;
-    stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)} · ${picks.length} ${t("selectedPicks")}</span></div>`;
+    const won = picks.filter(x => x.result === 1).length, lost = picks.filter(x => x.result === 0).length, got = picks.filter(x => x._bought).length;
+    const sumBits = [won + lost ? `${won} ${t("fcWonN")} · ${lost} ${t("fcLostN")}` : "", got ? `${t("fcBoughtN")} ${got}` : ""].filter(Boolean).join(" · ");
+    stat.innerHTML = `<div class="dayhead"><span class="daydate">${fmtDay(d)}</span><span class="daydow">${dowOf(d)} · ${picks.length} ${plForecasts(picks.length)}</span></div>`
+      + (sumBits ? `<div class="daysum" style="margin-top:6px"><span>${sumBits}</span></div>` : "");
     const note = error ? `<div class="loading">${t("selectionSourceUnavailable")}</div>` : "";
     box.innerHTML = note + (picks.length ? picks.map(dayPickRow).join("") : `<div class="loading">${t("noPickDay")}</div>`);
     return;
@@ -2869,16 +3040,20 @@ async function loadBetAnalysis(shownDay){
 
 function loadOfficialSelectionAnalysis(feed){
   const box = document.getElementById("baPanel");
-  const heading = document.querySelector("#pane-stats .section");
-  if (heading) { heading.dataset.i18n = "selectionAnalysis"; heading.textContent = t("selectionAnalysis"); }
-  if (!box) return;
+    if (!box) return;
   if (!feed) { box.innerHTML = `<div class="v3empty">${t("selectionSourceUnavailable")}</div>`; return; }
   const day = feed.session || {}, date = day.date || "";
   const selected = selectedPicks(feed).filter(b => b.session_date === date).length;
   const confirmed = personalTradeRows().filter(b => b.session_date === date && b._realTrade).length;
   const decisions = pendingAnalysisLabel(day);   // v161: «0 из 5 · 5 ожидают анализа» вместо «0/5 матчей в анализе»
+  if (!(decisions.planned > 0) && !(decisions.done > 0) && !selected && !confirmed && !Number(day.skipped || 0)) {
+    // v183: день без матчей в работе — одна строка состояния вместо четырёх нулей
+    box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("selectionAnalysis")}</div>
+      <div class="v3sub">${v3Esc(fmtDay(date))} · ${t("selectionAnalysisScope")}</div></div></div><div class="v3empty">${dayStatusNote(feed)}</div>`;
+    return;
+  }
   box.innerHTML = `<div class="v3head"><div><div class="v3title">${t("selectionAnalysis")}</div>
-      <div class="v3sub">${v3Esc(date)} · ${t("selectionAnalysisScope")}</div></div></div>
+      <div class="v3sub">${v3Esc(fmtDay(date))} · ${t("selectionAnalysisScope")}</div></div></div>
     <div class="v3metrics">
       <div class="v3metric"><b>${decisions.value}</b><span>${decisions.label}</span></div>
       <div class="v3metric"><b>${selected}</b><span>${t("selectedPicks")}</span></div>
@@ -3216,7 +3391,7 @@ function dayPickHead(date, rows, view){
   // только прогнозы → «N прогнозов»; есть покупки → «M ставок · K прогнозов»
   const cashN = (rows || []).filter(r => r && r._cash === true).length;
   const forecastN = n - cashN;
-  const count = cashN === 0 ? `${n} ${plForecasts(n)}` : forecastN === 0 ? `${cashN} ${plBets(cashN)}` : `${cashN} ${plBets(cashN)} · ${forecastN} ${plForecasts(forecastN)}`;
+  const count = n === 0 ? `0 ${plBets(0)}` : cashN === 0 ? `${n} ${plForecasts(n)}` : forecastN === 0 ? `${cashN} ${plBets(cashN)}` : `${cashN} ${plBets(cashN)} · ${forecastN} ${plForecasts(forecastN)}`;
   return `<div class="dayhead"><span class="daydate">${title}</span><span class="daydow">${count}</span></div>${note}`;
 }
 function cardMoney(r){
@@ -3257,8 +3432,16 @@ function pickAria(r, tone){
   const sport = r.sport === "soccer" ? t("sportSoccer") : r.sport === "mlb" ? t("sportMlb") : (r.sport || "");
   const m = cardMoney(r);
   const outcome = m ? [m.staked, m.odds, m.result, m.state].filter(Boolean).join(". ")
-    : [t("forecastWord"), forecastOutcomeWord(tone), r._autoRejected ? `${t("autoBetFailed")} (${r._autoReason || ""})` : ""].filter(Boolean).join(". ");
+    : [t("forecastWord"), forecastOutcomeWord(tone), r._autoRejected ? `${t("autoBetFailed")} (${autoWhy(r._autoReason)})` : ""].filter(Boolean).join(". ");
   return [sport, r.match || "", r.selection || "", outcome].filter(Boolean).join(". ");
+}
+function autoWhy(code){
+  const c = String(code || "").toUpperCase();
+  if (/BALANCE|FUNDS|INSUFFICIENT|ALLOWANCE/.test(c)) return t("autoWhyFunds");
+  if (/PRICE|SLIPPAGE|ODDS|QUOTE/.test(c)) return t("autoWhyPrice");
+  if (/LIQUID|BOOK|DEPTH|FILL/.test(c)) return t("autoWhyBook");
+  if (/LIMIT|CAP|MAX|EXPOSURE/.test(c)) return t("autoWhyLimit");
+  return t("autoWhyTech");
 }
 function pickDetails(r){
   // v167 (§9.2): в раскрытии — только подтверждённая комиссия. Выплата, доли, цена, коэффициент прогноза, резерв,
@@ -3266,7 +3449,7 @@ function pickDetails(r){
   const fee = cardFeeText(r);
   // v175.1 (проверка владельца): причина отказа автоставки раскрывается касанием той же строкой-деталью (существующий .pick-detail),
   // а не только в title/aria-label; без денег, без служебной простыни — одна строка «Автоставка не выполнена · КОД»
-  const refusal = r && r._cash !== true && r._autoRejected ? `<div class="pick-detail">${t("autoBetFailed")} · ${v3Esc(r._autoReason || "")}</div>` : "";
+  const refusal = r && r._cash !== true && r._autoRejected ? `<div class="pick-detail" title="${v3Esc(r._autoReason || "")}">${t("autoBetFailed")} · ${v3Esc(autoWhy(r._autoReason))}</div>` : "";
   return (fee ? `<div class="pick-detail">${fee}</div>` : "") + refusal;
 }
 // v167 (§9.2, п.1): реальные покупки на «Дашборде» (последние) и в архиве — та же короткая карточка, что на «Ставках».
@@ -3294,6 +3477,7 @@ function dayPickRow(r){
   // v172 (владелец 18.10): «Прогноз · Выигрыш/Проигрыш/Возврат» у рассчитанного прогноза; до расчёта — просто «Прогноз»
   // v175: у прогноза с отклонённой автоставкой — честная подпись «Автоставка не выполнена»; код отказа — в заголовке карточки (title)
   const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? (tone === "void" ? `<span class="ret">${forecastOutcomeWord(tone)}</span>` : forecastOutcomeWord(tone)) : "",
+                !m && r._bought ? `<span class="bought">${t("boughtAuto")}</span>` : "",
                 !m && r._autoRejected ? `<span class="neg" title="${v3Esc(r._autoReason || "")}">${t("autoBetFailed")}</span>` : ""].filter(Boolean).join(" · ");
   const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.odds ? `<span>${v3Esc(m.odds)}</span>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "",
                          m.state ? (m.stateCls ? `<span class="${m.stateCls}">${v3Esc(m.state)}</span>` : `<span>${v3Esc(m.state)}</span>`) : ""].filter(Boolean) : [];
@@ -3579,9 +3763,10 @@ async function loadLastBets(quiet){
       if (gen !== __betsGen || session !== sessionKey()) return;
       const st = document.getElementById("lastStat");
       if (st) st.innerHTML = dayPickHead(view.date, rows, view);
-      const nextHtml = rows.length ? personalListNote() + rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || dayStatusNote(feed)}</div>`;
+      const nextHtml = rows.length ? personalListNote() + rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || t("noBetsDayHint")}</div>`;
       swapListHtml(box, nextHtml);
       renderPersonalHistory(feed);
+      try { segAuto(); } catch(e) {}                        // v183: нет своих покупок — открыт раздел «Прогнозы»
       rerenderDashFromAccount();                            // карточка «Результат ставок · день» следует за днём списка
       const stats = document.getElementById("dashSports"); // статистика отбора — если при старте ленты ещё не было
       if (stats && feed && feed.by_sport && !stats.querySelector(".scard")) stats.innerHTML = officialSportCards(feed.by_sport);
