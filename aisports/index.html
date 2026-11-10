@@ -876,7 +876,7 @@ button.pickline-row:active{transform:scale(.985)}
 .segsw button:active{transform:scale(.97)}
 .segsw button[aria-selected="true"]{color:var(--txt);background:color-mix(in srgb,var(--accent) 18%,transparent);
   box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 38%,transparent)}
-#segFc .v3box{margin-bottom:var(--s4)}
+#pane-stats .v3box{margin-bottom:var(--s4)}
 .seg-note{font-size:12px;line-height:1.4;color:var(--mut);margin:0 2px var(--s3)}
 .pickline .bought{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--green);
   background:color-mix(in srgb,var(--green) 14%,transparent);border-radius:6px;padding:2px 6px;vertical-align:1px}
@@ -885,6 +885,44 @@ button.pickline-row:active{transform:scale(.985)}
 @media (prefers-reduced-motion:reduce){
   .iri::before,.hero3d.idle,.hero3d .glare::after,.fx-in,.pane-in{animation:none}
   .hero3d{transform:none;transition:none}
+}
+/* ═══ v184 (владелец 10.11): дашборд и карточка матча — как в песочнице; график счёта ═══ */
+@keyframes drawLine{to{stroke-dashoffset:0}}
+@keyframes dotPulse{0%{r:3.2;opacity:.9}100%{r:11;opacity:0}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.hero3d .hero-in{transform:translateZ(26px);transform-style:preserve-3d}
+.grid .card:last-child{grid-column:auto}
+.grid .card:last-child .v{font-size:clamp(17px,6vw,26px)}
+.wr-bar i{transform-origin:left center;animation:barGrow .9s cubic-bezier(.16,1,.3,1) both;animation-delay:calc(var(--i,0) * 60ms + 120ms)}
+.bet{transition:transform .18s cubic-bezier(.16,1,.3,1),background-color .18s ease}
+.bet .pk{font-size:15.5px;font-weight:800;letter-spacing:-.018em;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bet .pk b{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#3b82f6;
+  background:color-mix(in srgb,#3b82f6 14%,transparent);border-radius:6px;padding:2px 6px;margin-right:7px;vertical-align:2px}
+.bet .pk b.fc{color:var(--mut);background:color-mix(in srgb,var(--mut) 16%,transparent)}
+.bet .pk .winner{color:inherit}
+.bet .pk + .match{font-size:12.5px;font-weight:600;color:var(--txt-2);letter-spacing:0;margin-top:3px}
+.bet .odds .ol{font-style:normal;font-size:10px;font-weight:700;color:var(--mut);letter-spacing:.04em;margin-right:5px;text-transform:uppercase}
+.bet .bought{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--green);
+  background:color-mix(in srgb,var(--green) 14%,transparent);border-radius:6px;padding:2px 6px;vertical-align:1px}
+#dashSports .sport .st{margin-top:0}
+#dashSports{margin-bottom:var(--s4)}
+#acctChart:not(:empty){margin-bottom:var(--s2)}
+.chartcard{position:relative;margin-top:var(--s2);padding:var(--s4) var(--s4) var(--s3);border-radius:var(--r-l);
+  background:linear-gradient(160deg,var(--card-2),var(--card) 70%);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden}
+.chartcard .ch-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s2)}
+.chartcard .ch-t{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.chartcard .ch-r{font-size:11.5px;color:var(--mut);font-weight:600;font-variant-numeric:tabular-nums}
+.chartcard svg{display:block;width:100%;height:112px;margin-top:var(--s2);overflow:visible}
+.chartcard .ln{fill:none;stroke:url(#acctGrad);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:var(--len,1200);stroke-dashoffset:var(--len,1200);animation:drawLine 1.6s cubic-bezier(.16,1,.3,1) .15s forwards}
+.chartcard .ar{fill:url(#acctFill);opacity:0;animation:fxIn .9s ease .7s both}
+.chartcard .base{stroke:var(--line-2);stroke-width:1;stroke-dasharray:3 5}
+.chartcard .dot{fill:var(--accent)}
+.chartcard .pulse{fill:var(--accent);animation:dotPulse 2.2s ease-out infinite}
+.chartcard .ch-x{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut);font-weight:600;margin-top:4px}
+@media (prefers-reduced-motion:reduce){
+  .wr-bar i,.chartcard .ln,.chartcard .ar,.chartcard .pulse{animation:none}
+  .chartcard .ln{stroke-dashoffset:0}.chartcard .ar{opacity:1}
 }
 </style>
 </head>
@@ -936,6 +974,8 @@ button.pickline-row:active{transform:scale(.985)}
   <div class="grid" id="topCards"><div class="loading" data-i18n="loading">Загрузка…</div></div>
   <!-- 16.10: раскрытие денег — обе погашённые ставки, исходные игровые дни, время подтверждения, вклад, период 24 ч -->
   <div id="moneyDetails" class="card money-details" hidden></div>
+  <!-- v184: график результата подключённого счёта автоставок по игровым дням -->
+  <div id="acctChart"></div>
   <!-- v161 (владелец 16.10): личные реальные сделки живут на дашборде, не под «сегодняшними играми»;
        компактно последние, архив по игровым дням — только своя Telegram-сессия -->
   <div class="section" data-i18n="secRealBets">Ставки за 24 часа</div>
@@ -943,7 +983,18 @@ button.pickline-row:active{transform:scale(.985)}
   <!-- 16.10 (владелец): статистика отбора по видам — постоянно открыта, один заголовок и короткая подпись происхождения -->
   <div class="section" data-i18n="wrBySport">Статистика по видам спорта</div>
   <div class="stats-note" data-i18n="statsNote">По всем прогнозам системы</div>
-  <div id="dashSports" class="sgrid"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div id="dashSports"><div class="loading" data-i18n="loading">Загрузка…</div></div>
+  <div id="simBody">
+    <div class="section" data-i18n="secDayBets">История прогнозов</div>
+  <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
+  <div class="dayrow">
+    <button class="daybtn" id="dprev" aria-label="prev">←</button>
+    <input type="date" id="dpick" class="dpick">
+    <button class="daybtn" id="dnext" aria-label="next">→</button>
+  </div>
+  <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
+  <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
+  </div><!-- /simBody -->
   </div><!-- /pane-dash -->
 
   <div id="pane-sched" class="pane-glass pane-sched" style="display:none">
@@ -957,33 +1008,10 @@ button.pickline-row:active{transform:scale(.985)}
 
   <div id="pane-stats" class="pane-glass pane-stats">
 
-    <!-- v183 (владелец 10.11): два тарифа — два списка. «Ставки» — только реальные покупки счёта; «Прогнозы» — все прогнозы
-         системы по дням, каждый матч один раз (купленный автоставкой — с пометкой, а не второй карточкой) -->
-    <div class="segsw" id="betSeg" role="tablist">
-      <button type="button" role="tab" data-seg="bets" aria-selected="true" aria-controls="segBets" data-i18n="segBets">Ставки</button>
-      <button type="button" role="tab" data-seg="fc" aria-selected="false" aria-controls="segFc" data-i18n="segForecasts">Прогнозы</button>
-    </div>
-    <div id="segBets" role="tabpanel">
-    <div class="seg-note" data-i18n="segBetsNote">Покупки вашего счёта автоставок. Только реальные деньги.</div>
+    <div id="baPanel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
     <div class="section" data-i18n="secLast">Последние ставки</div>
     <div id="lastStat" class="card daycard" style="margin-bottom:10px"></div>
     <div class="bets" id="bets"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-    </div>
-    <div id="segFc" role="tabpanel" hidden>
-    <div class="seg-note" data-i18n="segFcNote">Все прогнозы системы по дням. Каждый матч показан один раз.</div>
-    <div id="baPanel" class="v3box"><div class="loading" data-i18n="loading">Загрузка…</div></div>
-  <div id="simBody">
-    <div class="section" data-i18n="secDayBets">История прогнозов</div>
-  <!-- v36 (CEO 18.08): дата и переключатели дней — ОДНОЙ строкой, компактно -->
-  <div class="dayrow">
-    <button class="daybtn" id="dprev" aria-label="prev">←</button>
-    <input type="date" id="dpick" class="dpick">
-    <button class="daybtn" id="dnext" aria-label="next">→</button>
-  </div>
-  <div id="dayStat" class="card daycard" style="margin-bottom:10px"></div>
-  <div class="bets" id="dayBets"><div class="loading" data-i18n="pickDate">Выбери дату</div></div>
-  </div><!-- /simBody -->
-    </div>
   </div>
 
   <div id="pane-me" class="pane-glass pane-me" style="display:none">
@@ -1176,7 +1204,7 @@ const __safeStorage = (kind) => {
 };
 const localStorage = __safeStorage("localStorage");
 const sessionStorage = __safeStorage("sessionStorage");
-const BUILD = "v183";
+const BUILD = "v184";
 // профиль сборки: "main" — основной бот; "aisports" — отдельный бот на сервере
 // (владелец 07.09: бейсбол первым, остальные виды затемнены как теннис)
 const APP_PROFILE = "aisports";
@@ -1338,7 +1366,15 @@ const T = {
   loading: ["Загрузка…", "Loading…", "加载中…"],
   secToday: ["Ставки сегодня <span class=\"tag\" id=\"todayTag\">live</span>", "Today's bets <span class=\"tag\" id=\"todayTag\">live</span>", "今日投注 <span class=\"tag\" id=\"todayTag\">live</span>"],
   secDayBets: ["Прогнозы по дням", "Forecasts by day", "按日预测"],
-  segBets: ["Ставки", "Bets", "投注"], segForecasts: ["Прогнозы", "Forecasts", "预测"],
+  pickLbl: ["Ставка", "Bet", "投注"], oddsLbl: ["кф", "odds", "赔率"], startsAt: ["начало", "starts", "开始"],
+  chartMin: ["минимум", "min", "最低"], chartMax: ["максимум", "max", "最高"],
+  acctChartTitle: ["Результат счёта по дням", "Account result by day", "账户每日结果"],
+  fcShareTitle: ["Доля побед прогнозов", "Forecast win share", "预测胜率"],
+  rowPending: ["ожидается", "pending", "待定"],
+  autoWord: ["Автоставки", "Auto-bets", "自动投注"],
+  autoConnectHint: ["Подключите счёт в профиле", "Connect an account in Profile", "请在个人资料中连接账户"],
+  noAcctHint: ["Появится после первой ставки счёта", "Appears after the account's first bet", "账户首次投注后显示"],
+  settledWord: ["рассчитано", "settled", "已结算"],
   segBetsNote: ["Покупки вашего счёта автоставок. Только реальные деньги.", "Purchases of your auto-bet account. Real money only.", "你的自动投注账户的购买记录，仅含真实资金。"],
   segFcNote: ["Все прогнозы системы по дням. Каждый матч показан один раз.", "All system forecasts by day. Each match is shown once.", "系统按日给出的全部预测，每场比赛只显示一次。"],
   boughtAuto: ["куплено автоставкой", "bought by auto-bet", "已自动买入"],
@@ -2197,33 +2233,6 @@ function coreFeed(force){
 
 // ═══ v183: раздел «Ставки | Прогнозы», вход содержимого, объём главной карточки ═══
 const FX_REDUCED = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e) { return false; } })();
-let __segUser = false;
-function setSeg(seg, byUser){
-  const fc = seg === "fc";
-  const a = document.getElementById("segBets"), b = document.getElementById("segFc");
-  if (!a || !b) return;
-  if (byUser) { __segUser = true; try { sessionStorage.setItem("aisSeg", seg); } catch(e) {} }
-  const was = b.hidden ? "bets" : "fc";
-  a.hidden = fc; b.hidden = !fc;
-  document.querySelectorAll("#betSeg button").forEach(x => x.setAttribute("aria-selected", x.dataset.seg === seg ? "true" : "false"));
-  if (was === seg) return;
-  const shown = fc ? b : a;
-  shown.classList.remove("pane-in"); void shown.offsetWidth; shown.classList.add("pane-in");
-  if (fc) { const pick = document.getElementById("dpick"); if (pick && pick.value) { try { loadDay(pick.value); } catch(e) {} } }   // пометки «куплено» — по свежей истории
-}
-function segAuto(){
-  // выбор пользователя в этой сессии не перебивается; пока личная история читается — не гадаем
-  if (__segUser) return;
-  let saved = ""; try { saved = sessionStorage.getItem("aisSeg") || ""; } catch(e) {}
-  if (saved === "bets" || saved === "fc") { __segUser = true; setSeg(saved); return; }
-  if (typeof personalHistoryLoading === "function" && personalHistoryLoading()) return;
-  const mine = personalTradeRows().some(x => x && (x._realTrade === true || x._unknown === true));
-  setSeg(mine ? "bets" : "fc");
-}
-document.querySelectorAll("#betSeg button").forEach(x => x.addEventListener("click", () => {
-  setSeg(x.dataset.seg, true);
-  if (tg && tg.HapticFeedback) { try { tg.HapticFeedback.selectionChanged(); } catch(e) {} }
-}));
 (function fxLayer(){
   const WATCH = ["topCards", "dashSports", "dayBets", "bets", "schedList", "baPanel", "personalHistory"];
   function tilt(card){
@@ -2251,12 +2260,8 @@ document.querySelectorAll("#betSeg button").forEach(x => x.addEventListener("cli
     card.addEventListener("pointercancel", leave, {passive: true});
   }
   function hero(box){
-    // главная карточка счёта перерисовывается целиком — объём и перелив возвращаются каждой перерисовкой, без повторного входа
-    const card = box.querySelector(".card.glass-sheen");
-    if (!card || card.classList.contains("hero3d")) return;
-    card.classList.add("hero3d", "iri");
-    const g = document.createElement("div"); g.className = "glare"; g.setAttribute("aria-hidden", "true"); card.appendChild(g);
-    tilt(card);
+    const card = box.querySelector(".hero3d");
+    if (card) tilt(card);
   }
   function run(box){
     if (box.id === "topCards") hero(box);
@@ -2382,30 +2387,33 @@ async function main(){
       : ta && ta.period24Known ? `${t("period24Short")}: — · ${t("period24Incomplete")}` : `${t("period24Short")}: —`;
     const dayHint = `${dayHintBase}<br>${p24line}`;
     const more = `<button type="button" class="money-more" id="moneyMore" aria-expanded="false" aria-controls="moneyDetails">${t("moneyMore")}</button>`;
+    // v184 (владелец 10.11: «дашборд делай так же, как в песочнице»): один главный итог — счёт; ниже две короткие плитки
+    const heroHtml = (k, v, d, cls) => `<div class="card glass-sheen hero3d iri" id="heroBank"><div class="hero-in"><div class="k">${k}</div>
+      <div class="v ${cls || ""}">${v}</div>${d ? `<div class="d" style="color:var(--mut)">${d}</div>` : ""}</div><span class="glare" aria-hidden="true"></span></div>`;
+    const head = accountHeadline(account && account.balance);
+    const bal = head.available == null ? "—" : moneyUnits(head.available, {decimals: 2});
+    const fcs = fcShare(feed);
+    const dayCard = (val, cls, hintHtml, withMore) => `<div class="card"><div class="k">${dayTitle}</div>
+      <div class="v ${cls || ""}">${val}</div><div class="d" style="color:var(--mut)">${hintHtml}</div>${withMore ? more : ""}</div>`;
     if (ta) {
       const wr = winrateText(ta);
-      document.getElementById("topCards").innerHTML = `
-    ${card}
-    <div class="card"><div class="k">${dayTitle}</div>
-      <div class="v ${dm && dm.pnlUnits != null ? tone(dm.pnlUnits) : ""}">${dayVal}</div>
-      <div class="d" style="color:var(--mut)">${dayHint}</div>${more}</div>
-    <div class="card"><div class="k">${t("allTimeResult")}</div>
-      <div class="v ${tone(ta.pnlAll)}">${ta.pnlAll != null ? shortTxt(ta.pnlAll) : "—"}</div>
-      <div class="d" style="color:var(--mut)">${(ta.pnlAll != null ? moneyUnits(ta.pnlAll, {exact:true, sign:true}) + " · " + t("taSettledHint") : t("taHistoryLimited")) + ledgerLine(ta) + since}</div></div>
-    <div class="card"><div class="k">${t("taWinrate")}</div>
+      const allTime = ta.pnlAll != null ? `${t("allTimeResult")} <span class="${tone(ta.pnlAll)}">${shortTxt(ta.pnlAll)}</span>` : t("taHistoryLimited");
+      document.getElementById("topCards").innerHTML = heroHtml(t("taAvailable"), bal, allTime + ledgerLine(ta) + since)
+        + dayCard(dayVal, dm && dm.pnlUnits != null ? tone(dm.pnlUnits) : "", dayHint, true)
+        + `<div class="card"><div class="k">${t("taWinrate")}</div>
       <div class="v ${ta.settled ? (ta.wins / ta.settled >= 0.5 ? "pos" : "neg") : ""}">${wr.rate}</div>
       <div class="d" style="color:var(--mut)">${wr.detail}</div></div>`;
       wireMoneyDetails(feed);
+      renderAcctChart();
       return;
     }
-    document.getElementById("topCards").innerHTML = `
-    ${card}
-    <div class="card"><div class="k">${dayTitle}</div><div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>
-    <div class="card"><div class="k">${t("allTimeResult")}</div><div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("taAccountLoading")}${since}</div></div>
-    <div class="card"><div class="k">${t("taWinrate")}</div><div class="v">—</div>
-      <div class="d" style="color:var(--mut)">${t("taHistoryLimited")}</div></div>`;
+    const shareCard = `<div class="card"><div class="k">${t("fcShareTitle")}</div>
+      <div class="v ${fcs.cls}">${fcs.rate}</div><div class="d" style="color:var(--mut)">${fcs.detail}</div></div>`;
+    document.getElementById("topCards").innerHTML = account
+      ? heroHtml(t("taAvailable"), bal, t("taAccountLoading") + since) + dayCard("—", "", t("taHistoryLimited"), false) + shareCard
+      : heroHtml(t("fcShareTitle"), fcs.rate, fcs.detail, fcs.cls) + dayCard("—", "", t("noAcctHint"), false)
+        + `<div class="card"><div class="k">${t("autoWord")}</div><div class="v">—</div><div class="d" style="color:var(--mut)">${t("autoConnectHint")}</div></div>`;
+    renderAcctChart();
     const det = document.getElementById("moneyDetails"); if (det) { det.hidden = true; det.innerHTML = ""; }
   };
   function wireMoneyDetails(feed){
@@ -3476,23 +3484,30 @@ function dayPickRow(r){
   const m = cardMoney(r);
   // v172 (владелец 18.10): «Прогноз · Выигрыш/Проигрыш/Возврат» у рассчитанного прогноза; до расчёта — просто «Прогноз»
   // v175: у прогноза с отклонённой автоставкой — честная подпись «Автоставка не выполнена»; код отказа — в заголовке карточки (title)
-  const sub1 = [selHtml, date ? v3Esc(date) : "", !m ? t("forecastWord") : "", !m ? (tone === "void" ? `<span class="ret">${forecastOutcomeWord(tone)}</span>` : forecastOutcomeWord(tone)) : "",
-                !m && r._bought ? `<span class="bought">${t("boughtAuto")}</span>` : "",
-                !m && r._autoRejected ? `<span class="neg" title="${v3Esc(r._autoReason || "")}">${t("autoBetFailed")}</span>` : ""].filter(Boolean).join(" · ");
-  const moneyBits = m ? [m.staked ? `<b>${v3Esc(m.staked)}</b>` : "", m.odds ? `<span>${v3Esc(m.odds)}</span>` : "", m.result ? `<b class="${m.cls}">${v3Esc(m.result)}</b>` : "",
-                         m.state ? (m.stateCls ? `<span class="${m.stateCls}">${v3Esc(m.state)}</span>` : `<span>${v3Esc(m.state)}</span>`) : ""].filter(Boolean) : [];
-  const sub2 = moneyBits.length ? `<small class="sub">${moneyBits.join(" · ")}</small>` : "";
-  // v180 (владелец 08.11): возврат (push по форе, нулевой результат) подсвечивается синим — метка ↩, синяя полоса, слово «Возврат» синим
-  const mark = tone === "win" ? "✓" : tone === "lose" ? "×" : tone === "void" ? "↩" : "";
-  const glow = tone === "win" ? "green" : tone === "lose" ? "red" : tone === "void" ? "blue" : "";
-  const key = v3Esc(rowKey(r));   // устойчивый ключ строки: раскрытие переживает перерисовку (16.10)
-  const more = pickDetails(r);
-  const inner = `<span class="pico" aria-hidden="true">${sportIco(r)}</span><span class="main"><strong class="match">${v3Esc(r.match || "")}</strong><small class="sub">${sub1}</small>${sub2}</span><span class="right">${mark ? `<span class="mark" aria-hidden="true">${mark}</span>` : ""}</span>`;
-  // раскрывать нечего — обычный блок без кнопочной семантики (ложной интерактивности нет)
-  const row = more
-    ? `<button type="button" class="pickline-row" data-key="${key}" aria-expanded="false" aria-label="${v3Esc(pickAria(r, tone))}">${inner}</button>`
-    : `<div class="pickline-row" data-key="${key}" role="group" aria-label="${v3Esc(pickAria(r, tone))}" style="cursor:default">${inner}</div>`;
-  return `<article class="pickline ${tone}" data-key="${key}">${row}${glow ? `<div class="glowbar ${glow}" aria-hidden="true"></div>` : ""}${more ? `<div class="pick-more" hidden>${more}</div>` : ""}</article>`;
+  const tag = cash ? t("pickLbl") : r._unknown ? t("reconcilingState") : t("forecastWord");
+  const fp = Number(r.fill_price);
+  const oddsV = cash && Number.isFinite(fp) && fp > 0 && fp < 1 ? 1 / fp : (cash ? null : oddsOf(r));
+  const oddsS = oddsV != null && isFinite(Number(oddsV)) && Number(oddsV) > 1 ? Number(oddsV).toFixed(2) : "—";
+  const mark = tone === "win" ? "✓" : tone === "lose" ? "×" : tone === "void" ? "↩" : "·";
+  const cls = tone === "win" ? "win" : tone === "lose" ? "lose" : tone === "void" ? "void" : "";
+  const settledRow = tone === "win" || tone === "lose" || tone === "void";
+  const startS = !settledRow && r.commence ? `${t("startsAt")} ${fmtTime(r.commence)}` : (date ? v3Esc(date) : "");
+  const fee = cardFeeText(r);
+  const bought = !m && r._bought ? `<span class="bought">${t("boughtAuto")}</span>` : "";
+  const refusal = !m && r._autoRejected ? `<span class="neg" title="${v3Esc(r._autoReason || "")}">${t("autoBetFailed")} · ${v3Esc(autoWhy(r._autoReason))}</span>` : "";
+  const selLine = [startS, fee ? v3Esc(fee) : "", bought, refusal].filter(Boolean).join(" · ");
+  const stakeS = m && m.staked ? v3Esc(m.staked) : "";
+  const stateS = m ? (m.result ? `<span class="${m.cls}">${v3Esc(m.result)}</span>` : `<span class="${m.stateCls || ""}">${v3Esc(m.state || "")}</span>`)
+                   : `<span>${v3Esc(forecastOutcomeWord(tone) || t("rowPending"))}</span>`;
+  const key = v3Esc(rowKey(r));   // устойчивый ключ строки (16.10)
+  // v184 (владелец 10.11): та же карточка, что в песочнице. <article> остаётся признаком строки для swapListHtml (ROW_MARK)
+  return `<article class="bet ${cls}" data-key="${key}" role="group" aria-label="${v3Esc(pickAria(r, tone))}"><div class="res" aria-hidden="true">${mark}</div>
+    <div class="m"><div class="pk"><b${cash ? "" : ' class="fc"'}>${tag}</b>${selHtml}</div>
+    <div class="match">${sportIco(r)} ${v3Esc(r.match || "")}</div>
+    <div class="sel">${selLine}</div></div>
+    <div class="odds"><div><i class="ol">${t("oddsLbl")}</i>${oddsS}</div>
+    <div class="pnl" style="color:var(--mut)">${stakeS}</div>
+    <div class="pnl">${stateS}</div></div></article>`;
 }
 // Приватная история ещё не пришла: отсутствие личной сделки у прогноза не объявляется окончательным
 function personalHistoryLoading(){
@@ -3722,7 +3737,73 @@ function plRu(n, one, few, many){
 function officialSportCards(bySport){
   const names = {mlb: t("sportMlb"), soccer: t("sportSoccer")};
   const keys = Object.keys(bySport || {}).filter(k => k === "mlb" || k === "soccer");
-  return keys.length ? keys.map(k => sportStatCardHtml(k, bySport[k], names[k])).join("") : `<div class="loading">${t("statsUnavailable")}</div>`;
+  return keys.length ? keys.map((k, i) => sportRowHtml(k, bySport[k], names[k], i)).join("") : `<div class="loading">${t("statsUnavailable")}</div>`;
+}
+function sportRowHtml(k, sp, title, i){
+  const w = Number(sp.wins || 0), l = Number(sp.losses || 0), ret = Number(sp.returns || 0), n = w + l;
+  const wr = n ? Math.round(100 * w / n) : null;
+  const bits = [`${w} ${plRu(w, t("winOne"), t("winFew"), t("winMany"))}`, `${l} ${plRu(l, t("lossOne"), t("lossFew"), t("lossMany"))}`];
+  if (ret) bits.push(`${ret} ${plRu(ret, t("returnOne"), t("returnFew"), t("returnMany"))}`);
+  return `<div class="sport" data-sport="${v3Esc(k)}" aria-label="${v3Esc(title || k)}" style="--i:${i || 0}"><div class="ico" aria-hidden="true">${v3Esc(sp.emoji || "")}</div>
+    <div class="info"><div class="st">${bits.join(" · ")}</div>
+    <div class="wr-bar" style="margin-top:6px"><i style="width:${wr == null ? 0 : Math.min(100, wr)}%;background:${wr != null && wr >= 50 ? "var(--green)" : "var(--red)"}"></i></div></div>
+    <div class="bank"><div class="b ${wr == null ? "" : wr >= 50 ? "pos" : "neg"}">${wr == null ? "—" : wr + " %"}</div></div></div>`;
+}
+function fcShare(feed){
+  // доля побед прогнозов по всем видам ленты — число для экрана без счёта (гость, счёт ещё не подключён)
+  let w = 0, l = 0;
+  Object.values((feed && feed.by_sport) || {}).forEach(sp => { w += Number(sp.wins || 0); l += Number(sp.losses || 0); });
+  const n = w + l;
+  if (!n) return {rate: "—", detail: t("statsUnavailable"), cls: ""};
+  return {rate: Math.round(100 * w / n) + " %", cls: w / n >= 0.5 ? "pos" : "neg",
+          detail: `${w} ${plRu(w, t("winOne"), t("winFew"), t("winMany"))} · ${l} ${plRu(l, t("lossOne"), t("lossFew"), t("lossMany"))}`};
+}
+function renderAcctChart(){
+  // v184 (владелец 10.11: «подключённый кошелёк к автоставкам — это данные»): накопленный результат счёта по игровым дням,
+  // только подтверждённые погашения (CLAIM) личной истории; меньше двух дней — графика нет
+  const box = document.getElementById("acctChart");
+  if (!box) return;
+  try {
+    const byDay = new Map();
+    personalTradeRows().forEach(x => {
+      if (!x || x.claim_confirmed !== true || x.pnl == null || !Number.isFinite(Number(x.pnl))) return;
+      const d = x.session_date || String(x.exec_ts || x.opened_ts || "").slice(0, 10);
+      if (d) byDay.set(d, (byDay.get(d) || 0) + Number(x.pnl));
+    });
+    const days = [...byDay.keys()].sort();
+    if (days.length < 2) { box.innerHTML = ""; box.dataset.sig = ""; return; }
+    let acc = 0;
+    const pts = [{v: 0}].concat(days.map(d => ({date: d, v: (acc += byDay.get(d))})));
+    const sig = pts.map(q => q.v.toFixed(2)).join(",");
+    if (box.dataset.sig === sig) return;                     // те же точки — без повторной анимации
+    box.dataset.sig = sig;
+    const vs = pts.map(q => q.v), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    const W = 320, H = 112, padT = 10, padB = 8, span = (hi - lo) || 1;
+    const X = i => (i / (pts.length - 1)) * W, Y = v => padT + (1 - (v - lo) / span) * (H - padT - padB);
+    let dd = "", len = 0;
+    pts.forEach((q, i) => {
+      const x = X(i), y = Y(q.v);
+      if (!i) { dd = `M${x.toFixed(1)} ${y.toFixed(1)}`; return; }
+      const px = X(i - 1), py = Y(pts[i - 1].v), cx = (px + x) / 2;
+      dd += ` C${cx.toFixed(1)} ${py.toFixed(1)} ${cx.toFixed(1)} ${y.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)}`;
+      len += Math.hypot(x - px, y - py) * 1.08;
+    });
+    const lx = X(pts.length - 1), ly = Y(pts[pts.length - 1].v), by = Y(0);
+    const sgn = v => (v > 0 ? "+" : v < 0 ? "−" : "") + usdTxt(Math.abs(v), 2);
+    box.innerHTML = `<div class="chartcard"><div class="ch-h"><span class="ch-t">${t("acctChartTitle")}</span>
+        <span class="ch-r">${t("chartMin")} ${sgn(lo)} · ${t("chartMax")} ${sgn(hi)}</span></div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${t("acctChartTitle")}">
+        <defs><linearGradient id="acctGrad" x1="0" y1="0" x2="${W}" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#38bdf8"/><stop offset=".5" stop-color="#a78bfa"/><stop offset="1" stop-color="#34d399"/></linearGradient>
+          <linearGradient id="acctFill" x1="0" y1="0" x2="0" y2="${H}" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#38bdf8" stop-opacity=".26"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0"/></linearGradient></defs>
+        <line class="base" x1="0" y1="${by.toFixed(1)}" x2="${W}" y2="${by.toFixed(1)}"/>
+        <path class="ar" d="${dd} L${W} ${H} L0 ${H} Z"/>
+        <path class="ln" d="${dd}" style="--len:${Math.ceil(len)}"/>
+        <circle class="pulse" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2"/><circle class="dot" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3.2"/>
+      </svg>
+      <div class="ch-x"><span>${fmtDay(days[0])}</span><span>${fmtDay(days[days.length - 1])}</span></div></div>`;
+  } catch (e) { box.innerHTML = ""; }
 }
 function sportStatCardHtml(k, sp, title){
   const w = Number(sp.wins || 0), l = Number(sp.losses || 0), ret = Number(sp.returns || 0), n = w + l;
@@ -3766,10 +3847,9 @@ async function loadLastBets(quiet){
       const nextHtml = rows.length ? personalListNote() + rows.map(dayPickRow).join("") : `<div class="loading">${personalUnknownTradesHint() || t("noBetsDayHint")}</div>`;
       swapListHtml(box, nextHtml);
       renderPersonalHistory(feed);
-      try { segAuto(); } catch(e) {}                        // v183: нет своих покупок — открыт раздел «Прогнозы»
       rerenderDashFromAccount();                            // карточка «Результат ставок · день» следует за днём списка
       const stats = document.getElementById("dashSports"); // статистика отбора — если при старте ленты ещё не было
-      if (stats && feed && feed.by_sport && !stats.querySelector(".scard")) stats.innerHTML = officialSportCards(feed.by_sport);
+      if (stats && feed && feed.by_sport && !stats.querySelector(".sport")) stats.innerHTML = officialSportCards(feed.by_sport);
     };
     paint();                                                 // названия и суммы — сразу, статистика матчей не блокирует показ
     loadMatchStats(rows.map(r => r.session_date)).then(paint).catch(() => {});
